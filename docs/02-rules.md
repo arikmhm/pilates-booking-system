@@ -43,7 +43,8 @@ per coach per hari.
 | **Aturan berulang** | Pola jadwal mingguan, mis. "Senin 07:30 Reformer, Coach A". |
 | **Sesi** | Instance nyata suatu kelas pada tanggal & jam tertentu. **Ini yang dibooking.** |
 | **Paket** | Sekumpulan kredit yang dibeli member, punya tanggal hangus & daftar jenis kelas yang diizinkan. |
-| **Kredit** | Hak ikut 1 kelas. Melekat pada paket asalnya. |
+| **Kredit** | Hak ikut 1 kelas. Melekat pada paket asalnya. **Saldo**, bukan uang. |
+| **Transaksi** | Peristiwa **uang**: satu pembelian paket. Menerbitkan sejumlah kredit, lalu selesai — nasib kreditnya sesudah itu bukan transaksi. Di demo hanya pembelian; refund dan pembayaran gagal menyusul bersama `payments` (BR-8.1). |
 | **Buku besar** | Catatan setiap perubahan kredit (±, alasan, waktu, pelaku). Saldo = jumlah buku besar. |
 | **Hangus** | Kredit tidak bisa dipakai lagi (masa berlaku habis / batal telat / no-show). |
 | **Waitlist** | Antrian member saat sesi penuh. |
@@ -228,7 +229,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 |---|---|---|
 | M1 | Jadwal | Kalender mingguan di laptop, daftar per hari di HP · sisa kursi · blok membuka panel konfirmasi M2, blok penuh langsung mengantre · bisa geser minggu — `src/app/jadwal/`. **Terbuka untuk tamu**: pengunjung yang belum masuk melihat jadwal yang sama dalam kerangka publik, tanpa tombol booking dan tanpa kartu kredit (DS-45) |
 | M2 | Konfirmasi *(panel geser)* | Pilih nomor alat · info "1 kredit dipotong" + sisa sesudahnya · aturan batal tertulis · terbuka-tutup lewat `?pilih=` — `src/app/jadwal/konfirmasi.tsx` |
-| M4 | Transaksi | Pembelian paket sendiri + nasib tiap kreditnya (jadi kelas · kembali · hangus). Tiap baris membuka **detail transaksi**: buku besar paket itu baris per baris — `src/app/transaksi/`, `src/app/transaksi/[id]/` |
+| M4 | Transaksi | **Uang**: satu baris satu pembelian paket. Tiap baris membuka detail transaksi — yang dibeli (kredit, masa berlaku, jenis kelas yang tercakup) + ringkasan empat angka nasib kreditnya, lalu menautkan ke buku kredit di Akun Saya (DS-48) — `src/app/transaksi/`, `src/app/transaksi/[id]/` |
 | M3 | Akun Saya | **Sisa kredit + tanggal hangus + hitung mundur** · booking aktif · **daftar tunggu + tombol keluar** (BR-4.7) · riwayat kredit — `src/app/akun/` |
 
 **Admin (tampilan laptop)**
@@ -237,7 +238,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 |---|---|---|
 | A1 | Dashboard hari ini | Sesi hari ini + okupansi · **panel "kredit hangus ≤ 7 hari"** + tombol kirim-WA · kartu setelan. **Dua fokus di satu layar** (DS-47): admin dapat ubin dan panel kerja — menunggu kursi, belum diabsen; owner dapat omzet bulan ini dan nilai kredit menggantung (BR-9.3) — `src/app/admin/` |
 | A2 | Detail sesi | Peserta · **daftarkan member** · **batalkan booking satu orang** · waitlist · centang kehadiran · tombol **Batalkan Kelas** — `src/app/admin/sesi/[id]/` |
-| A3 | Detail member | Satu kartu profil (kontak, kredit aktif, paket yang masih hidup) · berikan paket · koreksi manual · buku besar lengkap — `src/app/admin/member/[id]/` |
+| A3 | Detail member | Satu kartu profil (kontak, kredit aktif, paket yang masih hidup) · berikan paket · koreksi manual · **daftar transaksi** + buku besar kredit lengkap — satu-satunya layar yang memang memuat dua-duanya (DS-48) — `src/app/admin/member/[id]/` |
 | A4 | Direktori member | Tabel 7 kolom + cari, halaman, dan jumlah baris lewat URL · bulatan status kredit bertooltip (DS-36, DS-37) · panel tindak lanjut: kredit hangus ≤ 7 hari dan member yang lama tak datang — `src/app/admin/member/` |
 | A5 | Pelatih & staf | Beban mengajar 7 hari · tombol chat-WA coach · siapa punya peran apa — `src/app/admin/tim/` |
 | A6 | Layanan & paket | Jenis kelas · katalog paket + harga · **buat paket baru** · sembunyikan paket lama — `src/app/admin/layanan/` |

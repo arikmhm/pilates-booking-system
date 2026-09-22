@@ -135,6 +135,8 @@ export type DetailTransaksi = BarisTransaksi & {
   telepon: string;
   masa_berlaku_hari: number;
   jumlah_kredit_paket: number;
+  /** Jenis kelas yang boleh diikuti kreditnya — BR-1.4. Bagian dari barangnya. */
+  kelas: string[];
 };
 
 /**
@@ -147,7 +149,9 @@ export async function transaksiById(
   id: string,
   user_id?: string,
 ): Promise<DetailTransaksi | null> {
-  const [baris] = await sql<DetailTransaksi[]>`
+  const [baris] = await sql<
+    (Omit<DetailTransaksi, "kelas"> & { kelas: string[] | null })[]
+  >`
     select mp.id,
            mp.dibeli_at,
            mp.hangus_at,
@@ -159,6 +163,10 @@ export async function transaksiById(
            p.harga_rupiah,
            p.masa_berlaku_hari,
            p.jumlah_kredit as jumlah_kredit_paket,
+           (select array_agg(ct.nama order by ct.nama)
+              from package_class_types pct
+              join class_types ct on ct.id = pct.class_type_id
+             where pct.package_id = p.id) as kelas,
            mp.jumlah_kredit_awal as kredit_awal,
            coalesce(sum(cl.delta), 0)::int as sisa,
            coalesce(-sum(cl.delta) filter (where cl.alasan = 'booking'), 0)::int
@@ -174,52 +182,22 @@ export async function transaksiById(
       left join credit_ledger cl on cl.member_package_id = mp.id
      where mp.id = ${id}
        and (${user_id ?? null}::uuid is null or mp.user_id = ${user_id ?? null}::uuid)
-     group by mp.id, u.id, u.nama, u.telepon, p.nama, p.harga_rupiah,
-              p.masa_berlaku_hari, p.jumlah_kredit`;
+     -- p.id ikut dikelompokkan, bukan kolom-kolomnya satu per satu: subquery
+     -- jenis kelas menyebut p.id, dan Postgres hanya menganggap kolom lain
+     -- bergantung fungsional setelah kunci primernya ada di GROUP BY.
+     group by mp.id, u.id, u.nama, u.telepon, p.id`;
 
   if (!baris) return null;
   return {
     ...baris,
+    kelas: baris.kelas ?? [],
     dibeli_at: saat(baris.dibeli_at),
     hangus_at: saat(baris.hangus_at),
     diperpanjang_at: baris.diperpanjang_at ? saat(baris.diperpanjang_at) : null,
   };
 }
 
-export type BarisBuku = {
-  id: string;
-  created_at: Date;
-  delta: number;
-  alasan: string;
-  catatan: string | null;
-  pelaku: string | null;
-  kelas: string | null;
-  mulai_at: Date | null;
-};
-
-/** BR-1.7 — isi transaksi adalah buku besarnya, baris per baris. */
-export async function bukuPaket(sql: Sql, id: string): Promise<BarisBuku[]> {
-  const baris = await sql<BarisBuku[]>`
-    select cl.id, cl.created_at, cl.delta, cl.alasan, cl.catatan,
-           pel.nama as pelaku,
-           ct.nama  as kelas,
-           s.mulai_at
-      from credit_ledger cl
-      left join users pel on pel.id = cl.pelaku_id
-      left join bookings b on b.id = cl.booking_id
-      left join sessions s on s.id = b.session_id
-      left join class_types ct on ct.id = s.class_type_id
-     where cl.member_package_id = ${id}
-     order by cl.created_at, cl.id`;
-
-  return baris.map((b) => ({
-    ...b,
-    created_at: saat(b.created_at),
-    mulai_at: b.mulai_at ? saat(b.mulai_at) : null,
-  }));
-}
-
-/* ── Koreksi manual — UC-A17, jejak BR-1.8 ───────────────────────────────── */
+/* ── Koreksi manual — UC-A17, jejak BR-1.8 ──────────────────────────────── */
 
 export type Koreksi = {
   id: string;

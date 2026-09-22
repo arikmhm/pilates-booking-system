@@ -447,6 +447,29 @@ Dua hal yang menahan pembagian ini agar tidak berubah jadi pembagian sembarang:
   admin (harga paket di A6 dan A9 — meja depan harus bisa menjawab "paketnya
   berapa"), **penjumlahannya** tidak (BR-9.3).
 
+`DS-48` — **Satu layar, satu satuan: rupiah atau kredit, bukan dua-duanya.**
+Transaksi dan kredit gampang tertukar karena keduanya "riwayat", tapi
+pertanyaannya berbeda dan satuannya berbeda:
+
+| | Transaksi | Kredit |
+|---|---|---|
+| Menjawab | "uang apa yang masuk, kapan, untuk apa" | "saldo saya berapa, kenapa segitu" |
+| Satuan | rupiah | kredit |
+| Baris | satu per pembayaran | satu per gerak saldo (−1 booking, +1 batal, −4 hangus) |
+| Layar | `/transaksi`, `/transaksi/[id]` | Akun Saya (member) · buku besar di A3 (staf) |
+
+Keduanya bertemu tepat di satu titik: sebuah transaksi **menerbitkan** sejumlah
+kredit. Karena itu layar transaksi memuat ringkasan nasib kredit terbitannya —
+empat angka dan persamaannya (`10 − 9 + 1 − 0 = 2`) — lalu menautkan ke buku
+kreditnya, bukan menyalin barisnya. Kolom "Rincian" yang dulu menyebut "7 jadi
+kelas · 2 kembali" di tengah daftar rupiah dihapus karena itu: bahasa kredit di
+layar uang.
+
+Pengecualiannya **layar detail member (A3)**, dan pengecualian itu punya alasan:
+di sana pertanyaannya bukan tentang satu pembayaran melainkan tentang orangnya,
+dan meja depan memang perlu melihat keduanya berdampingan — daftar transaksi di
+atas, buku besar kredit di bawah.
+
 `DS-43` — **Tidak ada tautan mati, di halaman publik maupun di dalam aplikasi.**
 
 Tiap butir menu menuju salah satu dari tiga tempat saja:
@@ -546,17 +569,18 @@ menolak pemiliknya sendiri saat diklik lebih buruk daripada menu yang pendek.
 | Admin | — | Dashboard |
 | | Jadwal | Jadwal Kelas · Aturan Jadwal |
 | | Member | Direktori Member · Pesan Terkirim |
-| | Studio | Pelatih & Staf · Layanan & Paket · Halaman Publik |
+| | Studio | Pelatih & Staf · Layanan & Paket |
 | | Bisnis | Transaksi |
 | Owner | | semua milik admin, **+ Laporan di kelompok Bisnis** |
 
 Tiga hal yang diputuskan tabel itu:
 
 1. **Coach tidak punya Akun Saya** — dia tidak punya kredit, layarnya akan kosong.
-2. **Halaman Publik hanya di sisi staf.** Itu alat kerja mereka: menunjukkan harga ke
-   calon member, menyalin tautannya, memastikan apa yang terbaca orang luar. Untuk
-   member ia jalan mundur — mereka sudah di dalam, dan halaman jualan tidak punya
-   satu pun hal yang bisa mereka lakukan.
+2. **Tidak ada butir "Halaman Publik" di peran mana pun.** Halaman jualan bukan layar
+   aplikasi: ia tidak punya satu pun hal yang bisa dikerjakan dari dalam, dan menu yang
+   mengeluarkan orang dari aplikasinya sendiri cuma menambah satu cara tersesat. Staf
+   yang perlu menunjukkan harga ke calon member mengetik alamatnya — atau membuka A6,
+   yang memang berisi katalog yang sama dan bisa diubah.
 3. **Laporan hanya untuk owner** (BR-9.3). Resepsionis perlu seluruh jadwal dan
    seluruh member, tapi tidak perlu omzet. Pemisahan itu sendiri bagian dari yang
    dijual, jadi ia harus terlihat: admin yang membuka `/admin/laporan` dipantulkan

@@ -92,23 +92,6 @@ function status(p: Pembelian, sekarang: Date): [string, string] {
   ];
 }
 
-/** Rincian nasib kredit — dipakai baris tabel member dan staf. */
-function Rincian({ p }: { p: Pembelian }) {
-  const bagian: [number, string][] = [
-    [p.dipakai, "jadi kelas"],
-    [p.kembali, "kembali"],
-    [p.hangus, "hangus"],
-  ];
-  const isi = bagian.filter(([n]) => n > 0);
-  return (
-    <span className="text-app-body-sm text-muted-foreground">
-      {isi.length === 0
-        ? "Belum terpakai"
-        : isi.map(([n, l]) => `${n} ${l}`).join(" · ")}
-    </span>
-  );
-}
-
 export default async function Transaksi({
   searchParams,
 }: {
@@ -138,7 +121,12 @@ export default async function Transaksi({
         <div>
           <h1 className="text-app-title">Transaksi saya</h1>
           <p className="text-app-body-sm text-muted-foreground">
-            Tiap paket yang pernah dibeli, dan ke mana kreditnya pergi.
+            Tiap pembelian paket — satu baris satu pembayaran. Gerak kreditnya
+            ada di{" "}
+            <Link href="/akun" className="underline underline-offset-4">
+              Akun Saya
+            </Link>
+            .
           </p>
         </div>
 
@@ -185,9 +173,8 @@ export default async function Transaksi({
                       <th className={TH}>Paket</th>
                       <th className={`${TH} w-28 text-right`}>Harga</th>
                       <th className={`${TH} w-20 text-right`}>Kredit</th>
-                      <th className={TH}>Rincian</th>
                       <th className={`${TH} w-40`}>Berlaku sampai</th>
-                      <th className={`${TH} w-40`}>Status</th>
+                      <th className={`${TH} w-40`}>Sisa kredit</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -213,9 +200,6 @@ export default async function Transaksi({
                           <td className={`${TD} text-right tabular-nums`}>
                             {p.kredit_awal}
                           </td>
-                          <td className={TD}>
-                            <Rincian p={p} />
-                          </td>
                           <td className={`${TD} tabular-nums`}>
                             {tanggalRingkasWib(p.hangus_at)}
                             {p.diperpanjang_at && (
@@ -237,13 +221,6 @@ export default async function Transaksi({
           </Kartu>
         </div>
 
-        <p className="mt-dekat text-app-body-sm text-muted-foreground">
-          Gerak kredit baris per baris ada di{" "}
-          <Link href="/akun" className="underline underline-offset-4">
-            Akun Saya
-          </Link>
-          .
-        </p>
       </Kerangka>
     );
   }
@@ -377,7 +354,7 @@ export default async function Transaksi({
         <div>
           <h1 className="text-app-title">Buku transaksi</h1>
           <p className="text-app-body-sm text-muted-foreground">
-            Tiap paket yang berpindah ke member, terbaru di atas.
+            Uang yang masuk: satu baris satu pembelian paket, terbaru di atas.
           </p>
         </div>
         <Periode hari={hari} dasar="/transaksi" />
@@ -447,8 +424,7 @@ export default async function Transaksi({
                     <th className={TH}>Paket</th>
                     <th className={`${TH} w-28 text-right`}>Harga</th>
                     <th className={`${TH} w-20 text-right`}>Kredit</th>
-                    <th className={TH}>Rincian</th>
-                    <th className={`${TH} w-40`}>Status</th>
+                    <th className={`${TH} w-40`}>Sisa kredit</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -477,9 +453,6 @@ export default async function Transaksi({
                         </td>
                         <td className={`${TD} text-right tabular-nums`}>
                           {b.kredit_awal}
-                        </td>
-                        <td className={TD}>
-                          <Rincian p={b} />
                         </td>
                         <td className={TD}>
                           <Chip warna={warna} anak={label} />

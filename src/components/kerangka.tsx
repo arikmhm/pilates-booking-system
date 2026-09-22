@@ -20,7 +20,6 @@ import {
   Package,
   Receipt,
   Repeat,
-  Store,
   UserCog,
   Users,
   Wallet,
@@ -88,9 +87,9 @@ const TRANSAKSI: Butir = {
 // bisa menyembunyikan isi sidebar — beserta chevron, garis tegak, dan satu
 // komponen klien baru. Judul kelompok sudah mengelompokkan.
 //
-// "Halaman Publik" sengaja hanya ada di sisi staf: itu alat kerja mereka
-// (menunjukkan harga ke calon member, menyalin tautannya), bukan menu member —
-// member sudah di dalam, mengembalikannya ke halaman jualan itu jalan mundur.
+// Tidak ada butir "Halaman Publik" di mana pun: halaman jualan bukan layar
+// aplikasi, dan menu yang mengeluarkan orang dari aplikasinya sendiri cuma
+// menambah satu cara tersesat. Yang perlu melihatnya mengetik alamatnya.
 const STAF: Grup[] = [
   { butir: [{ href: "/admin", label: "Dashboard", ikon: LayoutDashboard }] },
   {
@@ -112,7 +111,6 @@ const STAF: Grup[] = [
     butir: [
       { href: "/admin/tim", label: "Pelatih & Staf", ikon: UserCog },
       { href: "/admin/layanan", label: "Layanan & Paket", ikon: Package },
-      { href: "/", label: "Halaman Publik", ikon: Store },
     ],
   },
 ];

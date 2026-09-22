@@ -7,12 +7,20 @@
 // padanya, lalu bukti lengkapnya paling bawah.
 
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { pg } from "@/db";
 import { riwayatKredit, type BarisLedger } from "@/db/booking";
 import { BATAS_KOREKSI, detailMember, dompetMember } from "@/db/admin";
+import { pembelianMember } from "@/db/transaksi";
 import { paketDijual } from "@/db/kelola";
 import { pastikanAdmin } from "@/lib/masuk";
-import { hariWib, jamWib, selisihManusiawi, tanggalRingkasWib } from "@/lib/waktu";
+import {
+  hariWib,
+  jamWib,
+  rupiah,
+  selisihManusiawi,
+  tanggalRingkasWib,
+} from "@/lib/waktu";
 import { tautanWa } from "@/lib/wa";
 import { Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
 import { Kembali } from "@/components/kembali";
@@ -91,11 +99,12 @@ export default async function A3({
   const member = await detailMember(pg, id);
   if (!member) notFound();
 
-  const [dompet, riwayat, katalog] = await Promise.all([
+  const [dompet, riwayat, katalog, transaksi] = await Promise.all([
     dompetMember(pg, id),
     // Buku besar LENGKAP — ini layar sengketa, bukan ringkasan.
     riwayatKredit(pg, id, 500),
     paketDijual(pg),
+    pembelianMember(pg, id),
   ]);
 
   const hidup = dompet.filter((p) => p.hangus_at > sekarang && p.sisa > 0);
@@ -301,6 +310,43 @@ export default async function A3({
 
       {/* ── Bukti lengkap, paling bawah ──────────────────────────────────── */}
       <div className="mt-dekat">
+        <Kartu
+          judul={`Transaksi · ${transaksi.length} pembelian`}
+          catatan="Uang yang masuk. Buku besar di bawah menjelaskan kreditnya."
+          padat
+        >
+          {transaksi.length === 0 ? (
+            <p className="p-4 text-app-body-sm text-muted-foreground">
+              Belum pernah membeli paket.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {transaksi.map((t) => (
+                <li
+                  key={t.id}
+                  className="flex items-center justify-between gap-4 px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <Link
+                      href={`/transaksi/${t.id}`}
+                      className="text-app-body underline underline-offset-4"
+                    >
+                      {t.paket}
+                    </Link>
+                    <p className="text-app-body-sm text-muted-foreground">
+                      {tanggalRingkasWib(t.dibeli_at)} · {t.kredit_awal} kredit ·
+                      berlaku sampai {tanggalRingkasWib(t.hangus_at)}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-app-body tabular-nums">
+                    {rupiah(t.harga_rupiah)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Kartu>
+
         <Kartu
           judul={`Buku besar · ${riwayat.length} baris`}
           catatan="Sisa kredit = jumlah kolom kanan. Tidak ada angka saldo yang disimpan terpisah, jadi tidak ada yang bisa melenceng."

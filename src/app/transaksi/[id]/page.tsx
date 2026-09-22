@@ -1,9 +1,22 @@
-// Detail satu transaksi — isi sebuah pembelian paket, baris per baris.
+// Detail satu transaksi — peristiwa UANG, bukan buku kredit.
 //
-// Yang dijawab layar ini: "kredit yang dibeli tanggal sekian itu jadi apa?"
-// Jawabannya buku besar paket tersebut (BR-1.7) — bukan ringkasan, bukan
-// saldo, melainkan tiap baris yang pernah menggerakkannya. Sengketa kredit
-// diselesaikan di halaman ini.
+// Dua hal yang sempat tercampur di layar ini, dan bedanya bukan soal rasa:
+//
+// | | Transaksi | Kredit |
+// |---|---|---|
+// | Isinya | uang berpindah: siapa bayar, berapa, untuk apa | saldo bergerak: −1 booking, +1 batal, −4 hangus |
+// | Satuannya | rupiah | kredit |
+// | Barisnya | satu per pembayaran | banyak, sepanjang umur paket |
+// | Layarnya | ini + daftar `/transaksi` | Akun Saya (member) · buku besar di A3 (staf) |
+//
+// Keduanya bertemu tepat di satu titik: sebuah transaksi **menerbitkan**
+// sejumlah kredit. Sesudah itu kreditnya hidup sendiri — dipakai, dikembalikan,
+// atau hangus — dan nasibnya bukan lagi peristiwa uang.
+//
+// Karena itu halaman ini memuat ringkasan nasib kredit terbitannya (empat
+// angka), bukan buku besarnya baris per baris. Barisnya ada di layar kredit,
+// satu tautan dari sini. Layar detail member (A3) boleh memuat dua-duanya —
+// di sana pertanyaannya memang tentang orangnya, bukan tentang satu pembayaran.
 //
 // Kepemilikan dijaga di dalam query: member yang mengetik id paket orang lain
 // mendapat 404, bukan halaman orang lain (`transaksiById` dengan `user_id`).
@@ -12,11 +25,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { pg } from "@/db";
 import { penggunaById } from "@/db/admin";
-import { bukuPaket, transaksiById } from "@/db/transaksi";
+import { transaksiById } from "@/db/transaksi";
 import { userSaatIni } from "@/lib/masuk";
 import {
   hariWib,
-  jamWib,
   rupiah,
   selisihManusiawi,
   tanggalRingkasWib,
@@ -25,6 +37,33 @@ import { tautanWa } from "@/lib/wa";
 import { Angka, Chip, Kartu, Kerangka } from "@/components/kerangka";
 
 export const dynamic = "force-dynamic";
+
+/** Satu baris fakta transaksi. Label kiri, nilai kanan — bukan tabel. */
+function Fakta({
+  label,
+  nilai,
+  catatan,
+}: {
+  label: string;
+  nilai: React.ReactNode;
+  catatan?: string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 border-b border-border py-3 last:border-0">
+      <span className="shrink-0 text-app-body-sm text-muted-foreground">
+        {label}
+      </span>
+      <span className="text-right text-app-body">
+        {nilai}
+        {catatan && (
+          <span className="block text-app-body-sm text-muted-foreground">
+            {catatan}
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}
 
 export default async function DetailTransaksi({
   params,
@@ -43,9 +82,10 @@ export default async function DetailTransaksi({
   const t = await transaksiById(pg, id, staf ? undefined : user_id);
   if (!t) notFound();
 
-  const buku = await bukuPaket(pg, id);
   const sekarang = new Date();
   const hidup = t.sisa > 0 && t.hangus_at > sekarang;
+  // Ke tempat kreditnya dicatat baris per baris — bukan ke sini.
+  const bukuKredit = staf ? `/admin/member/${t.member_id}` : "/akun";
 
   return (
     <Kerangka
@@ -56,22 +96,19 @@ export default async function DetailTransaksi({
     >
       <div className="flex flex-wrap items-start justify-between gap-dekat">
         <div>
-          <h1 className="text-app-title">{t.paket}</h1>
+          <p className="text-app-label uppercase text-muted-foreground">
+            Pembelian paket
+          </p>
+          <h1 className="mt-1 text-app-title">{rupiah(t.harga_rupiah)}</h1>
           <p className="text-app-body-sm text-muted-foreground">
-            Dibeli {hariWib(t.dibeli_at)} ·{" "}
+            {hariWib(t.dibeli_at)} ·{" "}
             {staf ? (
-              <>
-                {/* Dari transaksi ke orangnya — arah yang benar. Sebelumnya
-                    baris transaksi langsung melompat ke profil member dan
-                    transaksinya sendiri tidak punya halaman. */}
-                <Link
-                  href={`/admin/member/${t.member_id}`}
-                  className="underline underline-offset-4"
-                >
-                  {t.member}
-                </Link>{" "}
-                · {t.telepon}
-              </>
+              <Link
+                href={`/admin/member/${t.member_id}`}
+                className="underline underline-offset-4"
+              >
+                {t.member}
+              </Link>
             ) : (
               t.member
             )}
@@ -93,105 +130,105 @@ export default async function DetailTransaksi({
         )}
       </div>
 
-      <div className="mt-dekat grid gap-dekat sm:grid-cols-2 xl:grid-cols-4">
-        <Kartu>
-          <Angka
-            nilai={rupiah(t.harga_rupiah)}
-            label="Harga dibayar"
+      <div className="mt-dekat grid items-start gap-dekat lg:grid-cols-2">
+        {/* Kiri: apa yang dibeli. Semuanya fakta yang terkunci saat bayar —
+            harga dan isi paket di katalog boleh berubah kapan saja tanpa
+            mengubah baris ini. */}
+        <Kartu judul="Yang dibeli" catatan="Syaratnya terkunci sejak dibayar.">
+          <Fakta label="Paket" nilai={t.paket} />
+          <Fakta
+            label="Kredit diterbitkan"
+            nilai={<span className="tabular-nums">{t.kredit_awal}</span>}
             catatan={`${rupiah(Math.round(t.harga_rupiah / (t.kredit_awal || 1)))} per kelas`}
           />
-        </Kartu>
-        <Kartu>
-          <Angka
-            nilai={t.kredit_awal}
-            label="Kredit dibeli"
-            catatan={
-              t.kredit_awal === t.jumlah_kredit_paket
-                ? `Isi baku paket ini: ${t.jumlah_kredit_paket}`
-                : `Katalog sekarang ${t.jumlah_kredit_paket} — isi paket boleh berubah tanpa mengubah riwayat`
-            }
-          />
-        </Kartu>
-        <Kartu warna={hidup ? "bg-ok-surface border-border" : undefined}>
-          <Angka
-            nilai={t.sisa}
-            label="Sisa kredit"
-            catatan={
-              hidup
-                ? `Hangus ${hariWib(t.hangus_at)} · ${selisihManusiawi(t.hangus_at, sekarang)}`
-                : t.sisa <= 0
-                  ? "Habis terpakai."
-                  : `Hangus ${hariWib(t.hangus_at)} — tidak bisa dipakai lagi.`
-            }
-            warnaCatatan={hidup ? "text-ok-foreground" : "text-muted-foreground"}
-          />
-        </Kartu>
-        <Kartu>
-          <Angka
-            nilai={`${t.dipakai} / ${t.kembali} / ${t.hangus}`}
-            label="Kelas / kembali / hangus"
-            catatan={`Masa berlaku ${t.masa_berlaku_hari} hari sejak dibeli${
+          <Fakta
+            label="Masa berlaku"
+            nilai={`${t.masa_berlaku_hari} hari`}
+            catatan={`Sampai ${tanggalRingkasWib(t.hangus_at)}${
               t.diperpanjang_at
                 ? ` · diperpanjang ${tanggalRingkasWib(t.diperpanjang_at)}`
                 : ""
             }`}
           />
+          {/* BR-1.4 — jenis kelas yang tercakup adalah bagian dari barangnya,
+              setara dengan jumlah kredit dan masa berlakunya. Member yang tidak
+              pernah diberi tahu baru mengetahuinya saat booking ditolak (X7). */}
+          <Fakta
+            label="Berlaku untuk"
+            nilai={t.kelas.length ? t.kelas.join(" · ") : "—"}
+            catatan={
+              t.kelas.length ? "Kelas di luar daftar ini tidak bisa dipesan." : undefined
+            }
+          />
+          {staf && <Fakta label="Nomor HP" nilai={t.telepon} />}
         </Kartu>
-      </div>
 
-      <div className="mt-dekat">
+        {/* Kanan: satu-satunya tempat kredit muncul di layar ini — sebagai
+            ringkasan empat angka, bukan buku besar. */}
         <Kartu
-          judul="Buku besar paket ini"
-          catatan="Urut dari yang paling awal. Sisa kredit = jumlah kolom kanan (BR-1.7)."
-          padat
+          judul="Nasib kreditnya"
+          catatan="Ringkasan. Baris per barisnya ada di buku kredit."
         >
-          <ul className="divide-y divide-border">
-            {buku.map((b) => {
-              const naik = b.delta > 0;
-              return (
-                <li
-                  key={b.id}
-                  className="flex items-baseline justify-between gap-4 px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    {/* AGENTS.md — nilai `alasan` tampil apa adanya dalam
-                        Bahasa Indonesia. Hanya garis bawahnya diganti spasi. */}
-                    <p className="text-app-body first-letter:uppercase">
-                      {b.alasan.replace(/_/g, " ")}
-                    </p>
-                    <p className="truncate text-app-body-sm text-muted-foreground">
-                      {b.kelas && b.mulai_at
-                        ? `${b.kelas} · ${hariWib(b.mulai_at)} ${jamWib(b.mulai_at)}`
-                        : hariWib(b.created_at)}
-                      {b.pelaku && ` · oleh ${b.pelaku}`}
-                      {b.catatan && ` · ${b.catatan}`}
-                    </p>
-                  </div>
-                  <span
-                    className={`shrink-0 text-app-section tabular-nums ${
-                      naik ? "text-ok-foreground" : "text-muted-foreground"
-                    }`}
-                  >
-                    {naik ? "+" : ""}
-                    {b.delta}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="grid grid-cols-2 gap-4">
+            <Angka
+              nilai={t.dipakai}
+              label="Jadi kelas"
+              catatan="Kursi yang benar-benar dipesan."
+            />
+            <Angka
+              nilai={t.kembali}
+              label="Kembali"
+              catatan="Batal tepat waktu (BR-3.1)."
+            />
+            <Angka
+              nilai={t.hangus}
+              label="Hangus"
+              catatan="Lewat masa berlaku, batal telat, atau tidak datang."
+              warnaCatatan={
+                t.hangus ? "text-warn-foreground" : "text-muted-foreground"
+              }
+            />
+            <Angka
+              nilai={t.sisa}
+              label="Sisa"
+              catatan={
+                hidup
+                  ? `Bisa dipakai ${selisihManusiawi(t.hangus_at, sekarang)} lagi`
+                  : t.sisa <= 0
+                    ? "Habis terpakai."
+                    : "Tidak bisa dipakai lagi — masa berlakunya lewat."
+              }
+              warnaCatatan={
+                hidup ? "text-ok-foreground" : "text-muted-foreground"
+              }
+            />
+          </div>
 
-          <div className="flex items-baseline justify-between gap-4 border-t border-border px-4 py-3">
-            <span className="text-app-body">Sisa</span>
-            <span className="text-app-section tabular-nums">{t.sisa}</span>
+          <div className="mt-dekat flex flex-wrap items-center gap-3 border-t border-border pt-dekat">
+            <Link
+              href={bukuKredit}
+              className="inline-flex min-h-11 items-center rounded-sm border border-foreground px-4 text-app-label font-medium uppercase"
+            >
+              Buku kredit
+            </Link>
+            <span className="text-app-body-sm text-muted-foreground">
+              {t.kredit_awal} − {t.dipakai} + {t.kembali} − {t.hangus} ={" "}
+              <span className="tabular-nums">{t.sisa}</span>
+            </span>
           </div>
         </Kartu>
       </div>
 
-      <div className="mt-dekat">
+      <div className="mt-dekat flex flex-wrap items-center gap-3">
         <Chip
           warna="bg-neutral-surface text-neutral-foreground"
           anak={`Transaksi ${t.id.slice(0, 8)}`}
         />
+        <span className="text-app-body-sm text-muted-foreground">
+          Demo belum punya pembayaran sungguhan — paket diberikan meja depan
+          setelah bayar di tempat (UC-A13). Bukti bayar, refund, dan pembayaran
+          gagal menyusul bersama tabel `payments` (BR-8.1–8.2).
+        </span>
       </div>
     </Kerangka>
   );
