@@ -8,6 +8,11 @@
 // Komponen server murni — semua perpindahan minggu lewat tautan, tidak ada
 // state klien. Blok digambar `position: absolute` di dalam kolom harinya,
 // karena grid CSS tidak bisa menaruh sesi 06.00 dan 06.50 di baris yang sama.
+//
+// DS-40 — kalender menggulung SENDIRI, dua arah, bukan menggulungkan halaman.
+// Sejak kalender cuma memakai 8 dari 12 kolom, panel di sebelahnya harus tetap
+// terbaca saat jadwalnya panjang. Baris hari menempel di atas dan lajur jam
+// menempel di kiri, kalau tidak yang tergulung kehilangan sumbunya.
 
 import { kunciHariWib, menitHariWib, namaHariWib, tanggalWib } from "@/lib/waktu";
 import type { BarisJadwal } from "@/db/booking";
@@ -83,7 +88,7 @@ export function Kalender({
 
   const tinggi = (jamAkhir - jamAwal) * JAM_PX;
   const jamLabel = Array.from({ length: jamAkhir - jamAwal + 1 }, (_, i) => jamAwal + i);
-  const kolom = "grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]";
+  const kolom = "grid grid-cols-[3rem_repeat(7,minmax(0,1fr))]";
 
   // Garis jam digambar sebagai latar, bukan 105 div kosong.
   const garis = {
@@ -93,10 +98,13 @@ export function Kalender({
   };
 
   return (
-    <div className="overflow-x-auto rounded-md border border-border bg-background">
-      <div className="min-w-[64rem]">
-        <div className={`${kolom} border-b border-border`}>
-          <div />
+    <div className="max-h-[calc(100svh-15rem)] overflow-auto rounded-md border border-border bg-background">
+      {/* 44rem = 7 kolom hari @ ~93px + lajur jam. Di bawah itu barulah muncul
+          gulung mendatar, dan ia berhenti di tepi kotak ini — bukan di tepi
+          halaman (DS-40). */}
+      <div className="min-w-[44rem]">
+        <div className={`${kolom} sticky top-0 z-30 border-b border-border bg-background`}>
+          <div className="sticky left-0 bg-background" />
           {hari.map((h) => {
             const ini = kunciHariWib(h) === hariIni;
             return (
@@ -120,7 +128,10 @@ export function Kalender({
         </div>
 
         <div className={kolom}>
-          <div className="relative" style={{ height: tinggi }}>
+          <div
+            className="sticky left-0 z-20 bg-background"
+            style={{ height: tinggi }}
+          >
             {jamLabel.map((j, i) => (
               <span
                 key={j}

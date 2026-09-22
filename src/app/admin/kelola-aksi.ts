@@ -26,8 +26,12 @@ import { hariWib, jamWib } from "@/lib/waktu";
 function keLayanan(pesan: string): never {
   redirect(`/admin/layanan?kabar=${encodeURIComponent(pesan)}`);
 }
-function keJadwal(pesan: string): never {
-  redirect(`/admin/jadwal?kabar=${encodeURIComponent(pesan)}`);
+// Formulir buat-kelas hidup di dua layar: Aturan Jadwal dan kalender M1.
+// Daftar putih, bukan path apa adanya dari form — `dari` datang dari klien,
+// dan redirect yang menurut saja adalah open redirect.
+function keJadwal(pesan: string, dari?: FormDataEntryValue | null): never {
+  const tujuan = String(dari ?? "") === "/jadwal" ? "/jadwal" : "/admin/jadwal";
+  redirect(`${tujuan}?kabar=${encodeURIComponent(pesan)}`);
 }
 
 /** Bilangan bulat dalam rentang, atau null. */
@@ -98,21 +102,22 @@ export async function setAktifPaket(formData: FormData) {
 
 export async function tambahAturan(formData: FormData) {
   await pastikanOwner();
+  const dari = formData.get("dari");
 
   const hari = angka(formData, "hari", [1, 7]);
-  if (hari === null) keJadwal("Hari tidak sah.");
+  if (hari === null) keJadwal("Hari tidak sah.", dari);
 
   const jam = String(formData.get("jam_mulai") ?? "");
   if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(jam))
-    keJadwal("Jam mulai harus format HH:MM.");
+    keJadwal("Jam mulai harus format HH:MM.", dari);
 
   const class_type_id = String(formData.get("class_type_id") ?? "");
-  if (!class_type_id) keJadwal("Pilih jenis kelas.");
+  if (!class_type_id) keJadwal("Pilih jenis kelas.", dari);
 
   const coach_id = String(formData.get("coach_id") ?? "") || null;
   const kapasitasMentah = String(formData.get("kapasitas") ?? "").trim();
   const kapasitas = kapasitasMentah ? angka(formData, "kapasitas", [1, 60]) : null;
-  if (kapasitasMentah && kapasitas === null) keJadwal("Kapasitas harus 1–60.");
+  if (kapasitasMentah && kapasitas === null) keJadwal("Kapasitas harus 1–60.", dari);
 
   const studio = await setelanLengkap(pg);
   const aturan_id = await buatAturan(pg, {
@@ -144,6 +149,7 @@ export async function tambahAturan(formData: FormData) {
       (dibuat > milik_slot
         ? `, sekalian ${dibuat - milik_slot} sesi slot lain yang belum diterbitkan.`
         : "."),
+    dari,
   );
 }
 
@@ -167,19 +173,20 @@ export async function berhentikanAturan(formData: FormData) {
 
 export async function tambahSesi(formData: FormData) {
   await pastikanAdmin();
+  const dari = formData.get("dari");
 
   const tanggal = String(formData.get("tanggal") ?? "");
   const jam = String(formData.get("jam") ?? "");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(jam))
-    keJadwal("Tanggal atau jam tidak sah.");
+    keJadwal("Tanggal atau jam tidak sah.", dari);
 
   const class_type_id = String(formData.get("class_type_id") ?? "");
-  if (!class_type_id) keJadwal("Pilih jenis kelas.");
+  if (!class_type_id) keJadwal("Pilih jenis kelas.", dari);
 
   const kapasitas = angka(formData, "kapasitas", [1, 60]);
   const durasi = angka(formData, "durasi_menit", [15, 240]);
-  if (kapasitas === null) keJadwal("Kapasitas harus 1–60.");
-  if (durasi === null) keJadwal("Durasi harus 15–240 menit.");
+  if (kapasitas === null) keJadwal("Kapasitas harus 1–60.", dari);
+  if (durasi === null) keJadwal("Durasi harus 15–240 menit.", dari);
 
   const studio = await setelanLengkap(pg);
   const mulai = await buatSesiManual(pg, {
@@ -194,5 +201,8 @@ export async function tambahSesi(formData: FormData) {
 
   revalidatePath("/admin/jadwal");
   revalidatePath("/jadwal");
-  keJadwal(`Kelas tambahan dibuat: ${hariWib(mulai)} pukul ${jamWib(mulai)}.`);
+  keJadwal(
+    `Kelas tambahan dibuat: ${hariWib(mulai)} pukul ${jamWib(mulai)}.`,
+    dari,
+  );
 }

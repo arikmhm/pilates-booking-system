@@ -31,6 +31,7 @@ import {
 } from "@/lib/waktu";
 import { Angka, Chip, Kartu, Kerangka } from "@/components/kerangka";
 import { Kalender, type IsiBlok } from "./kalender";
+import { BuatKelas, type ModeBuat } from "./buat-kelas";
 import { booking, ikutWaitlist } from "./aksi";
 
 export const dynamic = "force-dynamic";
@@ -161,17 +162,17 @@ function Baris({ b, k }: { b: BarisJadwal; k: Konteks }) {
 }
 
 function Geser({
-  ke,
+  href,
   anak,
   label,
 }: {
-  ke: number;
+  href: string;
   anak: React.ReactNode;
   label: string;
 }) {
   return (
     <Link
-      href={ke === 0 ? "/jadwal" : `/jadwal?minggu=${ke}`}
+      href={href}
       aria-label={label}
       className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-border px-3 text-app-label uppercase transition-colors hover:border-foreground"
     >
@@ -180,16 +181,77 @@ function Geser({
   );
 }
 
+/**
+ * Saringan alat — DS-40.
+ *
+ * Satu studio bisa punya beberapa ruang, satu alat per ruang: Reformer di
+ * lantai bawah, Mat di atas. Dua sesi bisa berjalan di jam yang sama dan
+ * kalender menaruhnya berdampingan — terbaca, tapi sempit. Memilih satu alat
+ * mengembalikan kolom harinya jadi selebar satu sesi.
+ *
+ * Angka di sebelah nama adalah jumlah sesi minggu INI, bukan total: yang
+ * ditanya orang di depan kalender selalu "minggu ini ada berapa".
+ */
+function Saringan({
+  daftar,
+  aktif,
+  tautan,
+}: {
+  daftar: [string, number][];
+  aktif: string;
+  tautan: (alat: string) => string;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-1 rounded-sm border border-border p-1">
+      {([["", "Semua alat", daftar.reduce((t, [, n]) => t + n, 0)]] as [
+        string,
+        string,
+        number,
+      ][])
+        .concat(daftar.map(([nama, n]) => [nama, nama, n]))
+        .map(([nilai, label, n]) => {
+          const dipilih = nilai === aktif;
+          return (
+            <Link
+              key={nilai || "semua"}
+              href={tautan(nilai)}
+              aria-current={dipilih ? "true" : undefined}
+              className={`inline-flex min-h-11 items-center gap-2 rounded-sm px-3 text-app-label uppercase transition-colors ${
+                dipilih
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {label}
+              <span
+                className={`tabular-nums ${dipilih ? "opacity-70" : "opacity-60"}`}
+              >
+                {n}
+              </span>
+            </Link>
+          );
+        })}
+    </div>
+  );
+}
+
 export default async function M1({
   searchParams,
 }: {
-  searchParams: Promise<{ kabar?: string; minggu?: string }>;
+  searchParams: Promise<{
+    kabar?: string;
+    minggu?: string;
+    alat?: string;
+    buat?: string;
+  }>;
 }) {
   const user_id = await userSaatIni();
   if (!user_id) redirect("/masuk");
 
-  const { kabar, minggu } = await searchParams;
+  const { kabar, minggu, alat: alatParam, buat } = await searchParams;
   const geser = Math.trunc(Number(minggu)) || 0;
+  const alat = (alatParam ?? "").trim();
+  const modeBuat: ModeBuat = buat === "berulang" ? "berulang" : "sekali";
   const sekarang = new Date();
 
   const senin = new Date(
@@ -213,6 +275,33 @@ export default async function M1({
         ? "coach"
         : "member";
   const k: Konteks = { mode, setelan, paket, aktif, sekarang };
+  const staf = mode === "staf";
+
+  /** URL layar ini dengan satu bagian diganti — sisanya ikut terbawa. */
+  const url = (ubah: { minggu?: number; alat?: string; buat?: ModeBuat }) => {
+    const q = new URLSearchParams();
+    const m = ubah.minggu ?? geser;
+    const a = ubah.alat ?? alat;
+    const b = ubah.buat ?? modeBuat;
+    if (m) q.set("minggu", String(m));
+    if (a) q.set("alat", a);
+    if (b === "berulang") q.set("buat", b);
+    const sisa = q.toString();
+    return sisa ? `/jadwal?${sisa}` : "/jadwal";
+  };
+
+  // Saringan alat dihitung dari minggu yang sedang dibuka, bukan dari katalog
+  // jenis kelas: yang menarik adalah apa yang BERJALAN minggu ini. Alat yang
+  // sedang dipilih tetap disebut walau nol, kalau tidak pindah minggu bisa
+  // membuat chip-nya hilang dan pilihannya tidak bisa dilepas lagi.
+  const jumlahAlat = new Map<string, number>();
+  for (const b of baris) jumlahAlat.set(b.kelas, (jumlahAlat.get(b.kelas) ?? 0) + 1);
+  if (alat && !jumlahAlat.has(alat)) jumlahAlat.set(alat, 0);
+  const daftarAlat = [...jumlahAlat.entries()].sort((a, b) =>
+    a[0].localeCompare(b[0], "id"),
+  );
+
+  const tampil = alat ? baris.filter((b) => b.kelas === alat) : baris;
 
   // BR-1.7 — sisa kredit dijumlahkan dari buku besar, tidak ada kolom saldo.
   const hidup = paket.filter((p) => p.hangus_at > sekarang && p.sisa_kredit > 0);
@@ -226,12 +315,11 @@ export default async function M1({
   // Dikelompokkan per hari WIB, bukan per hari UTC — kelas 06.00 WIB jatuh di
   // tanggal sebelumnya kalau dihitung UTC (BR-7.5).
   const perHari = new Map<string, BarisJadwal[]>();
-  for (const b of baris) {
+  for (const b of tampil) {
     const kunci = kunciHariWib(b.mulai_at);
     perHari.set(kunci, [...(perHari.get(kunci) ?? []), b]);
   }
 
-  const mingguIni = geser === 0;
   const rentang = `${tanggalWib(senin)} – ${tanggalWib(new Date(sampai.getTime() - 86_400_000))}`;
 
   return (
@@ -242,20 +330,39 @@ export default async function M1({
       judul="Jadwal Kelas"
       kabar={kabar}
     >
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-app-title">{rentang}</h1>
-          <p className="text-app-body-sm text-muted-foreground">
-            {mingguIni
-              ? `Minggu ini · booking dibuka ${setelan.booking_opens_days} hari ke depan`
-              : `${Math.abs(geser)} minggu ${geser < 0 ? "lalu" : "ke depan"}`}
-          </p>
+      {/* DS-40 — rentang tanggal, geser minggu, dan saringan alat jadi SATU
+          bilah di kiri atas. Sebelumnya rentangnya judul besar sendiri dengan
+          subjudul di bawahnya; dua baris untuk keterangan yang cuma menamai
+          apa yang sudah terbaca di kepala kolom kalender. */}
+      <div className="flex flex-wrap items-center gap-dekat">
+        <div className="flex items-center gap-3">
+          <h1 className="text-app-section tabular-nums whitespace-nowrap">
+            {rentang}
+          </h1>
+          <div className="flex items-center gap-1">
+            <Geser
+              href={url({ minggu: geser - 1 })}
+              anak={<ChevronLeft className="size-4" />}
+              label="Minggu sebelumnya"
+            />
+            <Geser
+              href={url({ minggu: 0 })}
+              anak="Minggu ini"
+              label="Kembali ke minggu ini"
+            />
+            <Geser
+              href={url({ minggu: geser + 1 })}
+              anak={<ChevronRight className="size-4" />}
+              label="Minggu berikutnya"
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Geser ke={geser - 1} anak={<ChevronLeft className="size-4" />} label="Minggu sebelumnya" />
-          <Geser ke={0} anak="Minggu ini" label="Kembali ke minggu ini" />
-          <Geser ke={geser + 1} anak={<ChevronRight className="size-4" />} label="Minggu berikutnya" />
-        </div>
+
+        <Saringan
+          daftar={daftarAlat}
+          aktif={alat}
+          tautan={(a) => url({ alat: a })}
+        />
       </div>
 
       {mode === "member" && (
@@ -274,44 +381,79 @@ export default async function M1({
                   mepet ? "text-warn-foreground" : "text-muted-foreground"
                 }
               />
-              <Link
-                href="/akun"
-                className="inline-flex min-h-11 items-center text-app-body-sm underline underline-offset-4"
-              >
-                Riwayat kredit
-              </Link>
+              <div className="flex items-center gap-4">
+                {/* Ikut pindah dari subjudul yang dihapus: tanpa kalimat ini,
+                    blok minggu depan yang abu "di luar jendela" tidak punya
+                    penjelasan di mana pun (BR-2.1). */}
+                <p className="text-app-body-sm text-muted-foreground">
+                  Booking dibuka {setelan.booking_opens_days} hari ke depan.
+                </p>
+                <Link
+                  href="/akun"
+                  className="inline-flex min-h-11 items-center text-app-body-sm underline underline-offset-4"
+                >
+                  Riwayat kredit
+                </Link>
+              </div>
             </div>
           </Kartu>
         </div>
       )}
 
-      {baris.length === 0 && (
-        <p className="mt-sedang text-app-body text-muted-foreground">
-          Tidak ada kelas terjadwal di minggu ini.
-        </p>
-      )}
+      {/* DS-40 — 12 kolom: kalender 8, panel buat-kelas 4. Di bawah xl
+          keduanya menumpuk; 8/12 dari 1024px menyisakan kalender 480px, dan
+          kalender yang harus digulung mendatar sejak kolom pertama bukan
+          kalender lagi. */}
+      <div className="mt-dekat grid grid-cols-12 gap-dekat">
+        <div className="col-span-12 min-w-0 xl:col-span-8">
+          {tampil.length === 0 && (
+            <p className="text-app-body text-muted-foreground">
+              {alat
+                ? `Tidak ada kelas ${alat} di minggu ini.`
+                : "Tidak ada kelas terjadwal di minggu ini."}
+            </p>
+          )}
 
-      {/* Kalender mingguan butuh 64rem; di bawah itu daftar per hari menang. */}
-      <div className="mt-dekat hidden md:block">
-        <Kalender
-          senin={senin}
-          baris={baris}
-          isi={(b) => rupa(b, k)}
-          hariIni={kunciHariWib(sekarang)}
-        />
+          {/* Kalender mingguan butuh ruang; di bawah md daftar per hari menang. */}
+          {tampil.length > 0 && (
+            <>
+              <div className="hidden md:block">
+                <Kalender
+                  senin={senin}
+                  baris={tampil}
+                  isi={(b) => rupa(b, k)}
+                  hariIni={kunciHariWib(sekarang)}
+                />
+              </div>
+
+              <div className="space-y-dekat md:hidden">
+                {[...perHari.entries()].map(([kunci, sesi]) => (
+                  <Kartu key={kunci} judul={hariWib(sesi[0].mulai_at)} padat>
+                    <ul className="divide-y divide-border">
+                      {sesi.map((b) => (
+                        <Baris key={b.id} b={b} k={k} />
+                      ))}
+                    </ul>
+                  </Kartu>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        {staf && (
+          <div className="col-span-12 xl:col-span-4">
+            <BuatKelas
+              owner={saya.peran === "owner"}
+              mode={modeBuat}
+              tautan={(m) => url({ buat: m })}
+              kembali="/jadwal"
+              sekarang={sekarang}
+            />
+          </div>
+        )}
       </div>
 
-      <div className="mt-dekat space-y-dekat md:hidden">
-        {[...perHari.entries()].map(([kunci, sesi]) => (
-          <Kartu key={kunci} judul={hariWib(sesi[0].mulai_at)} padat>
-            <ul className="divide-y divide-border">
-              {sesi.map((b) => (
-                <Baris key={b.id} b={b} k={k} />
-              ))}
-            </ul>
-          </Kartu>
-        ))}
-      </div>
     </Kerangka>
   );
 }

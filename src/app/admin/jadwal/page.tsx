@@ -11,39 +11,31 @@
 // diam-diam. Yang dihapus hanya sesi mendatang yang benar-benar kosong.
 
 import { pg } from "@/db";
-import { daftarJenisKelas, daftarAturan, daftarTim, HARI } from "@/db/kelola";
+import { daftarAturan, HARI } from "@/db/kelola";
 import { pastikanAdmin } from "@/lib/masuk";
-import { kunciHariWib } from "@/lib/waktu";
 import { Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
-import { berhentikanAturan, tambahAturan, tambahSesi } from "../kelola-aksi";
+import { BuatKelas, type ModeBuat } from "@/app/jadwal/buat-kelas";
+import { berhentikanAturan } from "../kelola-aksi";
 
 export const dynamic = "force-dynamic";
-
-const INPUT =
-  "h-12 w-full rounded-sm border border-border bg-background px-3 text-app-body";
-const LABEL = "text-app-label uppercase text-muted-foreground";
 
 export default async function A7({
   searchParams,
 }: {
-  searchParams: Promise<{ kabar?: string }>;
+  searchParams: Promise<{ kabar?: string; buat?: string }>;
 }) {
   const pengguna = await pastikanAdmin();
   // Slot mingguan permanen = beban tiap minggu, kewenangan owner. Kelas
   // sekali jalan tetap milik admin — operasional dan sering mendesak.
   const owner = pengguna.peran === "owner";
-  const { kabar } = await searchParams;
+  const { kabar, buat } = await searchParams;
+  // Di layar INI yang dicari orang adalah slot mingguan, jadi itu tab bawaan.
+  // Di sebelah kalender sebaliknya — yang dicari di sana lubang satu minggu.
+  const modeBuat: ModeBuat = buat === "sekali" ? "sekali" : "berulang";
   const sekarang = new Date();
 
-  const [aturan, jenis, tim] = await Promise.all([
-    daftarAturan(pg, sekarang),
-    daftarJenisKelas(pg, sekarang),
-    daftarTim(pg, sekarang),
-  ]);
-  const coach = tim.filter((t) => t.peran === "coach");
-
+  const aturan = await daftarAturan(pg, sekarang);
   const aktif = aturan.filter((a) => !a.berlaku_sampai);
-  const besok = kunciHariWib(new Date(sekarang.getTime() + 86_400_000));
 
   return (
     <Kerangka
@@ -119,204 +111,19 @@ export default async function A7({
           )}
         </Kartu>
 
-        <div className="space-y-dekat">
-{owner ? (
-          <Kartu
-            judul="Slot mingguan baru"
-            catatan="Berulang tiap minggu sampai dihentikan."
-          >
-            <form action={tambahAturan} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={LABEL} htmlFor="hari">
-                    Hari
-                  </label>
-                  <select id="hari" name="hari" className={INPUT} defaultValue={2}>
-                    {HARI.map((h, i) => (
-                      <option key={h} value={i + 1}>
-                        {h}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={LABEL} htmlFor="jam_mulai">
-                    Jam mulai (WIB)
-                  </label>
-                  <input
-                    id="jam_mulai"
-                    name="jam_mulai"
-                    type="time"
-                    required
-                    defaultValue="09:00"
-                    className={INPUT}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={LABEL} htmlFor="class_type_id">
-                  Jenis kelas
-                </label>
-                <select
-                  id="class_type_id"
-                  name="class_type_id"
-                  required
-                  className={INPUT}
-                >
-                  {jenis.map((j) => (
-                    <option key={j.id} value={j.id}>
-                      {j.nama} · {j.durasi_menit} menit
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={LABEL} htmlFor="coach_id">
-                    Pelatih
-                  </label>
-                  <select id="coach_id" name="coach_id" className={INPUT}>
-                    <option value="">Belum ditentukan</option>
-                    {coach.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nama}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={LABEL} htmlFor="kapasitas">
-                    Kapasitas
-                  </label>
-                  <input
-                    id="kapasitas"
-                    name="kapasitas"
-                    type="number"
-                    min={1}
-                    max={60}
-                    placeholder="bawaan jenis kelas"
-                    className={INPUT}
-                  />
-                </div>
-              </div>
-
-              <Tombol penuh anak="Tambah slot" />
-            </form>
-          </Kartu>
-          ) : (
-            <Kartu judul="Slot mingguan baru">
-              <p className="text-app-body-sm text-muted-foreground">
-                Menambah atau menghentikan slot mingguan adalah kewenangan
-                pemilik studio — satu slot berarti beban coach tiap minggu.
-                Kelas tambahan sekali jalan di bawah tetap bisa kamu buat.
-              </p>
-            </Kartu>
-          )}
-
-          <Kartu
-            judul="Kelas tambahan sekali jalan"
-            catatan="Workshop, kelas pengganti, jam titipan. Tidak berulang."
-          >
-            <form action={tambahSesi} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={LABEL} htmlFor="tanggal">
-                    Tanggal
-                  </label>
-                  <input
-                    id="tanggal"
-                    name="tanggal"
-                    type="date"
-                    required
-                    defaultValue={besok}
-                    className={INPUT}
-                  />
-                </div>
-                <div>
-                  <label className={LABEL} htmlFor="jam">
-                    Jam (WIB)
-                  </label>
-                  <input
-                    id="jam"
-                    name="jam"
-                    type="time"
-                    required
-                    defaultValue="10:00"
-                    className={INPUT}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={LABEL} htmlFor="sesi_class_type_id">
-                  Jenis kelas
-                </label>
-                <select
-                  id="sesi_class_type_id"
-                  name="class_type_id"
-                  required
-                  className={INPUT}
-                >
-                  {jenis.map((j) => (
-                    <option key={j.id} value={j.id}>
-                      {j.nama}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2">
-                  <label className={LABEL} htmlFor="sesi_coach_id">
-                    Pelatih
-                  </label>
-                  <select id="sesi_coach_id" name="coach_id" className={INPUT}>
-                    <option value="">Belum ditentukan</option>
-                    {coach.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nama}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={LABEL} htmlFor="sesi_kapasitas">
-                    Kursi
-                  </label>
-                  <input
-                    id="sesi_kapasitas"
-                    name="kapasitas"
-                    type="number"
-                    required
-                    min={1}
-                    max={60}
-                    defaultValue={jenis[0]?.kapasitas_default ?? 8}
-                    className={INPUT}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={LABEL} htmlFor="durasi_menit">
-                  Durasi (menit)
-                </label>
-                <input
-                  id="durasi_menit"
-                  name="durasi_menit"
-                  type="number"
-                  required
-                  min={15}
-                  max={240}
-                  defaultValue={jenis[0]?.durasi_menit ?? 60}
-                  className={INPUT}
-                />
-              </div>
-
-              <Tombol gaya="garis" penuh anak="Buat kelas tambahan" />
-            </form>
-          </Kartu>
+        {/* Formulir yang sama persis dengan yang ada di sebelah kalender
+            (DS-40). Satu komponen, dua layar — dulu dua salinan yang harus
+            diubah bersamaan tiap kali jenis kelas atau batas kursi berubah. */}
+        <div>
+          <BuatKelas
+            owner={owner}
+            mode={modeBuat}
+            tautan={(m) =>
+              m === "sekali" ? "/admin/jadwal?buat=sekali" : "/admin/jadwal"
+            }
+            kembali="/admin/jadwal"
+            sekarang={sekarang}
+          />
         </div>
       </div>
     </Kerangka>

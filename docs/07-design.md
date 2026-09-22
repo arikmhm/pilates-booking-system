@@ -504,6 +504,41 @@ Semua batas nilai di formulir **diulang di server action**, bukan cuma `min`/`ma
 input. Atribut HTML itu kenyamanan pengguna; server action bisa dipanggil tanpa
 browser sama sekali.
 
+`DS-40` — **Kalender jadwal: satu bilah kendali di kiri atas, dan kalender yang
+menggulung sendiri.**
+
+Rentang tanggal, geser minggu, dan saringan alat berdiri berdampingan dalam satu baris
+di kiri atas — bukan judul besar dengan subjudul di bawahnya. Rentang tanggal tidak
+pernah menjadi judul halaman: ia keterangan bagi kendali di sebelahnya, dan nama
+halamannya sudah disebut remah roti (`DS-38`).
+
+**Saringan alat.** Satu studio bisa punya beberapa ruang dengan satu alat di
+masing-masing — Reformer di bawah, Mat di atas — jadi dua sesi berjalan di jam yang
+sama dan kalender menaruhnya berdampingan. Terbaca, tapi separuh lebar. Memilih satu
+alat mengembalikan kolom harinya jadi selebar satu sesi. Nilainya nama jenis kelas di
+URL (`?alat=Reformer`), ikut terbawa saat pindah minggu, dan angkanya jumlah sesi
+minggu yang sedang dibuka. Alat yang sedang dipilih tetap ditampilkan walau nol —
+kalau tidak, pindah ke minggu yang kosong membuat pilihannya tidak bisa dilepas lagi.
+
+**Kisi 12 kolom, 8 untuk kalender dan 4 untuk panel buat-kelas, pisah di 1280px** —
+sama seperti `DS-36`. Formulir itu dulu tinggal di layar Aturan Jadwal, padahal
+pertanyaan yang dijawabnya ("ada lubang di sini, isi apa?") selalu muncul sambil
+melihat kalendernya.
+
+**Satu formulir, dua mode, dua layar.** `BuatKelas` melayani kelas sekali jalan dan
+slot mingguan berulang; sakelarnya lewat URL (`?buat=berulang`), bukan state klien.
+Tab bawaannya berbeda per layar: di sebelah kalender "sekali jalan" (yang dicari di
+sana lubang satu minggu), di Aturan Jadwal "tiap minggu". Komponen yang sama dipakai
+keduanya — dulu dua salinan yang harus diubah bersamaan tiap kali jenis kelas berubah.
+Admin tidak melihat sakelarnya sama sekali: slot mingguan kewenangan owner (BR-9.1),
+dan tab yang ditolak servernya cuma memancing klik yang gagal.
+
+**Gulung mendatar berhenti di tepi kalender, bukan di tepi halaman.** Kalender punya
+`overflow-auto` dan `max-h` sendiri; baris hari menempel di atas dan lajur jam menempel
+di kiri. Tanpa itu, yang tergulung kehilangan sumbunya — dan panel di sebelahnya ikut
+terdorong keluar layar. Lebar minimum isinya 44rem (7 kolom hari ~93px + lajur jam);
+di bawah itu barulah muncul gulung mendatar, di dalam kotaknya.
+
 | Layar | Perangkat | Yang menentukan tampilannya |
 |---|---|---|
 | **M1 Jadwal** | HP | Daftar `card` per sesi. Sisa kursi pakai `app-body` + chip status bagian 7. Tombol `button-primary` lebar penuh; saat penuh berubah jadi `button-secondary` "Ikut Waitlist" |
