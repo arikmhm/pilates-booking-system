@@ -45,6 +45,8 @@ presentasi dan deploy.
       aturan batal tertulis sebelum tombolnya ditekan
 - [x] Kode tolak X7 — paket yang tidak mencakup jenis kelasnya berhenti dibilang
       "kredit kamu habis" (keputusan terbuka #6 ditutup)
+- [x] Semua menu bertujuan nyata — halaman publik tidak lagi memakai `href="#"`,
+      dijaga `src/app/rute.test.ts` (DS-43)
 - [x] Tombol Reset Demo — satu transaksi, id user tetap, presenter tidak terlempar keluar
 - [x] Navigasi sidebar shadcn + kalender mingguan M1 (DS-31–DS-34)
 - [x] **Lima layar pengelolaan**: direktori member (A4), pelatih & staf (A5),
@@ -86,6 +88,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-23 | **Semua menu ditautkan ke tujuan yang nyata** — halaman publik `/` sebelumnya memakai `href="#"` di 12 tempat: empat butir menu kepala, enam butir kaki, dan dua tombol utama yang bahkan bukan tautan (`<button type="button">` tanpa aksi). Sekarang tiap butir menuju pita di halaman yang sama (`#kelas` `#instruktur` `#tentang` `#harga`), layar aplikasi yang memang ada (`/jadwal` `/akun` `/masuk`), atau WhatsApp studio lewat `tautanWa()`. Kolom Member di kaki dibuat persis menu sidebar member supaya satu layar tidak punya dua nama. Halamannya tetap statis. Penjaganya `src/app/rute.test.ts` — tiap rute harfiah di seluruh `src/app` dan `src/components` wajib punya `page.tsx`-nya, tiap jangkar wajib punya `id`-nya, dan tautan mati ditolak; ketiganya dibuktikan lewat mutasi (DS-43) |
 | 2026-09-23 | `?pilih=` yang tidak bisa dibuka sekarang bersuara: kursi terakhir yang keburu diambil antara halaman digambar dan bloknya diklik, tautan basi ke minggu lain, atau syarat booking yang sudah tidak terpenuhi. Sebelumnya panelnya diam-diam tidak digambar dan kliknya terasa tidak terjadi |
 | 2026-09-23 | Kode tolak **X7** sendiri untuk BR-1.4: member berkredit 3 yang membuka kelas Mat tidak lagi dibilang "kredit kamu habis" — sebabnya paketnya memang tidak mencakup jenis kelas itu, dan jalan keluarnya beli paket lain, bukan isi ulang. Batasnya adalah adanya paket yang belum hangus dan sisanya di atas nol; kredit yang semuanya sudah mati tetap X5. Dua test, dibuktikan lewat mutasi. Keputusan terbuka #6 ditutup |
 | 2026-09-23 | **Layar M2 selesai** — blok yang bisa dipesan berhenti memesan saat diklik: ia membuka panel konfirmasi `?pilih=<session_id>` dengan pemilih nomor alat (BR-2.6), sisa kredit sesudah potongan, dan aturan batal tertulis sebelum tombolnya ditekan. Pilihan alat sengaja cuma menggeser `ORDER BY` query 5.1, bukan menambah syarat — alat yang keburu terisi tetap memberi kursi, dan pesan baliknya menyebut alat yang benar-benar didapat. Panelnya server murni: radio `sr-only` + `peer-checked`, tanpa satu baris kode klien, jadi tombol kembali browser menutupnya. Sekalian redirect sesudah booking membawa minggu dan saringan yang sedang dibuka — sebelumnya memesan kelas minggu depan melemparkan orang kembali ke minggu ini (DS-42) |

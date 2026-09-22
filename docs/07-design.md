@@ -336,6 +336,35 @@ mengunci tata letak, jadi memasang foto asli nanti tidak menggeser apa pun.
 
 ---
 
+`DS-43` — **Tidak ada tautan mati, di halaman publik maupun di dalam aplikasi.**
+
+Tiap butir menu menuju salah satu dari tiga tempat saja:
+
+| Tujuan | Contoh | Dipakai untuk |
+|---|---|---|
+| Pita di halaman yang sama | `#kelas` `#instruktur` `#tentang` `#harga` | Menu kepala dan dua kolom kaki |
+| Layar aplikasi yang memang ada | `/jadwal` `/akun` `/masuk` | Kolom Member di kaki, tombol hero, tombol Masuk |
+| WhatsApp studio | `wa.me/…` lewat `tautanWa()` | "Ambil Kelas Gratis" dan "Chat WhatsApp" |
+
+Halaman jualan yang tautannya mati memperagakan persis kebalikan dari yang dijual —
+dan `href="#"` sempat ada di 12 tempat: empat butir menu kepala, enam butir kaki, dan
+dua tombol utama.
+
+Pendaftaran member mandiri baru ada di versi real (UC-M13), jadi tombol "Ambil Kelas
+Gratis" mengantar ke WhatsApp meja depan, bukan ke formulir yang belum ada. Nomornya
+ikut seed demo — halaman ini tetap **statis**, dan membacanya dari database berarti
+menukar prerender sebuah halaman pemasaran dengan satu nomor telepon.
+
+Kolom **Member** di kaki halaman sengaja persis menu sidebar member. Dua daftar yang
+menamai hal yang sama dengan kata berbeda — "Jadwal Saya" di luar, "Jadwal Kelas" di
+dalam — membuat orang mengira itu dua layar.
+
+Dijaga `src/app/rute.test.ts`: tiap rute harfiah di seluruh `src/app` dan
+`src/components` harus punya `page.tsx`-nya, tiap jangkar `#` harus punya `id`-nya di
+berkas yang sama, dan `href="#"` tidak boleh muncul di mana pun.
+
+---
+
 ## 9. Pemetaan ke layar aplikasi
 
 Enam layar aplikasi di balik login. Definisinya di [02-rules.md](02-rules.md)

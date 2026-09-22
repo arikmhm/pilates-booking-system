@@ -5,10 +5,34 @@
 // memasang foto asli nanti tidak menggeser tata letak.
 //
 // Angka dan harga diambil dari seed demo docs/02-rules.md bagian 3.
+//
+// DS-43 — tidak ada tautan mati di halaman ini. Tiap butir menu menuju salah
+// satu dari tiga tempat saja: pita di halaman ini, layar aplikasi yang memang
+// ada, atau WhatsApp studio. Halaman jualan yang tautannya mati justru
+// memperagakan kebalikan dari yang dijual.
+
+import Link from "next/link";
+import { tautanWa } from "@/lib/wa";
 
 const FOTO = "bg-[linear-gradient(135deg,var(--accent-warm),var(--photo-warm))]";
 
-const NAV = ["Kelas", "Jadwal", "Harga", "Tentang"];
+/** Nomor meja depan di seed demo (`src/db/seed.ts`, staf ke-3 = admin). */
+const TELEPON = "0811550002";
+
+const WA_COBA = tautanWa(
+  TELEPON,
+  "Halo Kenari, saya mau coba kelas pertama yang gratis. Jadwal kosongnya kapan ya?",
+);
+const WA_TANYA = tautanWa(TELEPON, "Halo Kenari, saya mau tanya soal kelas dan paketnya.");
+
+const NAV: [string, string][] = [
+  ["Kelas", "#kelas"],
+  ["Instruktur", "#instruktur"],
+  ["Harga", "#harga"],
+  // Satu-satunya butir yang keluar dari halaman jualan. Pengunjung yang belum
+  // masuk diantar /jadwal sendiri ke layar masuk.
+  ["Jadwal", "/jadwal"],
+];
 
 const KELAS = [
   ["Reformer", "8 kursi", "Beban pegas untuk kekuatan dan kelenturan sekaligus."],
@@ -37,37 +61,104 @@ const PAKET = [
   { nama: "Drop-in", harga: "150.000", per: "Sekali datang", masa: "Berlaku 7 hari", unggulan: false },
 ];
 
-const FOOTER = [
-  ["Kelas", ["Reformer", "Tower", "Chair", "Mat"]],
-  ["Studio", ["Tentang Kami", "Instruktur", "Lokasi", "Kontak"]],
-  ["Member", ["Masuk", "Jadwal Saya", "Sisa Kredit", "Aturan Pembatalan"]],
-] as const;
+// Kolom Kelas menunjuk pita yang sama berkali-kali, dan itu memang benar:
+// keempat nama alat dijelaskan di satu pita. Yang dicari orang di kaki halaman
+// adalah namanya, bukan alamat yang berbeda-beda.
+//
+// Kolom Member sengaja persis menu sidebar member (`components/kerangka.tsx`).
+// Dua daftar yang menamai hal sama dengan kata berbeda — "Jadwal Saya" di sini,
+// "Jadwal Kelas" di dalam — membuat orang mengira itu dua layar.
+const FOOTER: [string, [string, string][]][] = [
+  [
+    "Kelas",
+    [
+      ["Reformer", "#kelas"],
+      ["Tower", "#kelas"],
+      ["Chair", "#kelas"],
+      ["Mat", "#kelas"],
+    ],
+  ],
+  [
+    "Studio",
+    [
+      ["Tentang Kami", "#tentang"],
+      ["Instruktur", "#instruktur"],
+      ["Harga", "#harga"],
+      ["Tanya lewat WhatsApp", WA_TANYA],
+    ],
+  ],
+  [
+    "Member",
+    [
+      ["Jadwal Kelas", "/jadwal"],
+      ["Akun Saya", "/akun"],
+      ["Masuk", "/masuk"],
+    ],
+  ],
+];
 
 function Pita({
+  id,
   latar = "",
   children,
 }: {
+  /** Tujuan butir menu. Tanpa ini menu di kepala halaman tidak punya sasaran. */
+  id?: string;
   latar?: string;
   children: React.ReactNode;
 }) {
   // DS-24 — 40px di HP, 100px di laptop. Ini sumber kesan lapangnya.
   return (
-    <section className={`py-sedang lg:py-luas ${latar}`}>
+    <section id={id} className={`py-sedang lg:py-luas ${latar}`}>
       <div className="mx-auto w-full max-w-[1200px] px-gutter">{children}</div>
     </section>
   );
 }
 
-function Tombol({ anak, penuh = false }: { anak: string; penuh?: boolean }) {
+/**
+ * Satu-satunya cara halaman ini menulis tautan.
+ *
+ * wa.me membuka tab baru — meninggalkan halaman jualan di tengah jalan untuk
+ * membuka WhatsApp adalah cara kehilangan pengunjung. Sisanya `<Link>` biasa,
+ * termasuk jangkar `#`: Next menanganinya sebagai navigasi di halaman yang sama.
+ */
+function Tautan({
+  href,
+  kelas,
+  anak,
+}: {
+  href: string;
+  kelas: string;
+  anak: React.ReactNode;
+}) {
+  return href.startsWith("http") ? (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={kelas}>
+      {anak}
+    </a>
+  ) : (
+    <Link href={href} className={kelas}>
+      {anak}
+    </Link>
+  );
+}
+
+function Tombol({
+  anak,
+  href,
+  penuh = false,
+}: {
+  anak: string;
+  href: string;
+  penuh?: boolean;
+}) {
   return (
-    <button
-      type="button"
-      className={`h-12 rounded-sm bg-primary px-9 text-app-label font-medium uppercase text-primary-foreground ${
+    <Tautan
+      href={href}
+      anak={anak}
+      kelas={`inline-flex h-12 items-center justify-center rounded-sm bg-primary px-9 text-app-label font-medium uppercase text-primary-foreground ${
         penuh ? "w-full sm:w-auto" : ""
       }`}
-    >
-      {anak}
-    </button>
+    />
   );
 }
 
@@ -78,25 +169,32 @@ export default function Profil() {
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between px-gutter">
           <nav className="hidden flex-1 gap-dekat md:flex">
-            {NAV.map((t) => (
-              <a key={t} href="#" className="min-h-11 inline-flex items-center text-app-body-sm hover:underline">
-                {t}
-              </a>
+            {NAV.map(([label, href]) => (
+              <Tautan
+                key={label}
+                href={href}
+                anak={label}
+                kelas="min-h-11 inline-flex items-center text-app-body-sm hover:underline"
+              />
             ))}
           </nav>
           <span className="text-app-label font-medium uppercase tracking-[0.18em] md:flex-1 md:text-center">
             Studio Pilates Kenari
           </span>
           <div className="flex flex-1 items-center justify-end gap-4">
-            <a href="#" className="min-h-11 inline-flex items-center hidden text-app-body-sm sm:inline-flex">
-              Masuk
-            </a>
-            <a
-              href="#"
-              className="min-h-11 inline-flex items-center rounded-sm bg-primary px-4 text-app-label font-medium uppercase text-primary-foreground"
-            >
-              Coba Kelas Pertama
-            </a>
+            <Tautan
+              href="/masuk"
+              anak="Masuk"
+              kelas="min-h-11 hidden items-center text-app-body-sm sm:inline-flex"
+            />
+            {/* Turun ke pita "Kelas pertama gratis" — penawarannya ada di
+                halaman ini, jadi tidak ada gunanya mengirim orang ke tempat
+                lain untuk membacanya. */}
+            <Tautan
+              href="#harga"
+              anak="Coba Kelas Pertama"
+              kelas="min-h-11 inline-flex items-center rounded-sm bg-primary px-4 text-app-label font-medium uppercase text-primary-foreground"
+            />
           </div>
         </div>
       </header>
@@ -120,7 +218,7 @@ export default function Profil() {
             Bergerak tenang, pulang bertenaga.
           </h1>
           <div className="mt-dekat">
-            <Tombol anak="Lihat Jadwal Minggu Ini" penuh />
+            <Tombol anak="Lihat Jadwal Minggu Ini" href="/jadwal" penuh />
           </div>
         </div>
       </section>
@@ -137,7 +235,7 @@ export default function Profil() {
       </Pita>
 
       {/* 4 — kelas, pita sand */}
-      <Pita latar="bg-surface-sand">
+      <Pita id="kelas" latar="bg-surface-sand">
         <div className="grid items-center gap-sedang lg:grid-cols-2">
           <div aria-hidden className={`${FOTO} aspect-[4/3] w-full rounded-md`} />
           <div>
@@ -177,7 +275,7 @@ export default function Profil() {
       </Pita>
 
       {/* 6 — instruktur, pita sand. Geser mendatar pakai scroll asli, tanpa JS. */}
-      <Pita latar="bg-surface-sand">
+      <Pita id="instruktur" latar="bg-surface-sand">
         <h2 className="text-marketing-h2">Instruktur kami</h2>
         <ul className="mt-dekat -mx-gutter flex snap-x gap-4 overflow-x-auto px-gutter">
           {INSTRUKTUR.map(([nama, ket]) => (
@@ -191,7 +289,7 @@ export default function Profil() {
       </Pita>
 
       {/* 7 — untuk semua */}
-      <Pita>
+      <Pita id="tentang">
         <div className="mx-auto max-w-[52ch] text-center">
           <h2 className="text-marketing-h2">Untuk setiap tubuh</h2>
           <p className="mt-rapat text-app-body text-muted-foreground">
@@ -215,7 +313,7 @@ export default function Profil() {
 
       {/* 8 — harga, pita penutup. Teks sekunder pakai emphasis-sand, bukan
           muted-foreground: di sand-deep muted cuma 4.24:1 (DS-19). */}
-      <Pita latar="bg-surface-sand-deep">
+      <Pita id="harga" latar="bg-surface-sand-deep">
         <div className="mx-auto max-w-[44ch] text-center">
           <h2 className="text-marketing-h2">Kelas pertama gratis</h2>
           <p className="mt-rapat text-app-body text-emphasis-sand">
@@ -247,9 +345,10 @@ export default function Profil() {
           ))}
         </div>
 
-        {/* DS-13 — satu tombol utama per layar; ini satu-satunya di halaman. */}
+        {/* Satu-satunya jalan mendaftar di demo ini adalah bicara dengan meja
+            depan: pendaftaran member mandiri baru ada di versi real (UC-M13). */}
         <div className="mt-sedang text-center">
-          <Tombol anak="Ambil Kelas Gratis" penuh />
+          <Tombol anak="Ambil Kelas Gratis" href={WA_COBA} penuh />
         </div>
       </Pita>
 
@@ -275,22 +374,23 @@ export default function Profil() {
               <p className="mt-2 max-w-[28ch] text-app-body-sm text-emphasis-sand">
                 Jl. Kenari, Kudus, Jawa Tengah. Buka Senin–Sabtu, 06.00–20.00 WIB.
               </p>
-              <a
-                href="#"
-                className="min-h-11 inline-flex items-center mt-4 rounded-sm border border-foreground px-4 text-app-label font-medium uppercase"
-              >
-                Chat WhatsApp
-              </a>
+              <Tautan
+                href={WA_TANYA}
+                anak="Chat WhatsApp"
+                kelas="min-h-11 mt-4 inline-flex items-center rounded-sm border border-foreground px-4 text-app-label font-medium uppercase"
+              />
             </div>
             {FOOTER.map(([judul, tautan]) => (
               <div key={judul}>
                 <p className="text-app-label uppercase text-emphasis-sand">{judul}</p>
                 <ul className="mt-1">
-                  {tautan.map((t) => (
-                    <li key={t}>
-                      <a href="#" className="min-h-11 inline-flex items-center text-app-body-sm hover:underline">
-                        {t}
-                      </a>
+                  {tautan.map(([label, href]) => (
+                    <li key={label}>
+                      <Tautan
+                        href={href}
+                        anak={label}
+                        kelas="min-h-11 inline-flex items-center text-app-body-sm hover:underline"
+                      />
                     </li>
                   ))}
                 </ul>
