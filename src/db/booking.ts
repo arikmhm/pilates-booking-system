@@ -137,9 +137,15 @@ export type BarisJadwal = Sesi & {
   antre_saya: boolean;
 };
 
+/**
+ * `user_id` boleh null — jadwal bersifat publik (UC-P01), dan pengunjung yang
+ * belum masuk tetap harus bisa membacanya. Null dicor ke `uuid` supaya
+ * Postgres punya tipe untuk parameternya; `= null` tidak pernah benar, jadi
+ * `booking_saya` dan `antre_saya` ikut kosong dengan sendirinya.
+ */
 export async function jadwal(
   sql: Sql,
-  args: { user_id: string; dari: Date; sampai: Date },
+  args: { user_id: string | null; dari: Date; sampai: Date },
 ): Promise<BarisJadwal[]> {
   const baris = await sql<BarisJadwal[]>`
     select s.id,
@@ -155,10 +161,10 @@ export async function jadwal(
              where w.session_id = s.id and w.status = 'waiting')::int as antre,
            (select jsonb_build_object('nomor_alat', b2.nomor_alat)
               from bookings b2
-             where b2.session_id = s.id and b2.user_id = ${args.user_id}
+             where b2.session_id = s.id and b2.user_id = ${args.user_id}::uuid
                and b2.status = 'confirmed') as booking_saya,
            exists (select 1 from waitlist_entries w2
-                    where w2.session_id = s.id and w2.user_id = ${args.user_id}
+                    where w2.session_id = s.id and w2.user_id = ${args.user_id}::uuid
                       and w2.status = 'waiting') as antre_saya
       from sessions s
       join class_types ct on ct.id = s.class_type_id

@@ -86,7 +86,7 @@ flowchart LR
 
 | ID | Use case | Aturan | Demo |
 |---|---|---|:--:|
-| UC-M01 | Lihat jadwal kelas — kalender mingguan di laptop, daftar per hari di HP | BR-2.1 | ✅ |
+| UC-M01 | Lihat jadwal kelas — kalender mingguan di laptop, daftar per hari di HP. **Tidak butuh akun**: `/jadwal` melayani pengunjung dengan jadwal yang sama tanpa tombol booking (DS-45) | BR-2.1 | ✅ |
 | UC-M02 | Lihat detail kelas dan sisa kursi | BR-7.2 | ✅ |
 | UC-M03 | Booking kelas | BR-2.1–2.7 | ✅ |
 | UC-M04 | Pilih nomor alat *— include dari M03* | BR-2.6 | ✅ |

@@ -25,12 +25,17 @@ const WA_COBA = tautanWa(
 );
 const WA_TANYA = tautanWa(TELEPON, "Halo Kenari, saya mau tanya soal kelas dan paketnya.");
 
+// Tiga butir, tiga langkah yang benar-benar dijual: pilih jenis kelasnya →
+// beli kredit yang mencakup jenis itu (BR-1.4) → pakai kredit di sesi yang
+// tersedia. Instruktur tidak ikut di kepala halaman: pitanya tetap ada, tapi
+// ia profil studio, bukan yang dibeli — dan tidak ada layar instruktur yang
+// bisa dituju sesudahnya.
 const NAV: [string, string][] = [
   ["Kelas", "#kelas"],
-  ["Instruktur", "#instruktur"],
-  ["Harga", "#harga"],
-  // Satu-satunya butir yang keluar dari halaman jualan. Pengunjung yang belum
-  // masuk diantar /jadwal sendiri ke layar masuk.
+  ["Paket", "#paket"],
+  // Satu-satunya butir yang keluar dari halaman jualan — dan ia tetap bisa
+  // dibaca tanpa akun: /jadwal melayani tamu dengan jadwal yang sama tanpa
+  // tombol booking (DS-45).
   ["Jadwal", "/jadwal"],
 ];
 
@@ -55,10 +60,17 @@ const INSTRUKTUR = [
   ["Bagas Nugroho", "Chair · Keseimbangan"],
 ];
 
+// Nama dan harga mengikuti katalog seed (`src/db/seed.ts`) — di sana paketnya
+// memang bernama "10 Sesi Reformer" dan Mat tidak masuk.
+//
+// `cakupan` bukan hiasan. BR-1.4 mengikat kredit ke jenis kelas, jadi jenis
+// kelas yang tercakup adalah bagian dari barang yang dibeli, setara dengan
+// jumlah kredit dan masa berlakunya. Halaman yang menyembunyikannya membuat
+// member baru tahu saat booking-nya ditolak dengan pesan X7 (BR-2.7).
 const PAKET = [
-  { nama: "4 Sesi", harga: "560.000", per: "Rp 140.000 per kelas", masa: "Berlaku 1 bulan", unggulan: false },
-  { nama: "10 Sesi", harga: "1.350.000", per: "Rp 135.000 per kelas", masa: "Berlaku 2 bulan", unggulan: true },
-  { nama: "Drop-in", harga: "150.000", per: "Sekali datang", masa: "Berlaku 7 hari", unggulan: false },
+  { nama: "4 Sesi", harga: "560.000", per: "4 kredit · Rp 140.000 per kelas", masa: "Berlaku 1 bulan", cakupan: "Semua jenis kelas", unggulan: false },
+  { nama: "10 Sesi Reformer", harga: "1.350.000", per: "10 kredit · Rp 135.000 per kelas", masa: "Berlaku 2 bulan", cakupan: "Reformer, Tower, Chair — Mat tidak termasuk", unggulan: true },
+  { nama: "Drop-in", harga: "150.000", per: "1 kredit · sekali datang", masa: "Berlaku 7 hari", cakupan: "Semua jenis kelas", unggulan: false },
 ];
 
 // Kolom Kelas menunjuk pita yang sama berkali-kali, dan itu memang benar:
@@ -83,7 +95,7 @@ const FOOTER: [string, [string, string][]][] = [
     [
       ["Tentang Kami", "#tentang"],
       ["Instruktur", "#instruktur"],
-      ["Harga", "#harga"],
+      ["Paket", "#paket"],
       ["Tanya lewat WhatsApp", WA_TANYA],
     ],
   ],
@@ -191,7 +203,7 @@ export default function Profil() {
                 halaman ini, jadi tidak ada gunanya mengirim orang ke tempat
                 lain untuk membacanya. */}
             <Tautan
-              href="#harga"
+              href="#paket"
               anak="Coba Kelas Pertama"
               kelas="min-h-11 inline-flex items-center rounded-sm bg-primary px-4 text-app-label font-medium uppercase text-primary-foreground"
             />
@@ -311,13 +323,14 @@ export default function Profil() {
         </ul>
       </Pita>
 
-      {/* 8 — harga, pita penutup. Teks sekunder pakai emphasis-sand, bukan
+      {/* 8 — paket, pita penutup. Teks sekunder pakai emphasis-sand, bukan
           muted-foreground: di sand-deep muted cuma 4.24:1 (DS-19). */}
-      <Pita id="harga" latar="bg-surface-sand-deep">
+      <Pita id="paket" latar="bg-surface-sand-deep">
         <div className="mx-auto max-w-[44ch] text-center">
-          <h2 className="text-marketing-h2">Kelas pertama gratis</h2>
+          <h2 className="text-marketing-h2">Satu kredit, satu kelas</h2>
           <p className="mt-rapat text-app-body text-emphasis-sand">
-            Datang dulu, rasakan dulu. Paket dibeli setelah kamu yakin.
+            Kelas pertama gratis — datang dulu, rasakan dulu. Setelah yakin, beli
+            paket kredit dan pakai kreditnya untuk mengambil kursi di jadwal.
           </p>
         </div>
 
@@ -341,6 +354,7 @@ export default function Profil() {
               </p>
               <p className="mt-2 text-app-body-sm text-emphasis-sand">{p.per}</p>
               <p className="text-app-body-sm text-emphasis-sand">{p.masa}</p>
+              <p className="text-app-body-sm text-emphasis-sand">{p.cakupan}</p>
             </div>
           ))}
         </div>

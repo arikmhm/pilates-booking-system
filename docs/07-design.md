@@ -51,7 +51,7 @@ tanpa alasan tertulis.
 
   /* pita halaman publik — bagian 8 */
   --surface-sand:      #F3EFE8;  /* pita tenang berselang-seling dengan putih */
-  --surface-sand-deep: #EBE5DA;  /* pita penutup: harga, footer */
+  --surface-sand-deep: #EBE5DA;  /* pita penutup: paket, footer */
   --border-warm:       #DCD5C8;  /* pemisah di atas pita sand — dekoratif */
 
   /* aksen teks editorial — SUDAH digelapkan agar lolos AA, lihat DS-18 */
@@ -94,7 +94,7 @@ Tailwind v4 — petakan sekali di `@theme inline`, setelah itu pakai `bg-primary
 | `border` | `#E5E7EB` | garis kartu, pemisah, tepi input | jadi teks |
 | `muted-foreground` | `#6B6B6E` | teks sekunder, keterangan, label mati | teks utama |
 | `surface-sand` | `#F3EFE8` | pita halaman publik yang berselang-seling dengan putih | layar aplikasi M1–A3 |
-| `surface-sand-deep` | `#EBE5DA` | pita harga dan footer | blok kecil — ini warna pita |
+| `surface-sand-deep` | `#EBE5DA` | pita paket dan footer | blok kecil — ini warna pita |
 | `emphasis-green` | `#487026` | **teks** beraksen hijau di kalimat editorial | tombol — tombol tetap `primary` |
 | `emphasis-sand` | `#6E5F47` | **teks** beraksen hangat, teks sekunder di `surface-sand-deep` | teks panjang |
 | `accent-warm` `accent-sand` | `#CBBEA3` `#C8C0B2` | blok dekoratif, gambar kosong, chip halus | **teks di atas putih** — 1.8:1, gagal total |
@@ -268,7 +268,7 @@ keyboard sepanjang hari.
 | `split` | Foto separuh · teks separuh. Berbalik arah tiap pemakaian supaya halaman tidak monoton |
 | `stat-grid` | Angka `app-number` + label `app-label`. Tanpa garis pemisah, hanya jarak |
 | `person-card` | Foto potret 3:4 · nama `app-section` · keterangan `app-body-sm` `muted-foreground` |
-| `plan-card` | Kartu putih di atas pita. Paket unggulan berlatar `primary` dengan chip "PALING LAKU" |
+| `plan-card` | Kartu putih di atas pita. Paket unggulan berlatar `primary` dengan chip "PALING LAKU". Tiga baris keterangan: jumlah kredit · masa berlaku · **jenis kelas yang tercakup** (BR-1.4) |
 | `quote` | Serif `serif-hero` diperkecil, rata tengah, maks 44ch, atribusi `app-label` |
 | `site-footer` | Pita `surface-sand-deep`. Kolom tautan + wordmark besar di dasar |
 
@@ -310,7 +310,7 @@ gagasan.
 
 `DS-23` — **Urutan pita selalu berselang-seling putih dan `surface-sand`.** Dua pita
 sand berdampingan membuat halaman terasa kusam; dua pita putih berdampingan membuat
-batas gagasan hilang. Pita penutup — harga dan footer — memakai `surface-sand-deep`.
+batas gagasan hilang. Pita penutup — paket dan footer — memakai `surface-sand-deep`.
 
 Susunan halaman profil:
 
@@ -323,7 +323,7 @@ Susunan halaman profil:
 | 5 | Angka | putih | `stat-grid` — kapasitas, durasi, jumlah kelas |
 | 6 | Instruktur | `surface-sand` | Baris `person-card` yang bisa digeser mendatar |
 | 7 | Untuk semua | putih | Judul tengah + jajaran foto komunitas |
-| 8 | Harga | `surface-sand-deep` | Tiga `plan-card`, yang tengah unggulan |
+| 8 | Paket | `surface-sand-deep` | Tiga `plan-card`, yang tengah unggulan |
 | 9 | Testimoni | putih | `quote` |
 | 10 | `site-footer` | `surface-sand-deep` | Kolom tautan · wordmark besar |
 
@@ -336,13 +336,44 @@ mengunci tata letak, jadi memasang foto asli nanti tidak menggeser apa pun.
 
 ---
 
+`DS-44` — **Menu kepala menamai barangnya, bukan pitanya.** Tiga butir saja —
+Kelas · Paket · Jadwal — karena itu tiga langkah yang dijual: pilih jenis kelas →
+beli kredit yang mencakup jenis itu (BR-1.4) → pakai kredit di sesi yang tersedia.
+"Harga" menamai label harganya, bukan yang dibeli; yang dibeli adalah kredit
+dengan masa berlaku dan daftar jenis kelas. Instruktur tetap punya pitanya dan
+tautan di kaki halaman, tapi keluar dari menu kepala: ia profil studio, dan tidak
+ada layar instruktur yang bisa dituju sesudahnya.
+
+`DS-45` — **Jadwal itu publik; yang disembunyikan tombolnya, bukan jadwalnya.**
+Butir menu "Jadwal" di halaman profil mengantar ke `/jadwal` apa adanya, bukan ke
+`/masuk`. Orang yang sedang menimbang mau ikut kelas apa perlu melihat jam dan
+sisa kursinya lebih dulu — meminta ia membuat akun untuk membaca jam buka adalah
+pintu yang ditutup persis di depan calon member (UC-M01).
+
+Tamu memakai kerangka publik `src/app/jadwal/publik.tsx`, bukan sidebar aplikasi:
+sidebar member yang separuh butirnya melempar ke layar masuk itu janji kosong.
+Yang dilihat tamu sama persis — rentang minggu, geser minggu, saringan alat,
+kalender yang sama — hanya rupa bloknya yang berbeda:
+
+| Blok | Tamu melihat | Member melihat |
+|---|---|---|
+| Masih ada kursi | `N kursi tersisa`, diklik → `/masuk` | `N kursi · Booking` → panel M2 |
+| Penuh | `Penuh`, mati | `Penuh · N antre`, tombol daftar tunggu |
+| Lewat atau batal | `Sudah lewat` / `Dibatalkan`, mati | kode tolak ringkas (X1–X7) |
+
+Tamu tidak melihat jumlah antre, kartu sisa kredit, maupun kode tolak: semuanya
+jawaban atas pertanyaan yang cuma dimiliki orang yang sudah punya akun. Sebagai
+gantinya ada **keterangan warna** di atas kalender — tamu baru pertama kali
+melihat kalender ini, dan DS-14 cuma menjamin tiap blok berteks, bukan bahwa tiga
+rupa itu langsung terbaca maknanya.
+
 `DS-43` — **Tidak ada tautan mati, di halaman publik maupun di dalam aplikasi.**
 
 Tiap butir menu menuju salah satu dari tiga tempat saja:
 
 | Tujuan | Contoh | Dipakai untuk |
 |---|---|---|
-| Pita di halaman yang sama | `#kelas` `#instruktur` `#tentang` `#harga` | Menu kepala dan dua kolom kaki |
+| Pita di halaman yang sama | `#kelas` `#instruktur` `#tentang` `#paket` | Menu kepala dan dua kolom kaki |
 | Layar aplikasi yang memang ada | `/jadwal` `/akun` `/masuk` | Kolom Member di kaki, tombol hero, tombol Masuk |
 | WhatsApp studio | `wa.me/…` lewat `tautanWa()` | "Ambil Kelas Gratis" dan "Chat WhatsApp" |
 

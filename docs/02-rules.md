@@ -226,7 +226,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 
 | ID | Layar | Isi |
 |---|---|---|
-| M1 | Jadwal | Kalender mingguan di laptop, daftar per hari di HP · sisa kursi · blok membuka panel konfirmasi M2, blok penuh langsung mengantre · bisa geser minggu — `src/app/jadwal/` |
+| M1 | Jadwal | Kalender mingguan di laptop, daftar per hari di HP · sisa kursi · blok membuka panel konfirmasi M2, blok penuh langsung mengantre · bisa geser minggu — `src/app/jadwal/`. **Terbuka untuk tamu**: pengunjung yang belum masuk melihat jadwal yang sama dalam kerangka publik, tanpa tombol booking dan tanpa kartu kredit (DS-45) |
 | M2 | Konfirmasi *(panel geser)* | Pilih nomor alat · info "1 kredit dipotong" + sisa sesudahnya · aturan batal tertulis · terbuka-tutup lewat `?pilih=` — `src/app/jadwal/konfirmasi.tsx` |
 | M3 | Akun Saya | **Sisa kredit + tanggal hangus + hitung mundur** · booking aktif · **daftar tunggu + tombol keluar** (BR-4.7) · riwayat kredit — `src/app/akun/` |
 

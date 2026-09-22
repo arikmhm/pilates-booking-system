@@ -73,3 +73,19 @@ test("tidak ada tautan mati — href ke jangkar kosong", () => {
 
   expect(mati).toEqual([]);
 });
+
+test("jangkar ke halaman profil (/#…) punya id-nya di halaman profil", () => {
+  // `"/#paket"` lolos dua penjaga di atas: ia bukan rute (ada `#`-nya) dan
+  // bukan jangkar di berkas yang sama. Padahal justru itu bentuk tautan yang
+  // dipakai layar publik di luar `/` untuk menunjuk pita di halaman profil.
+  const profil = readFileSync(new URL("page.tsx", APP), "utf8");
+  const hilang: string[] = [];
+
+  for (const { jalur, isi } of semua) {
+    for (const [, nama] of isi.matchAll(/"\/#([a-z0-9-]+)"/g)) {
+      if (!profil.includes(`id="${nama}"`)) hilang.push(`${jalur} → /#${nama}`);
+    }
+  }
+
+  expect(hilang).toEqual([]);
+});

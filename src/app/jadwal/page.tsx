@@ -1,8 +1,14 @@
 // Layar M1 Jadwal — 02-rules.md bagian 6.1.
 //
-// Satu halaman, tiga peran. Member melihat tombol booking, staf melihat
-// tautan ke detail sesi, coach hanya melihat. Datanya sama persis; yang
-// berbeda cuma apa yang bisa dilakukan pada sebuah blok.
+// Satu halaman, empat peran. Member melihat tombol booking, staf melihat
+// tautan ke detail sesi, coach hanya melihat, dan **tamu** — pengunjung yang
+// belum masuk — melihat jadwal yang sama tanpa satu pun tombol. Datanya sama
+// persis; yang berbeda cuma apa yang bisa dilakukan pada sebuah blok.
+//
+// DS-45 — jadwal bersifat publik. Melempar tamu ke /masuk berarti meminta
+// orang membuat akun untuk membaca jam buka; yang layak disembunyikan adalah
+// tombolnya, bukan jadwalnya. Tamu memakai kerangka publik (`publik.tsx`),
+// bukan sidebar aplikasi.
 //
 // Keputusan boleh-tidaknya booking diambil bolehBooking() di src/rules/,
 // bukan di sini. Berkas ini membaca database dan menggambar hasilnya.
@@ -31,6 +37,7 @@ import {
   tanggalWib,
 } from "@/lib/waktu";
 import { Angka, Chip, Kartu, Kerangka } from "@/components/kerangka";
+import { Keterangan, RangkaPublik } from "./publik";
 import { Kalender, type IsiBlok } from "./kalender";
 import { BuatKelas, type ModeBuat } from "./buat-kelas";
 import { Konfirmasi } from "./konfirmasi";
@@ -38,7 +45,7 @@ import { ikutWaitlist } from "./aksi";
 
 export const dynamic = "force-dynamic";
 
-type Mode = "member" | "staf" | "coach";
+type Mode = "tamu" | "member" | "staf" | "coach";
 
 type Konteks = {
   mode: Mode;
@@ -82,6 +89,35 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
       warna: "border-warn-foreground/30 bg-warn-surface text-warn-foreground",
       catatan: `Mengantre · ${b.antre} di daftar`,
     };
+
+  // Tamu — DS-45. Yang perlu terbaca cuma tiga hal: kelas apa, jam berapa,
+  // masih ada kursi atau tidak. Jumlah antre dan kode tolak milik member
+  // tidak berarti apa-apa untuk orang yang belum punya akun, dan blok yang
+  // masih kosong jadi tautan ke layar masuk — itu langkah berikutnya.
+  if (k.mode === "tamu") {
+    if (b.status !== "scheduled" || b.mulai_at <= k.sekarang)
+      return {
+        warna: "border-border bg-muted text-muted-foreground",
+        catatan: b.status !== "scheduled" ? "Dibatalkan" : "Sudah lewat",
+      };
+
+    if (penuh)
+      return {
+        warna: "border-border bg-neutral-surface text-neutral-foreground",
+        catatan: "Penuh",
+      };
+
+    return {
+      warna:
+        "border-foreground bg-background transition-colors hover:bg-primary hover:text-primary-foreground",
+      catatan: `${sisa} kursi tersisa`,
+      bungkus: (anak) => (
+        <Link href="/masuk" className="block h-full">
+          {anak}
+        </Link>
+      ),
+    };
+  }
 
   if (k.mode !== "member")
     return {
@@ -253,8 +289,9 @@ export default async function M1({
     pilih?: string;
   }>;
 }) {
+  // Tidak ada penjaga di sini — jadwal boleh dibaca siapa saja (DS-45).
+  // Yang menentukan tombol apa yang muncul adalah `mode` di bawah.
   const user_id = await userSaatIni();
-  if (!user_id) redirect("/masuk");
 
   const { kabar, minggu, alat: alatParam, buat, pilih } = await searchParams;
   const geser = Math.trunc(Number(minggu)) || 0;
@@ -267,17 +304,22 @@ export default async function M1({
   );
   const sampai = new Date(senin.getTime() + 7 * 86_400_000);
 
+  // Tiga query terakhir milik pengguna yang sudah masuk. Nilai biasa di dalam
+  // Promise.all tetap sah, jadi tamu tidak perlu cabang await sendiri.
   const [setelan, baris, paket, aktif, saya] = await Promise.all([
     setelanStudio(pg),
     jadwal(pg, { user_id, dari: senin, sampai }),
-    paketMember(pg, user_id),
-    bookingAktif(pg, user_id),
-    penggunaById(pg, user_id),
+    user_id ? paketMember(pg, user_id) : [],
+    user_id ? bookingAktif(pg, user_id) : [],
+    user_id ? penggunaById(pg, user_id) : null,
   ]);
-  if (!saya) redirect("/masuk"); // cookie menunjuk user yang sudah tidak ada
+  // Cookie menunjuk user yang sudah tidak ada — beda dengan tamu yang memang
+  // belum pernah masuk, dan yang ini memang harus diluruskan di /masuk.
+  if (user_id && !saya) redirect("/masuk");
 
-  const mode: Mode =
-    saya.peran === "admin" || saya.peran === "owner"
+  const mode: Mode = !saya
+    ? "tamu"
+    : saya.peran === "admin" || saya.peran === "owner"
       ? "staf"
       : saya.peran === "coach"
         ? "coach"
@@ -387,23 +429,21 @@ export default async function M1({
 
   const rentang = `${tanggalWib(senin)} – ${tanggalWib(new Date(sampai.getTime() - 86_400_000))}`;
 
-  return (
-    <Kerangka
-      nama={saya.nama}
-      peran={saya.peran}
-      aktif="/jadwal"
-      judul="Jadwal Kelas"
-      kabar={kabar ?? kabarPilih}
-    >
+  // Kerangka publik sudah memasang <h1> "Jadwal Kelas"-nya sendiri; di dalam
+  // aplikasi rentang tanggal inilah satu-satunya judul halaman.
+  const Judul = mode === "tamu" ? "h2" : "h1";
+
+  const isi = (
+    <>
       {/* DS-40 — rentang tanggal, geser minggu, dan saringan alat jadi SATU
           bilah di kiri atas. Sebelumnya rentangnya judul besar sendiri dengan
           subjudul di bawahnya; dua baris untuk keterangan yang cuma menamai
           apa yang sudah terbaca di kepala kolom kalender. */}
       <div className="flex flex-wrap items-center gap-dekat">
         <div className="flex items-center gap-3">
-          <h1 className="text-app-section tabular-nums whitespace-nowrap">
+          <Judul className="text-app-section tabular-nums whitespace-nowrap">
             {rentang}
-          </h1>
+          </Judul>
           <div className="flex items-center gap-1">
             <Geser
               href={url({ minggu: geser - 1 })}
@@ -465,14 +505,24 @@ export default async function M1({
         </div>
       )}
 
+      {mode === "tamu" && (
+        <div className="mt-dekat">
+          <Keterangan />
+        </div>
+      )}
+
       {/* DS-40 — 12 kolom: kalender 8, panel buat-kelas 4. Di bawah xl
           keduanya menumpuk; 8/12 dari 1024px menyisakan kalender 480px, dan
           kalender yang harus digulung mendatar sejak kolom pertama bukan
           kalender lagi. */}
       <div className="mt-dekat grid grid-cols-12 gap-dekat">
         <div className="col-span-12 min-w-0 xl:col-span-8">
+          {/* Minggu kosong tetap menggambar kalendernya. Mengganti kalender
+              dengan satu kalimat membuat sumbu harinya ikut hilang, dan yang
+              justru ingin dibaca dari minggu kosong adalah bentuk kosongnya —
+              tombol geser minggu pun jadi melompat-lompat tingginya. */}
           {tampil.length === 0 && (
-            <p className="text-app-body text-muted-foreground">
+            <p className="mb-dekat text-app-body text-muted-foreground">
               {alat
                 ? `Tidak ada kelas ${alat} di minggu ini.`
                 : "Tidak ada kelas terjadwal di minggu ini."}
@@ -480,36 +530,32 @@ export default async function M1({
           )}
 
           {/* Kalender mingguan butuh ruang; di bawah md daftar per hari menang. */}
-          {tampil.length > 0 && (
-            <>
-              <div className="hidden md:block">
-                <Kalender
-                  senin={senin}
-                  baris={tampil}
-                  isi={(b) => rupa(b, k)}
-                  hariIni={kunciHariWib(sekarang)}
-                />
-              </div>
+          <div className="hidden md:block">
+            <Kalender
+              senin={senin}
+              baris={tampil}
+              isi={(b) => rupa(b, k)}
+              hariIni={kunciHariWib(sekarang)}
+            />
+          </div>
 
-              <div className="space-y-dekat md:hidden">
-                {[...perHari.entries()].map(([kunci, sesi]) => (
-                  <Kartu key={kunci} judul={hariWib(sesi[0].mulai_at)} padat>
-                    <ul className="divide-y divide-border">
-                      {sesi.map((b) => (
-                        <Baris key={b.id} b={b} k={k} />
-                      ))}
-                    </ul>
-                  </Kartu>
-                ))}
-              </div>
-            </>
-          )}
+          <div className="space-y-dekat md:hidden">
+            {[...perHari.entries()].map(([kunci, sesi]) => (
+              <Kartu key={kunci} judul={hariWib(sesi[0].mulai_at)} padat>
+                <ul className="divide-y divide-border">
+                  {sesi.map((b) => (
+                    <Baris key={b.id} b={b} k={k} />
+                  ))}
+                </ul>
+              </Kartu>
+            ))}
+          </div>
         </div>
 
         {staf && (
           <div className="col-span-12 min-w-0 xl:col-span-4">
             <BuatKelas
-              owner={saya.peran === "owner"}
+              owner={saya?.peran === "owner"}
               mode={modeBuat}
               tautan={(m) => url({ buat: m })}
               kembali="/jadwal"
@@ -528,6 +574,29 @@ export default async function M1({
           tutup={url({})}
         />
       )}
+    </>
+  );
+
+  if (!saya)
+    return (
+      <RangkaPublik
+        judul="Jadwal Kelas"
+        catatan="Jadwal lengkap studio, minggu per minggu. Kelas yang masih punya kursi bisa diklik untuk masuk dan memesannya — satu kredit untuk satu kelas."
+        kabar={kabar}
+      >
+        {isi}
+      </RangkaPublik>
+    );
+
+  return (
+    <Kerangka
+      nama={saya.nama}
+      peran={saya.peran}
+      aktif="/jadwal"
+      judul="Jadwal Kelas"
+      kabar={kabar ?? kabarPilih}
+    >
+      {isi}
     </Kerangka>
   );
 }
