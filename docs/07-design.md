@@ -342,13 +342,31 @@ Enam layar aplikasi di balik login. Definisinya di [02-rules.md](02-rules.md)
 bagian 6.1. Semuanya memakai **skala aplikasi**, bukan skala pemasaran.
 
 `DS-26` — **Semua layar aplikasi duduk di satu kerangka** (`src/components/kerangka.tsx`):
-bilah atas putih berisi wordmark, navigasi sesuai peran, nama pengguna, dan tombol
-Ganti · latar halaman `muted` · isi berupa kartu putih bergaris. Pergeseran nada
+sidebar putih di kiri berisi wordmark, menu sesuai peran, nama pengguna, dan Ganti
+Pengguna · latar isi `muted` · isi berupa kartu putih bergaris. Pergeseran nada
 `muted` → putih itu yang memisahkan permukaan, bukan bayangan (DS-9). Halaman publik
 tidak memakai kerangka ini — pola pitanya berbeda (bagian 8).
 
-`DS-27` — Lebar isi: layar member `max-w-lg` (512px), layar admin `max-w-[1200px]`.
-Member dirancang HP dulu; kolom sempit di laptop itu disengaja, bukan lupa.
+`DS-31` — **Sidebar memakai komponen shadcn** (`src/components/ui/sidebar.tsx`), disalin
+ke repo seperti keputusan 5 di [06-architecture.md](06-architecture.md). Tiga hal wajib
+saat menambah komponen shadcn berikutnya:
+
+1. **Token `--sidebar-*` dan kawan-kawannya dialiaskan ke palet bagian 2**, tidak diisi
+   warna bawaan shadcn. Butir aktif memakai `primary`, hover memakai `muted` — shadcn
+   memberi keduanya token yang sama persis, jadi tanpa penimpaan ini "sedang dibuka"
+   dan "sedang disentuh tetikus" tampak identik.
+2. **Tinggi butir menu dinaikkan ke 48px** (`h-12`). Bawaannya 32px, melanggar DS-11.
+3. **Teks yang terbaca pembaca layar diterjemahkan** — `Toggle Sidebar` jadi
+   `Buka tutup navigasi`, `Close` jadi `Tutup`. Teks ke pengguna Bahasa Indonesia
+   berlaku juga untuk teks yang tak terlihat mata.
+
+Blok `.dark` yang ditulis CLI shadcn dibuang: sistem ini hanya punya satu palet.
+Varian `dark:` sendiri dibiarkan terdaftar ke `.dark` yang tak pernah dipasang, supaya
+aturan bawaan komponen tidak diam-diam menyala mengikuti tema OS pengguna.
+
+`DS-27` — Lebar isi: layar member `max-w-[34rem]`, layar admin `max-w-[1200px]`, diukur
+di dalam area isi (sidebar 256px berada di luarnya). Member dirancang HP dulu; kolom
+sempit di laptop itu disengaja, bukan lupa.
 
 `DS-28` — **Jam jadi jangkar kiri** di tiap daftar sesi, lebar tetap, `tabular-nums`.
 Mata menyusuri satu kolom lurus, bukan zigzag mengikuti panjang nama kelas.

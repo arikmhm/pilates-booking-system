@@ -2,7 +2,7 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** 6 layar + Reset Demo selesai · sisa 4 job terjadwal
+**Tahap:** 6 layar + Reset Demo + sidebar selesai · sisa 4 job terjadwal
 **Terakhir diperbarui:** 2026-09-22
 
 ---
@@ -73,6 +73,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | Navigasi pindah ke sidebar shadcn (`ui/sidebar.tsx`, sheet di HP). Token `--sidebar-*` dialiaskan ke palet sendiri, butir aktif pakai `primary` supaya tidak tertukar dengan hover, tinggi butir 48px (DS-11), teks pembaca layar diterjemahkan. `use-mobile` ditulis ulang pakai `useSyncExternalStore` dan `SidebarMenuSkeleton` dibuang — keduanya ditolak `react-hooks` lint. DS-31 |
 | 2026-09-22 | **Bug tata letak besar diperbaiki**: nama token `--spacing-lg` dll. bertabrakan dengan skala container Tailwind, sehingga `max-w-lg` = 60px dan `max-w-md` = 40px. Semua layar member dan halaman masuk selama ini selebar 40–60px. Token diganti nama Indonesia, lebar isi jadi nilai eksplisit, ditambah test penjaga (DS-29, DS-30) |
 | 2026-09-22 | Pembenahan tampilan kelima layar aplikasi: kerangka bersama (bilah atas + latar muted + kartu putih), primitif `Kartu`/`Tombol`/`Chip`/`Angka`, DS-26–DS-28. Sesi demo batas 12 jam tidak lagi dibuat manual — dulu bisa mendarat pukul 01.18 di jadwal |
 | 2026-09-22 | Reset Demo jadi. Seed dipecah: `seed.ts` fungsi murni, `seed-cli.mts` pembungkus CLI. Id user dibuat tetap supaya reset tidak melempar presenter keluar. Paket jadi ESM (`"type": "module"`) — menghilangkan peringatan Node tiap seed dijalankan |

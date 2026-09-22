@@ -35,7 +35,7 @@ Setiap keputusan di bawah dinilai dengan empat ini.
 | 2 | **PostgreSQL** | Bukan selera — partial unique index-nya yang menegakkan invarian kapasitas |
 | 3 | **Drizzle**, bukan Prisma | Query 5.1 (`generate_series` + `LATERAL`) tidak bisa diungkapkan ORM mana pun; Drizzle mengizinkan `sql` mentah tanpa berkelahi. Prisma berarti raw SQL juga, sambil menanggung engine 40MB |
 | 4 | **Drizzle**, bukan SQL mentah | 14 tabel berarti tipe yang dijaga tangan di puluhan tempat. Itu bukan "beberapa baris" |
-| 5 | **Tailwind + shadcn/ui** | Komponen disalin ke repo, bukan dependency runtime. Sesuai janji "klien memiliki kodenya" |
+| 5 | **Tailwind + shadcn/ui** | Komponen disalin ke repo, bukan dependency runtime. Sesuai janji "klien memiliki kodenya". Yang ikut masuk sebagai dependency hanya primitifnya: `radix-ui` (aksesibilitas dialog, tooltip, separator), `class-variance-authority`, `cn`, `lucide-react`. Komponen yang dipakai dan cara menjinakkannya: [07-design.md](07-design.md) DS-31 |
 | 6 | **Session token di tabel + cookie httpOnly** | ~40 baris, bisa dicabut kapan saja. Clerk/Auth0 berlangganan USD untuk 100 pengguna satu peran |
 | 7 | **SMTP lewat nodemailer** | Portabel — jalan dengan Resend, Brevo, atau email domain klien sendiri. Nol kunci vendor |
 | 8 | **Job = HTTP endpoint + secret** | Vercel Cron di demo, `crontab` di VPS, kode sama |

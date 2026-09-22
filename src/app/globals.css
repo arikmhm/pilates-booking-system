@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 /* Token dari docs/07-design.md bagian 2. Ubah di sini, jangan di komponen (DS-1). */
 :root {
   /* permukaan dan teks */
@@ -42,6 +44,27 @@
   --danger: #c94b4b;
   --neutral-surface: #f1f2f4;
   --neutral-foreground: #6b6b6e;
+
+  /* Sidebar — alias ke palet 07-design.md, bukan warna baru (DS-1).
+     Butir aktif memakai --primary; hover memakai --muted supaya keduanya
+     tidak tertukar (shadcn memberi keduanya token yang sama). */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #222325;
+  --sidebar-primary: #bcff88;
+  --sidebar-primary-foreground: #222325;
+  --sidebar-accent: #f7f7f8;
+  --sidebar-accent-foreground: #222325;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #222325;
+
+  /* Nama yang diminta komponen shadcn tapi tidak ada di 07-design.md.
+     Semuanya alias, tidak menambah warna. */
+  --accent: #f7f7f8;
+  --accent-foreground: #222325;
+  --secondary: #f7f7f8;
+  --secondary-foreground: #222325;
+  --destructive: #c94b4b;
+  --input: #e5e7eb;
 }
 
 @theme inline {
@@ -120,6 +143,20 @@
   --text-marketing-lead: clamp(19px, 2.6vw, 36px);
   --text-marketing-lead--line-height: 1.55;
   --text-marketing-lead--letter-spacing: -0.01em;
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
+  --color-input: var(--input);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
 }
 
 @layer base {
@@ -137,3 +174,4 @@
     outline-offset: 2px;
   }
 }
+
