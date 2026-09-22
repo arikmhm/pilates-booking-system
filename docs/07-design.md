@@ -434,6 +434,44 @@ Begitu satu peran punya lebih dari empat butir, menunya dikelompokkan. "Harian" 
 yang dibuka tiap hari, "Studio" untuk yang dibuka saat menata, "Bisnis" untuk angka.
 Urutannya mengikuti seberapa sering dipakai, bukan abjad.
 
+`DS-36` — **Tabel data: satu kolom satu atribut, dan tiap sel seringkas mungkin.**
+Menumpuk nama di atas nomor HP di satu sel menghemat lebar tapi menghabiskan yang
+lebih mahal — kemampuan mata menyusuri satu kolom lurus. Aturannya:
+
+1. **Tanggal dipendekkan**: `22 Okt 2026`, bukan `Sel, 22 Oktober 2026`. Di kolom
+   tanggal, nama hari tidak pernah menjadi jawaban atas apa pun. Helper-nya
+   `tanggalRingkasWib()`.
+2. **Nilai kosong ditulis `—`, bukan dibiarkan kosong** — sel kosong terbaca sebagai
+   gagal render. Dan kalau sebuah angka tidak berarti apa-apa, tulis `—` juga:
+   tanggal hangus paket berisi nol kredit hanya menambah kebisingan.
+3. **Cari, halaman, dan jumlah baris lewat URL** (`?q=` `?hal=` `?per=`), bukan state
+   klien. Hasil pencarian jadi bisa ditautkan, di-refresh, dan dibuka di tab baru —
+   tiga hal yang dipakai resepsionis sambil memegang telepon. Tabelnya tetap Server
+   Component, tanpa satu kilobyte JavaScript.
+4. **Batas `?per=` divalidasi di server.** `?per=99999` cuma perlu diketik sekali.
+5. **Mengganti jumlah baris selalu kembali ke halaman 1** — halaman 4 dari 4 tidak ada
+   lagi begitu isinya 50 per halaman.
+
+Lebar tabel + panel tindak lanjut memakai kisi 12 kolom, **8 / 4, pisah di 1280px**.
+Bukan 1024px: di sana panel kanan tinggal ~227px dan tabelnya mulai menggulir, jadi
+dua-duanya sempit — menumpuk lebih baik.
+
+`DS-37` — **Status boleh jadi bulatan warna tanpa teks, asal teksnya ada di tiga
+tempat lain.** Ini pengecualian DS-14 yang disengaja, dipakai di kolom status kredit
+A4. Di kolom sempit, chip berteks memakan lebar yang lebih berguna untuk nama dan
+tanggal, dan statusnya toh diulang kolom Hangus di sebelahnya.
+
+Yang menahannya agar tidak jadi informasi-hanya-warna:
+
+- `aria-label` membawa kalimat statusnya ke pembaca layar
+- pemicunya `<button>`, jadi bisa difokus keyboard — tooltip muncul tanpa tetikus
+- **bentuknya berbeda, bukan cuma warnanya**: aman = titik penuh, segera hangus =
+  titik penuh berlingkar (massa visual paling besar), tidak punya kredit = titik abu
+
+Bulatan "tidak punya kredit" sengaja abu penuh, bukan cincin kosong: di data demo 30
+dari 40 member berstatus begitu, dan cincin samar sebanyak itu terbaca sebagai gagal
+render, bukan sebagai status.
+
 `DS-34` — **Layar kelola memakai satu pola: daftar di kiri, formulir di kanan**
 (`grid lg:grid-cols-[minmax(0,1fr)_26rem]`), menumpuk jadi satu kolom di bawah 1024px.
 Formulir yang bersembunyi di balik tombol "Tambah" memaksa orang menghafal isi daftar

@@ -11,6 +11,9 @@ const hariFmt = fmt({ weekday: "long", day: "numeric", month: "long" });
 const hariPendekFmt = fmt({ weekday: "short", day: "numeric", month: "short" });
 const namaHariFmt = fmt({ weekday: "short" });
 const tanggalFmt = fmt({ day: "numeric", month: "short" });
+// "22 Sep 2026" — dipakai kolom tabel. Nama hari sengaja tidak ikut: di
+// sebuah kolom tanggal, "Sen," cuma menambah lebar tanpa menambah jawaban.
+const ringkasFmt = fmt({ day: "numeric", month: "short", year: "numeric" });
 // en-CA memberi YYYY-MM-DD — kunci pengelompokan per hari WIB, bukan per hari UTC.
 const kunciFmt = fmt({ year: "numeric", month: "2-digit", day: "2-digit" }, "en-CA");
 
@@ -20,6 +23,7 @@ export const hariPendekWib = (d: Date) => hariPendekFmt.format(d);
 export const kunciHariWib = (d: Date) => kunciFmt.format(d);
 export const namaHariWib = (d: Date) => namaHariFmt.format(d);
 export const tanggalWib = (d: Date) => tanggalFmt.format(d);
+export const tanggalRingkasWib = (d: Date) => ringkasFmt.format(d);
 
 /* ── Aritmetika hari WIB ───────────────────────────────────────────────────
    Dipakai kalender mingguan untuk menempatkan blok dan menggeser minggu.
