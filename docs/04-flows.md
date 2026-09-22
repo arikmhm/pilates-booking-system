@@ -326,15 +326,19 @@ langsung menjalankan kotak K dan L.
 
 ## 9. Ringkasan titik rawan
 
-| # | Titik | Risiko kalau salah | Ada di |
-|---|---|---|---|
-| 1 | INSERT booking atomik | Double booking di depan owner | Alur 1, 4 |
-| 2 | Urutan pakai kredit paling cepat hangus | Member dirugikan, protes | Alur 2 |
-| 3 | Kredit kembali ke paket ASAL | Masa berlaku bisa diakali | Alur 3 |
-| 4 | Batal telat tidak menulis ledger baru | Kredit terpotong dua kali | Alur 3 |
-| 5 | Loop lewati kredit tidak valid | Kursi kosong padahal antrean panjang | Alur 4 |
-| 6 | `dipromosikan_at` diisi | Orang yang baru naik ikut kena aturan hangus | Alur 4 |
-| 7 | Job idempoten | Kredit hangus dua kali | Alur 7.2 |
-| 8 | Webhook idempoten | Kredit dobel | Alur 8 |
+| # | Titik | Risiko kalau salah | Ada di | Dijaga oleh |
+|---|---|---|---|---|
+| 1 | INSERT booking atomik | Double booking di depan owner | Alur 1, 4 | **database** — partial unique index, `src/db/kapasitas.test.ts` |
+| 2 | Urutan pakai kredit paling cepat hangus | Member dirugikan, protes | Alur 2 | `pilihPaket()` |
+| 3 | Kredit kembali ke paket ASAL | Masa berlaku bisa diakali | Alur 3 | `hasilPembatalan()` → `ke_paket` |
+| 4 | Batal telat tidak menulis ledger baru | Kredit terpotong dua kali | Alur 3 | `hasilPembatalan()` → `kredit_kembali: false` |
+| 5 | Loop lewati kredit tidak valid | Kursi kosong padahal antrean panjang | Alur 4 | `naikkanWaitlist()` → `dilewati[]` |
+| 6 | `dipromosikan_at` diisi | Orang yang baru naik ikut kena aturan hangus | Alur 4 | `naikkanWaitlist()` → `naik.dipromosikan_at` |
+| 7 | Job idempoten | Kredit hangus dua kali | Alur 7.2 | `hasilPenghangusan()` → `sudah_dihanguskan` |
+| 8 | Webhook idempoten | Kredit dobel | Alur 8 | `bolehTerimaPembayaran()` → status `paid` |
 
 Delapan titik ini yang wajib punya test. Sisanya boleh mengandalkan pemakaian manual.
+
+Titik 1 dijaga database; tujuh sisanya keputusan murni di `src/rules/index.ts` dan diuji
+di `src/rules/index.test.ts` tanpa database. Tiap test dibuktikan tidak sia-sia lewat
+mutasi: aturannya sengaja dirusak, dan hanya test yang bersangkutan yang merah.
