@@ -34,6 +34,8 @@ Butuh Node 22+ dan Docker.
 cp .env.example .env.local   # isi CRON_SECRET dan SMTP bila perlu
 npm install
 npm run db:up                # Postgres lokal di port 5432
+npm run db:migrate           # 12 tabel
+npm run db:seed              # data demo, tanggal relatif hari ini
 npm run dev                  # http://localhost:3000
 ```
 

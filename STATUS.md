@@ -2,7 +2,7 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** 8 titik rawan tertutup · siap menulis seed demo dan layar M1
+**Tahap:** seed demo jalan di Neon · siap membangun layar M1
 **Terakhir diperbarui:** 2026-09-22
 
 ---
@@ -13,10 +13,10 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 
 ## Berikutnya — tiga langkah pertama
 
-1. Seed demo — tanggal relatif terhadap `now()` ([02-rules.md](docs/02-rules.md) bagian 6.2)
-2. Layar M1 Jadwal + server action booking: baca db → panggil `bolehBooking()` →
+1. Layar M1 Jadwal + server action booking: baca db → panggil `bolehBooking()` →
    query 5.1 (pindahkan dari `src/db/kapasitas.test.ts`) → `credit_ledger` −1
-3. Layar M3 Akun Saya — sisa kredit, hitung mundur hangus, riwayat ledger
+2. Layar M3 Akun Saya — sisa kredit, hitung mundur hangus, riwayat ledger
+3. Layar A1 Dashboard — panel "kredit hangus ≤ 7 hari" (5 orang sudah ada di seed)
 
 ## Selesai
 
@@ -34,6 +34,7 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 - [x] Skema 12 tabel + migrasi pertama, 3 partial unique index dan 4 CHECK terpasang
 - [x] Test integrasi kapasitas hijau — 20 booking paralel ke 8 kursi, tepat 8 berhasil
 - [x] `src/rules/` — 8 titik rawan tertutup, 38 test, diverifikasi lewat mutasi
+- [x] Seed demo deterministik — 40 member, 168 sesi, sesi penuh 8/8 + 3 antre, panel A1 5 orang
 
 ## Keputusan terbuka
 
@@ -63,6 +64,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | Seed demo `src/db/seed.mts` jalan di lokal dan Neon. Deterministik, tanggal relatif. Booking dibatasi jendela 7 hari (BR-2.1). Seed menolak jalan kalau menemukan studio yang bukan studio demo |
 | 2026-09-22 | `src/rules/` ditulis sebagai fungsi murni: 7 titik rawan keputusan + 1 dijaga database. 38 test, semuanya dibuktikan lewat mutasi. Tabel titik rawan di 04-flows.md bagian 9 kini menyebut fungsi penjaganya |
 | 2026-09-22 | Neon dipasang sebagai Postgres demo (`purple-moon-87115116`, Singapura). 12 tabel termigrasi ke branch `production`. Test dikunci ke `TEST_DATABASE_URL` lokal supaya `TRUNCATE` tidak pernah kena database sungguhan |
 | 2026-09-22 | Skema 12 tabel ditulis dan dimigrasikan. ERD dilengkapi: `users.email` (login magic link, ketinggalan sejak 21 Sep) dan `studios.generate_weeks_ahead`. Tabel sesi login ditunda, dicatat di 05-data-model.md bagian 8 |

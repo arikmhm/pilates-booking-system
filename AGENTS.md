@@ -73,10 +73,14 @@ npm run typecheck    # tsc --noEmit
 npm test             # Vitest — hanya 8 titik rawan
 npm run db:generate  # migrasi baru dari src/db/schema.ts
 npm run db:migrate   # terapkan migrasi
+npm run db:seed      # isi data demo — semua tanggal relatif hari ini
 ./check-docs.sh      # angka dan link dokumen
 ```
 
 Salin `.env.example` jadi `.env.local` sebelum menjalankan apa pun.
+
+`npm test` menjalankan `TRUNCATE` di database lokal — jalankan `npm run db:seed` lagi
+sesudahnya kalau sedang memakai aplikasinya.
 
 `DATABASE_URL` menunjuk Neon (demo di Vercel); `TEST_DATABASE_URL` menunjuk Postgres
 lokal dan **wajib `localhost`** — test menjalankan `TRUNCATE CASCADE` dan akan menolak

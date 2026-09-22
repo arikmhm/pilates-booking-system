@@ -241,6 +241,9 @@ M3 adalah jantung skenario A. Panel kredit hangus di A1 = daftar orang yang haru
 
 ### 6.2 Seed data
 
+Diterapkan di `src/db/seed.mts` — `npm run db:seed`. Hasilnya deterministik (PRNG
+berbenih tetap): demo yang tampil beda tiap reset adalah demo yang tidak bisa dilatih.
+
 Semua tanggal **relatif terhadap hari ini**, bukan tanggal mati. Wajib ada:
 
 - ~40 member (nama Jawa), sisa kredit bervariasi
@@ -249,6 +252,10 @@ Semua tanggal **relatif terhadap hari ini**, bukan tanggal mati. Wajib ada:
 - 1 sesi **nanti malam** → untuk mendemokan batas 12 jam
 - Riwayat campuran: hadir, no-show, batal tepat waktu, batal telat
 - 2 coach, jadwal 4 minggu dengan okupansi bervariasi (penuh / hampir penuh / sepi)
+
+Booking **hanya** dibuat untuk sesi dalam jendela `booking_opens_days` (7 hari). Mengisi
+sesi tiga minggu lagi akan menampilkan keadaan yang BR-2.1 tidak izinkan terjadi —
+sesi di luar jendela memang harus kosong.
 
 ### 6.3 Skrip demo — 5 menit
 
