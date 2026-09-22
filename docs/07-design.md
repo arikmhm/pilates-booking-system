@@ -344,6 +344,14 @@ dengan masa berlaku dan daftar jenis kelas. Instruktur tetap punya pitanya dan
 tautan di kaki halaman, tapi keluar dari menu kepala: ia profil studio, dan tidak
 ada layar instruktur yang bisa dituju sesudahnya.
 
+Bilahnya satu berkas untuk semua halaman publik — `components/bilah-publik.tsx`,
+dipakai halaman profil dan jadwal publik. Tautannya mutlak (`/#paket`, bukan
+`#paket`) supaya bentuk yang sama jalan dari kedua halaman; butir halaman yang
+sedang dibuka ditandai `aria-current="page"` dan bergaris bawah. Dua halaman
+publik yang menyalin menunya masing-masing akan berbeda pada perubahan pertama,
+dan menu yang berubah saat orang berpindah halaman membuat satu situs terasa
+seperti dua.
+
 `DS-45` — **Jadwal itu publik; yang disembunyikan tombolnya, bukan jadwalnya.**
 Butir menu "Jadwal" di halaman profil mengantar ke `/jadwal` apa adanya, bukan ke
 `/masuk`. Orang yang sedang menimbang mau ikut kelas apa perlu melihat jam dan

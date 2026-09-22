@@ -7,11 +7,12 @@
 //
 // Kerangka aplikasi (`components/kerangka.tsx`) sengaja TIDAK dipakai di sini:
 // sidebar member penuh menu yang belum bisa dibuka tamu, dan sidebar yang
-// separuh butirnya melempar ke layar masuk itu janji kosong. Yang dipinjam
-// dari halaman profil hanya bilah atasnya, supaya tamu merasa masih berada di
-// situs yang sama.
+// separuh butirnya melempar ke layar masuk itu janji kosong. Bilah atasnya
+// bukan tiruan bilah halaman profil — ia berkas yang sama persis
+// (`components/bilah-publik.tsx`), supaya tamu tidak merasa berpindah situs.
 
 import Link from "next/link";
+import { BilahPublik } from "@/components/bilah-publik";
 
 export function RangkaPublik({
   judul,
@@ -27,30 +28,7 @@ export function RangkaPublik({
 }) {
   return (
     <div className="flex min-h-full flex-1 flex-col bg-background">
-      <header className="border-b border-border">
-        <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between gap-4 px-gutter">
-          <Link
-            href="/"
-            className="text-app-label font-medium uppercase tracking-[0.18em]"
-          >
-            Studio Pilates Kenari
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/#paket"
-              className="min-h-11 hidden items-center text-app-body-sm hover:underline sm:inline-flex"
-            >
-              Paket
-            </Link>
-            <Link
-              href="/masuk"
-              className="min-h-11 inline-flex items-center rounded-sm bg-primary px-4 text-app-label font-medium uppercase text-primary-foreground"
-            >
-              Masuk
-            </Link>
-          </div>
-        </div>
-      </header>
+      <BilahPublik aktif="/jadwal" />
 
       <main className="mx-auto w-full max-w-[1200px] flex-1 px-gutter py-sedang">
         <h1 className="text-app-title">{judul}</h1>

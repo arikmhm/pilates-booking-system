@@ -12,6 +12,7 @@
 // memperagakan kebalikan dari yang dijual.
 
 import Link from "next/link";
+import { BilahPublik } from "@/components/bilah-publik";
 import { tautanWa } from "@/lib/wa";
 
 const FOTO = "bg-[linear-gradient(135deg,var(--accent-warm),var(--photo-warm))]";
@@ -24,20 +25,6 @@ const WA_COBA = tautanWa(
   "Halo Kenari, saya mau coba kelas pertama yang gratis. Jadwal kosongnya kapan ya?",
 );
 const WA_TANYA = tautanWa(TELEPON, "Halo Kenari, saya mau tanya soal kelas dan paketnya.");
-
-// Tiga butir, tiga langkah yang benar-benar dijual: pilih jenis kelasnya →
-// beli kredit yang mencakup jenis itu (BR-1.4) → pakai kredit di sesi yang
-// tersedia. Instruktur tidak ikut di kepala halaman: pitanya tetap ada, tapi
-// ia profil studio, bukan yang dibeli — dan tidak ada layar instruktur yang
-// bisa dituju sesudahnya.
-const NAV: [string, string][] = [
-  ["Kelas", "#kelas"],
-  ["Paket", "#paket"],
-  // Satu-satunya butir yang keluar dari halaman jualan — dan ia tetap bisa
-  // dibaca tanpa akun: /jadwal melayani tamu dengan jadwal yang sama tanpa
-  // tombol booking (DS-45).
-  ["Jadwal", "/jadwal"],
-];
 
 const KELAS = [
   ["Reformer", "8 kursi", "Beban pegas untuk kekuatan dan kelenturan sekaligus."],
@@ -177,39 +164,8 @@ function Tombol({
 export default function Profil() {
   return (
     <>
-      {/* 1 — site-header. Di HP navigasi disembunyikan, wordmark dan CTA tetap. */}
-      <header className="border-b border-border bg-background">
-        <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between px-gutter">
-          <nav className="hidden flex-1 gap-dekat md:flex">
-            {NAV.map(([label, href]) => (
-              <Tautan
-                key={label}
-                href={href}
-                anak={label}
-                kelas="min-h-11 inline-flex items-center text-app-body-sm hover:underline"
-              />
-            ))}
-          </nav>
-          <span className="text-app-label font-medium uppercase tracking-[0.18em] md:flex-1 md:text-center">
-            Studio Pilates Kenari
-          </span>
-          <div className="flex flex-1 items-center justify-end gap-4">
-            <Tautan
-              href="/masuk"
-              anak="Masuk"
-              kelas="min-h-11 hidden items-center text-app-body-sm sm:inline-flex"
-            />
-            {/* Turun ke pita "Kelas pertama gratis" — penawarannya ada di
-                halaman ini, jadi tidak ada gunanya mengirim orang ke tempat
-                lain untuk membacanya. */}
-            <Tautan
-              href="#paket"
-              anak="Coba Kelas Pertama"
-              kelas="min-h-11 inline-flex items-center rounded-sm bg-primary px-4 text-app-label font-medium uppercase text-primary-foreground"
-            />
-          </div>
-        </div>
-      </header>
+      {/* 1 — site-header, bersama dengan jadwal publik. */}
+      <BilahPublik />
 
       {/* 2 — hero. Teks putih hanya aman karena ada tirai (DS-20): 7.74:1. */}
       <section className="relative flex min-h-[70vh] items-center overflow-hidden">
