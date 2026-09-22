@@ -96,12 +96,14 @@ pilihan itu harus tetap terbuka.
 **Job lewat HTTP.** Empat job terjadwal jadi endpoint biasa berpenjaga secret,
 dipanggil Vercel Cron di demo dan `crontab` di VPS. Kode sama, beda satu baris config.
 
-**Waktu dinormalisasi di `src/db/`, bukan di layar.** Parser tipe postgres.js tidak
+**Waktu dinormalisasi di lapisan database, bukan di layar.** Parser tipe postgres.js tidak
 terpasang di runtime server Next: kolom `timestamptz` kembali sebagai string mentah,
 dan `Date` yang dikirim sebagai parameter ditolak. Di node biasa (seed, test) keduanya
 jalan — jadi typecheck dan test **tidak** akan menangkapnya. Tiap query yang menyentuh
-waktu memakai `saat()` saat membaca dan `ts()` + `::timestamptz` saat menulis
-(`src/db/booking.ts`). Jangan pernah menyerahkan baris mentah ke `src/rules/`.
+waktu memakai `saat()` saat membaca dan `ts()`/`iso()` + `::timestamptz` saat menulis
+(`src/db/booking.ts`, `src/db/seed.ts`). Jangan pernah menyerahkan baris mentah ke
+`src/rules/`. Berlaku juga untuk kode yang tadinya cuma dipakai CLI: begitu sebuah
+fungsi bisa dipanggil dari server action, ia harus benar di dua runtime.
 
 **Insert massal wajib menyebut kolomnya.** `sql(array)` di postgres.js menyimpulkan
 daftar kolom dari kunci objek **pertama**. Kalau objek pertama tidak punya kolom yang

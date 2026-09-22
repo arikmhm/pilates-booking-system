@@ -16,11 +16,13 @@ import {
   tandaiHadir,
   type KunciSetelan,
 } from "@/db/admin";
+import { seed } from "@/db/seed";
 import { pastikanAdmin } from "@/lib/masuk";
 
 function kembali(pesan: string): never {
   redirect(`/admin?kabar=${encodeURIComponent(pesan)}`);
 }
+const keAdmin = kembali;
 
 export async function ubahSetelan(formData: FormData) {
   await pastikanAdmin();
@@ -169,5 +171,29 @@ export async function koreksiKreditManual(formData: FormData) {
     hasil.ok
       ? `Koreksi ${delta > 0 ? "+" : ""}${delta} tercatat. Sisa paket sekarang ${hasil.sisa}.`
       : `Ditolak — sisa paket cuma ${hasil.sisa}, koreksi itu membuatnya minus.`,
+  );
+}
+
+/* ── Reset Demo ───────────────────────────────────────────────────────────
+   02-rules.md bagian 5 menandainya "wajib": skenario diulang puluhan kali,
+   dan tiap pengulangan butuh data yang sama persis.                      */
+
+export async function resetDemo() {
+  await pastikanAdmin();
+
+  // seed() sendiri menolak jalan kalau menemukan studio yang bukan studio
+  // demo. Tombolnya juga disembunyikan di layar, tapi penjaga sebenarnya ada
+  // di sana — tombol tersembunyi bukan tombol yang tidak bisa ditekan.
+  //
+  // Satu transaksi: gagal di tengah presentasi tidak boleh meninggalkan
+  // database separuh terisi. Kalau meledak, demo yang lama tetap utuh.
+  const r = await pg.begin((tx) => seed(tx));
+
+  for (const jalur of ["/admin", "/jadwal", "/akun"]) revalidatePath(jalur);
+
+  // Id user sengaja tetap antar reset, jadi cookie login presenter selamat.
+  keAdmin(
+    `Demo direset · ${r.member} member · ${r.sesi} sesi · ${r.booking} booking · ` +
+      `panel A1 ${r.panel_a1} orang · antrean berkredit ${r.antrean_berkredit}.`,
   );
 }

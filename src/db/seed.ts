@@ -7,7 +7,9 @@
 // Hasilnya deterministik (PRNG berbenih tetap). Demo yang tampil beda tiap
 // reset adalah demo yang tidak bisa dilatih.
 //
-// Jalankan: npm run db:seed
+// Dipakai dua tempat: `npm run db:seed` lewat seed-cli.mts, dan tombol
+// "Reset Demo" di layar A1. Karena itu berkas ini tidak mencetak apa pun dan
+// tidak membuat koneksi sendiri — keduanya urusan pemanggil.
 
 import postgres from "postgres";
 
@@ -16,14 +18,15 @@ import postgres from "postgres";
 // yang kekurangan kunci membuat kolom itu hilang dari INSERT tanpa galat apa
 // pun. Sudah dua kali menggigit di sini — lihat AGENTS.md.
 
-const STUDIO = "Studio Pilates Kenari";
+export const STUDIO_DEMO = "Studio Pilates Kenari";
+const STUDIO = STUDIO_DEMO;
 const WIB = 7; // UTC+7, tanpa DST
 
 /* ── Penjaga ──────────────────────────────────────────────────────────────
    Seed ini TRUNCATE 12 tabel. DATABASE_URL menunjuk Neon, dan suatu hari
    akan menunjuk VPS klien. Menolak jalan kalau menemukan studio yang bukan
    studio demo — database kosong dan database demo tetap boleh.            */
-async function pastikanAman(sql: postgres.Sql) {
+async function pastikanAman(sql: postgres.Sql | postgres.TransactionSql) {
   const ada = await sql<{ nama: string }[]>`select nama from studios limit 5`;
   const asing = ada.filter((r) => r.nama !== STUDIO);
   if (asing.length > 0) {
@@ -78,6 +81,16 @@ function jamWib(offsetHari: number, jam: number, menit: number): Date {
   );
 }
 const hariKe = (n: number) => new Date(SEKARANG.getTime() + n * 86_400_000);
+
+/**
+ * Date → ISO string untuk parameter timestamptz.
+ *
+ * Seed ini dipanggil dari dua tempat: node biasa (CLI) dan server action
+ * Reset Demo. Di runtime Next, parser/serializer postgres.js tidak terpasang
+ * dan `Date` sebagai parameter ditolak mentah-mentah — sama seperti di
+ * src/db/booking.ts. String ISO benar di dua-duanya.
+ */
+const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 const jamKe = (n: number) => new Date(SEKARANG.getTime() + n * 3_600_000);
 const tglIso = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -137,7 +150,17 @@ const NAMA_MEMBER = [
 
 const DURASI = 70; // grid 70 menit
 
-async function seed(sql: postgres.Sql) {
+/**
+ * UUID tetap untuk user, supaya Reset Demo tidak melempar presenter keluar.
+ *
+ * Cookie login berisi user_id. Kalau id-nya baru tiap reset, sekali klik
+ * tombol reset di tengah presentasi berarti harus login ulang. Bentuknya
+ * sengaja jelas-jelas buatan — nol semua kecuali nomor urut.
+ */
+const idDemo = (n: number) =>
+  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+
+export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
   await pastikanAman(sql);
 
   await sql.unsafe(`truncate
@@ -177,14 +200,16 @@ async function seed(sql: postgres.Sql) {
       // kekurangan kunci, TypeScript menolak daftar kolomnya. Itu penjaga
       // yang tepat: kunci yang hilang berarti kolom hilang dari INSERT.
       ...staf.map((s, i) => ({
+        id: idDemo(i + 1),
         studio_id: studio.id,
         nama: s.nama,
         telepon: `08115500${String(i).padStart(2, "0")}`,
         email: `${s.peran}${i}@kenari.test` as string | null,
         peran: s.peran,
-        created_at: hariKe(-900), // studio berdiri lebih dulu dari membernya
+        created_at: iso(hariKe(-900)), // studio berdiri lebih dulu dari membernya
       })),
       ...NAMA_MEMBER.map((nama, i) => ({
+        id: idDemo(101 + i),
         studio_id: studio.id,
         nama,
         telepon: `08122${String(100000 + i)}`,
@@ -193,10 +218,10 @@ async function seed(sql: postgres.Sql) {
         peran: "member",
         // Tanpa ini semua member "bergabung hari ini", dan layar A3 studio
         // yang katanya sudah jalan dua tahun terbaca seperti baru dipasang.
-        created_at: hariKe(-antara(20, 900)),
+        created_at: iso(hariKe(-antara(20, 900))),
       })),
     ],
-      "studio_id", "nama", "telepon", "email", "peran", "created_at",
+      "id", "studio_id", "nama", "telepon", "email", "peran", "created_at",
     )} returning id, nama, peran`;
 
   const coach = orang.filter((o) => o.peran === "coach");
@@ -265,7 +290,7 @@ async function seed(sql: postgres.Sql) {
         schedule_rule_id: a.id,
         class_type_id: a.class_type_id,
         coach_id: a.coach_id,
-        mulai_at: jamWib(d, jam, menit),
+        mulai_at: iso(jamWib(d, jam, menit)),
         durasi_menit: DURASI,
         kapasitas: kap, // BR-7.3 — DISALIN, bukan di-join
         status: "scheduled",
@@ -280,18 +305,30 @@ async function seed(sql: postgres.Sql) {
     schedule_rule_id: null,
     class_type_id: jenisId["Reformer"].id,
     coach_id: coach[0].id,
-    mulai_at: jamKe(8),
+    mulai_at: iso(jamKe(8)),
     durasi_menit: DURASI,
     kapasitas: 8,
     status: "scheduled",
   });
 
-  const sesi = await sql`
+  const sesiMentah = await sql<
+    {
+      id: string;
+      schedule_rule_id: string | null;
+      class_type_id: string;
+      mulai_at: string | Date;
+      kapasitas: number;
+    }[]
+  >`
     insert into sessions ${sql(
       sesiBaris, "studio_id", "schedule_rule_id", "class_type_id", "coach_id",
       "mulai_at", "durasi_menit", "kapasitas", "status",
     )}
     returning id, schedule_rule_id, class_type_id, mulai_at, kapasitas`;
+
+  // Arah sebaliknya: di runtime Next `mulai_at` kembali sebagai string, dan
+  // seluruh logika di bawah ini membandingkan serta menghitung tanggal.
+  const sesi = sesiMentah.map((s) => ({ ...s, mulai_at: new Date(s.mulai_at) }));
 
   /* 7 — paket milik member + ledger pembelian */
   // Lima orang pertama sengaja hangus 2–6 hari lagi: itu isi panel A1,
@@ -312,8 +349,8 @@ async function seed(sql: postgres.Sql) {
     mp.push({
       user_id: member[i].id,
       package_id: p.id,
-      dibeli_at: dibeli,
-      hangus_at: hariKe(sisaHari),
+      dibeli_at: iso(dibeli),
+      hangus_at: iso(hariKe(sisaHari)),
       jumlah_kredit_awal: p.jumlah_kredit,
     });
   }
@@ -330,7 +367,7 @@ async function seed(sql: postgres.Sql) {
       booking_id: null,
       delta: awal,
       alasan: "beli",
-      created_at: mp[i].dibeli_at,
+      created_at: mp[i].dibeli_at as string,
     });
     kredit.push({
       mp_id: mpRows[i].id as string,
@@ -428,8 +465,8 @@ async function seed(sql: postgres.Sql) {
         nomor_alat: alat,
         status,
         sumber: "member",
-        created_at: new Date(s.mulai_at.getTime() - 3 * 86_400_000),
-        dibatalkan_at: dibatalkan,
+        created_at: iso(new Date(s.mulai_at.getTime() - 3 * 86_400_000)),
+        dibatalkan_at: iso(dibatalkan),
       });
 
       // BR-2.2 — kredit dipotong saat booking, apa pun hasilnya nanti.
@@ -441,7 +478,7 @@ async function seed(sql: postgres.Sql) {
         _kunci: `${s.id}:${m.id}`,
         delta: -1,
         alasan: "booking",
-        created_at: new Date(s.mulai_at.getTime() - 3 * 86_400_000),
+        created_at: iso(new Date(s.mulai_at.getTime() - 3 * 86_400_000)),
       });
       kredit[i].sisa -= 1;
 
@@ -454,7 +491,7 @@ async function seed(sql: postgres.Sql) {
           _kunci: `${s.id}:${m.id}`,
           delta: 1,
           alasan: "batal_tepat_waktu",
-          created_at: dibatalkan,
+          created_at: iso(dibatalkan),
         });
         kredit[i].sisa += 1;
       }
@@ -475,7 +512,7 @@ async function seed(sql: postgres.Sql) {
           user_id: m.id,
           status: "waiting",
           // BR-4.2 — urutan antrean murni created_at
-          created_at: new Date(SEKARANG.getTime() - (3 - k) * 3_600_000),
+          created_at: iso(new Date(SEKARANG.getTime() - (3 - k) * 3_600_000)),
         });
       });
     }
@@ -529,7 +566,7 @@ async function seed(sql: postgres.Sql) {
             ? "Booking kamu terkonfirmasi. Sampai ketemu di studio."
             : "Kredit kamu akan hangus dalam 3 hari. Yuk pakai sebelum lewat.",
         session_id: null,
-        terkirim_at: jamKe(-antara(1, 40)),
+        terkirim_at: iso(jamKe(-antara(1, 40))),
       })),
     )}`;
 
@@ -563,18 +600,6 @@ async function seed(sql: postgres.Sql) {
       select member_package_id from credit_ledger
       group by member_package_id having sum(delta) < 0) t`;
 
-  console.log(`\n  ${STUDIO} — seed selesai\n`);
-  console.log(`  member            ${cek.member}`);
-  console.log(`  sesi (4 minggu)   ${cek.sesi}`);
-  console.log(`  booking           ${cek.booking}  (${bookingRows.length} baris)`);
-  console.log(`  waitlist          ${cek.waitlist}`);
-  console.log(`  baris ledger      ${cek.ledger}`);
-  console.log(`  panel A1 ≤ 7 hari ${cek.panel_a1} orang`);
-  console.log(`  sesi penuh besok  ${besokPagi ? besokPagi.mulai_at.toISOString() : "TIDAK ADA"}`);
-  console.log(`  sesi dalam 8 jam  ${jamKe(8).toISOString()}`);
-  console.log(`  admin demo        ${admin.nama}`);
-  console.log(`  antrean berkredit ${antreSiap.n} dari ${waitlistBaris.length}`);
-
   // Tanpa tautan booking_id, layar M3 cuma bisa bilang "booking" — bukan kelas
   // apa dan kapan. Gagalnya senyap: INSERT tetap sukses, kolomnya saja hilang.
   if (tertaut.n > 0) {
@@ -599,16 +624,18 @@ async function seed(sql: postgres.Sql) {
         `Booking ditulis melebihi kredit yang dibeli.`,
     );
   }
-  console.log(`\n  saldo semua paket >= 0 ✓\n`);
+  return {
+    member: cek.member as number,
+    sesi: cek.sesi as number,
+    booking: cek.booking as number,
+    waitlist: cek.waitlist as number,
+    ledger: cek.ledger as number,
+    panel_a1: cek.panel_a1 as number,
+    antrean_berkredit: antreSiap.n as number,
+    sesi_penuh_besok: besokPagi ? besokPagi.mulai_at : null,
+    sesi_dalam_8_jam: jamKe(8),
+    admin: admin.nama as string,
+  };
 }
 
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error("DATABASE_URL belum diisi — lihat .env.example");
-const sql = postgres(url, { max: 4 });
-seed(sql)
-  .then(() => sql.end())
-  .catch(async (e) => {
-    console.error(`\n  ${e.message}\n`);
-    await sql.end();
-    process.exit(1);
-  });
+export type RingkasSeed = Awaited<ReturnType<typeof seed>>;

@@ -212,7 +212,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | Ekspor data & backup | ⬜ | ✅ | |
 | Peran owner & coach terpisah | ⬜ | ✅ | Demo: satu peran admin |
 | **Hanya di demo** | | | |
-| Tombol Reset Demo | ✅ | ⬜ | Wajib — skenario diulang puluhan kali |
+| Tombol Reset Demo | ✅ | ⬜ | Wajib — skenario diulang puluhan kali. Ada di A1, hanya muncul di database demo |
 | Ganti identitas studio cepat | ✅ | ⬜ | Nama, logo, warna — personalisasi per prospek |
 
 ---

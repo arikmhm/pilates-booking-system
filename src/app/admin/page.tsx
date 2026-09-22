@@ -17,7 +17,8 @@ import {
 import { pastikanAdmin } from "@/lib/masuk";
 import { hariWib, jamWib, selisihManusiawi } from "@/lib/waktu";
 import { tautanWa } from "@/lib/wa";
-import { ubahSetelan } from "./aksi";
+import { STUDIO_DEMO } from "@/db/seed";
+import { resetDemo, ubahSetelan } from "./aksi";
 
 export const dynamic = "force-dynamic";
 
@@ -245,6 +246,27 @@ export default async function A1({
               </button>
             </form>
           </section>
+
+          {/* Hanya muncul di database demo. Penjaga sebenarnya ada di seed()
+              yang menolak jalan kalau studionya bukan studio demo — ini cuma
+              supaya tombolnya tidak menggoda di instance klien. */}
+          {setelan.nama === STUDIO_DEMO && (
+            <section className="rounded-md border border-border p-4">
+              <h2 className="text-app-section">Reset demo</h2>
+              <p className="text-app-body-sm text-muted-foreground">
+                Kembalikan semua data ke keadaan awal. Tanggalnya dihitung ulang
+                dari hari ini, dan kamu tetap login.
+              </p>
+              <form action={resetDemo} className="mt-3">
+                <button
+                  type="submit"
+                  className="h-12 w-full rounded-sm border border-foreground text-app-label font-medium uppercase"
+                >
+                  Reset Demo
+                </button>
+              </form>
+            </section>
+          )}
         </div>
       </div>
     </main>

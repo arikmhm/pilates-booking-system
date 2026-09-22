@@ -2,6 +2,7 @@
   "name": "sport-booking-system",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -16,7 +17,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "cek:docs": "./check-docs.sh",
-    "db:seed": "node --env-file=.env.local src/db/seed.mts"
+    "db:seed": "node --env-file=.env.local src/db/seed-cli.mts"
   },
   "dependencies": {
     "@neon/config": "^1.7.2",

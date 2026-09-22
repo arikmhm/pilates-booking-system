@@ -2,7 +2,7 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** 6 layar demo selesai · sisa tombol Reset Demo dan 4 job terjadwal
+**Tahap:** 6 layar + Reset Demo selesai · sisa 4 job terjadwal
 **Terakhir diperbarui:** 2026-09-22
 
 ---
@@ -13,12 +13,11 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 
 ## Berikutnya — tiga langkah pertama
 
-1. Tombol **Reset Demo** — ditandai "wajib" di 02-rules.md bagian 5. Butuh seed
-   diekstrak dari `seed.mts` jadi fungsi yang bisa diimpor server action
-2. Empat job terjadwal sebagai endpoint HTTP berpenjaga `CRON_SECRET`
+1. Empat job terjadwal sebagai endpoint HTTP berpenjaga `CRON_SECRET`
    ([05-data-model.md](docs/05-data-model.md) bagian 6) — `hasilPenghangusan()`
    dan `naikkanWaitlist()` sudah siap dipakai
-3. Latihan skrip presentasi 5 menit dari ujung ke ujung, rekam video 90 detik
+2. Latihan skrip presentasi 5 menit dari ujung ke ujung, rekam video 90 detik
+3. Deploy demo ke Vercel — `DATABASE_URL` sudah menunjuk Neon
 
 ## Selesai
 
@@ -43,6 +42,7 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 - [x] Layar A2 Detail sesi — kehadiran, koreksi no-show, Batalkan Kelas satuan & massal (Alur 5)
 - [x] Layar A3 Detail member — dompet kredit, buku besar lengkap, koreksi manual (BR-1.8)
 - [x] **Keenam layar demo selesai** — M1 M2* M3 A1 A2 A3 (*M2 masih ditentukan sistem)
+- [x] Tombol Reset Demo — satu transaksi, id user tetap, presenter tidak terlempar keluar
 
 ## Keputusan terbuka
 
@@ -73,6 +73,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | Reset Demo jadi. Seed dipecah: `seed.ts` fungsi murni, `seed-cli.mts` pembungkus CLI. Id user dibuat tetap supaya reset tidak melempar presenter keluar. Paket jadi ESM (`"type": "module"`) — menghilangkan peringatan Node tiap seed dijalankan |
 | 2026-09-22 | Layar A3 selesai — enam layar demo lengkap. Seed: kolom ditulis eksplisit di semua insert massal setelah bug yang sama menggigit kedua kali, dan satu bug laten ketahuan — sesi "dalam 8 jam" terpilih ganda sebagai "sesi penuh besok pagi" kalau seed dijalankan setelah ~16.00 WIB |
 | 2026-09-22 | Layar A2 + Alur 5 lengkap (BR-5.1–5.6) sebagai satu pernyataan CTE. Ditemukan seed diam-diam membuang kolom `booking_id`: postgres.js menyimpulkan daftar kolom dari objek pertama, dan baris pertama tidak punya kolom itu. 405 baris ledger kehilangan tautannya tanpa galat apa pun |
 | 2026-09-22 | Layar A1 Dashboard: okupansi hari ini, panel "kredit hangus ≤ 7 hari" dengan tombol kirim-WA, dan 3 setelan yang bisa diubah admin. Kontrol akses peran dipasang — member dan coach ditolak dari `/admin` |
