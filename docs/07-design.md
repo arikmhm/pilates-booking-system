@@ -495,7 +495,7 @@ dari 40 member berstatus begitu, dan cincin samar sebanyak itu terbaca sebagai g
 render, bukan sebagai status.
 
 `DS-34` — **Layar kelola memakai satu pola: daftar di kiri, formulir di kanan**
-(`grid lg:grid-cols-[minmax(0,1fr)_26rem]`), menumpuk jadi satu kolom di bawah 1024px.
+(`grid lg:grid-cols-[minmax(0,1fr)_30rem]`), menumpuk jadi satu kolom di bawah 1024px.
 Formulir yang bersembunyi di balik tombol "Tambah" memaksa orang menghafal isi daftar
 sebelum mengisinya; diletakkan bersebelahan, daftar itu jadi contoh hidup untuk
 formulirnya. Berlaku di A6 dan A7.
@@ -538,6 +538,22 @@ dan tab yang ditolak servernya cuma memancing klik yang gagal.
 di kiri. Tanpa itu, yang tergulung kehilangan sumbunya — dan panel di sebelahnya ikut
 terdorong keluar layar. Lebar minimum isinya 44rem (7 kolom hari ~93px + lajur jam);
 di bawah itu barulah muncul gulung mendatar, di dalam kotaknya.
+
+**Penerbitan jadwal jadi strip tetap di kaki kartu, bukan tab ketiga.** Dua tab di
+atasnya membuat SATU kelas; menerbitkan menjalankan apa yang sudah dijanjikan aturan
+mingguan. Ia tidak bersaing dengan keduanya, dan tombol yang disembunyikan di balik tab
+bukan tombol yang dipakai. Stripnya cuma ada di layar Aturan Jadwal (`terbit`), tidak di
+sebelah kalender — di sana kartunya 4 dari 12 kolom dan sudah penuh.
+
+Strip itu selalu membuka dengan **keadaan sekarang** — "120 sesi terbit, sampai 13 Okt
+2026" — bukan langsung tombol. Pertanyaan yang dibawa orang ke layar ini "perlu
+diterbitkan belum?", dan tombol tanpa angka di atasnya menjawabnya dengan menyuruh
+mencoba. Kolom kanan A7 melebar 26rem → 30rem untuk menampungnya.
+
+Jangka terbitnya milik owner, tombolnya milik admin (DS-35): menerbitkan itu
+operasional, menentukan sampai berapa minggu ke depan studio terikat jadwal itu syarat
+studio. Admin tidak melihat inputnya sama sekali — dan karena field `minggu` memang
+tidak ikut terkirim, tidak ada yang bisa diubah, bukan sekadar tidak terlihat.
 
 | Layar | Perangkat | Yang menentukan tampilannya |
 |---|---|---|

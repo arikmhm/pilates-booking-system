@@ -14,10 +14,16 @@
 
 import Link from "next/link";
 import { pg } from "@/db";
-import { daftarJenisKelas, daftarTim, HARI } from "@/db/kelola";
-import { kunciHariWib } from "@/lib/waktu";
+import {
+  BATAS_TERBIT,
+  daftarJenisKelas,
+  daftarTim,
+  HARI,
+  statusTerbit,
+} from "@/db/kelola";
+import { kunciHariWib, tanggalRingkasWib } from "@/lib/waktu";
 import { Kartu, Tombol } from "@/components/kerangka";
-import { tambahAturan, tambahSesi } from "@/app/admin/kelola-aksi";
+import { tambahAturan, tambahSesi, terbitkanJadwal } from "@/app/admin/kelola-aksi";
 
 const INPUT =
   "h-12 w-full rounded-sm border border-border bg-background px-3 text-app-body";
@@ -63,6 +69,7 @@ export async function BuatKelas({
   tautan,
   kembali,
   sekarang,
+  terbit,
 }: {
   owner: boolean;
   mode: ModeBuat;
@@ -71,10 +78,13 @@ export async function BuatKelas({
   /** Ke mana aksinya kembali setelah selesai. */
   kembali: string;
   sekarang: Date;
+  /** Tampilkan panel penerbitan jadwal. Hanya di layar Aturan Jadwal. */
+  terbit?: boolean;
 }) {
-  const [jenis, tim] = await Promise.all([
+  const [jenis, tim, status] = await Promise.all([
     daftarJenisKelas(pg, sekarang),
     daftarTim(pg, sekarang),
+    terbit ? statusTerbit(pg, sekarang) : null,
   ]);
   const coach = tim.filter((t) => t.peran === "coach");
   const besok = kunciHariWib(new Date(sekarang.getTime() + 86_400_000));
@@ -284,6 +294,59 @@ export async function BuatKelas({
 
             <Tombol gaya="garis" penuh anak="Buat kelas tambahan" />
           </form>
+        )}
+
+        {/* ── Terbitkan jadwal — UC-S01, BR-7.1 ──────────────────────────────
+            Dua formulir di atas membuat SATU kelas. Yang ini menerbitkan
+            semua yang sudah dijanjikan aturan mingguan, dan karena itu bukan
+            tab ketiga: ia tidak bersaing dengan keduanya, dan tombol yang
+            disembunyikan di balik tab bukan tombol yang dipakai.
+
+            Sengaja tidak berjalan sendiri tiap malam lagi. Studio ingin tahu
+            KAPAN jadwalnya bertambah, bukan menemukannya sudah bertambah. */}
+        {status && (
+          <div className="border-t border-border pt-4">
+            <p className="text-app-section">Terbitkan jadwal</p>
+            <p className="text-app-body-sm text-muted-foreground">
+              {status.sampai
+                ? `${status.mendatang} sesi terbit, sampai ${tanggalRingkasWib(status.sampai)}.`
+                : "Belum ada sesi terbit dari aturan mingguan."}
+            </p>
+
+            <form action={terbitkanJadwal} className="mt-3 space-y-3">
+              <input type="hidden" name="dari" value={kembali} />
+
+              {owner ? (
+                <label className="flex items-center justify-between gap-4">
+                  <span className="text-app-body">Jangka terbit</span>
+                  <span className="flex items-center gap-2">
+                    <input
+                      name="minggu"
+                      type="number"
+                      required
+                      min={BATAS_TERBIT[0]}
+                      max={BATAS_TERBIT[1]}
+                      defaultValue={status.minggu}
+                      className="h-12 w-20 rounded-sm border border-border bg-background px-3 text-app-body tabular-nums"
+                      aria-label="Jangka terbit dalam minggu"
+                    />
+                    <span className="text-app-body-sm text-muted-foreground">
+                      minggu
+                    </span>
+                  </span>
+                </label>
+              ) : (
+                /* Tanpa field `minggu`, aksinya cuma menerbitkan — jangkanya
+                   tidak ikut terkirim, jadi tidak ada yang bisa diubah. */
+                <p className="text-app-body-sm text-muted-foreground">
+                  Jangka terbit {status.minggu} minggu ke depan, diatur pemilik
+                  studio.
+                </p>
+              )}
+
+              <Tombol penuh anak="Terbitkan sekarang" />
+            </form>
+          </div>
         )}
       </div>
     </Kartu>

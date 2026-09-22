@@ -181,7 +181,7 @@ flowchart LR
     C(("Coach")):::aktor
 
     subgraph JOB["Job Otomatis"]
-        S01(["UC-S01 Generate sesi 8 minggu ke depan"]):::demo
+        S01(["UC-S01 Terbitkan sesi dari aturan"]):::demo
         S02(["UC-S02 Hanguskan kredit kedaluwarsa"]):::demo
         S03(["UC-S03 Tandai no-show otomatis"]):::demo
         S04(["UC-S04 Tutup waitlist yang lewat batas"]):::demo
@@ -228,7 +228,7 @@ flowchart LR
 
 | ID | Use case | Pemicu | Aturan | Demo |
 |---|---|---|---|:--:|
-| UC-S01 | Generate sesi dari aturan berulang | Harian | BR-7.1 | ✅ |
+| UC-S01 | Terbitkan sesi dari aturan berulang | **Tombol di A7** | BR-7.1 | ✅ |
 | UC-S02 | Hanguskan kredit kedaluwarsa | Harian | BR-1.6 | ✅ |
 | UC-S03 | Tandai no-show otomatis | Tiap jam | BR-6.2 | ✅ |
 | UC-S04 | Tutup waitlist yang lewat batas booking | Tiap jam | BR-4.6 | ✅ |

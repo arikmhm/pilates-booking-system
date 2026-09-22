@@ -93,8 +93,11 @@ bagian 4.
 tanpa SDK bawaan host. Target deploy diputuskan per klien saat serah terima, dan
 pilihan itu harus tetap terbuka.
 
-**Job lewat HTTP.** Empat job terjadwal jadi endpoint biasa berpenjaga secret,
-dipanggil Vercel Cron di demo dan `crontab` di VPS. Kode sama, beda satu baris config.
+**Job lewat HTTP.** Empat job jadi endpoint biasa berpenjaga secret, dipanggil Vercel
+Cron di demo dan `crontab` di VPS. Kode sama, beda satu baris config. Tiga terjadwal;
+`generate-sesi` sengaja **tidak** ada di `vercel.json` — pemicunya tombol "Terbitkan
+sekarang" di layar A7 (Alur 7.3), dan endpoint-nya dibiarkan hidup supaya klien yang
+mau kembali ke otomatis cukup menambah satu baris crontab.
 Logikanya di `src/db/job.ts` (fungsi yang menerima klien db), route-nya cuma
 pembungkus. Panggil manual:
 

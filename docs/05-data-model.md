@@ -354,7 +354,7 @@ ORDER BY mp.hangus_at;
 
 | Job | Frekuensi | Aturan | Isi |
 |---|---|---|---|
-| Generate sesi | Harian | BR-7.1 | Buat sesi dari `schedule_rules` sampai 8 minggu ke depan |
+| Terbitkan sesi | **Tombol di A7** | BR-7.1 | Buat sesi dari `schedule_rules` sampai `generate_weeks_ahead` minggu ke depan |
 | Hanguskan kredit | Harian | BR-1.6 | Paket lewat `hangus_at` dengan sisa > 0 → tulis ledger `−sisa`, alasan `hangus` |
 | No-show otomatis | Tiap jam | BR-6.2 | Booking `confirmed` yang kelasnya selesai > 2 jam lalu → `no_show` |
 | Tutup waitlist | Tiap jam | BR-4.6 | Antrean di sesi yang booking-nya sudah ditutup → `expired` + notifikasi |
@@ -363,7 +363,8 @@ ORDER BY mp.hangus_at;
 Keempat job pertama jadi **endpoint HTTP biasa** di `src/app/api/cron/`, dijaga
 header `Authorization: Bearer $CRON_SECRET`. Vercel Cron memanggilnya di demo
 (`vercel.json`), `crontab` + `curl` di VPS — kode sama, beda satu berkas config
-(06-architecture.md keputusan 8). Logikanya sendiri ada di `src/db/job.ts` sebagai
+(06-architecture.md keputusan 8). **Kecuali "Terbitkan sesi":** endpoint-nya ada tapi
+tidak dijadwalkan, karena pemicunya tombol di A7 (Alur 7.3). Logikanya sendiri ada di `src/db/job.ts` sebagai
 fungsi yang menerima klien database, jadi bisa diuji tanpa server.
 
 `notifications.terkirim_at` berdefault `now()`: kanal `layar` sampai ke penerimanya

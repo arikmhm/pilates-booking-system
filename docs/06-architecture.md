@@ -172,12 +172,13 @@ menerbitkan link login untuk ditempel ke chat bagi member yang tidak pegang emai
 
 ## 5b. Job terjadwal sebagai endpoint HTTP
 
-Empat job (05-data-model.md bagian 6) jadi route biasa, bukan fitur platform:
+Empat job (05-data-model.md bagian 6) jadi route biasa, bukan fitur platform. Tiga
+terjadwal, satu dipicu tombol:
 
 | Endpoint | Jadwal (UTC) | WIB | Aturan |
 |---|---|---|---|
 | `/api/cron/hanguskan-kredit` | `10 17 * * *` | 00.10 | BR-1.6 |
-| `/api/cron/generate-sesi` | `30 17 * * *` | 00.30 | BR-7.1 |
+| `/api/cron/generate-sesi` | — *(tombol di A7)* | — | BR-7.1 |
 | `/api/cron/no-show` | `5 * * * *` | tiap jam | BR-6.2 |
 | `/api/cron/tutup-waitlist` | `15 * * * *` | tiap jam | BR-4.6 |
 

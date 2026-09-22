@@ -12,11 +12,13 @@ import { pg } from "@/db";
 import { setelanLengkap } from "@/db/admin";
 import {
   BATAS_PAKET,
+  BATAS_TERBIT,
   bersihkanSesiKosong,
   buatAturan,
   buatPaket,
   buatSesiManual,
   hentikanAturan,
+  simpanJangkaTerbit,
   ubahAktifPaket,
 } from "@/db/kelola";
 import { generateSesi } from "@/db/job";
@@ -203,6 +205,48 @@ export async function tambahSesi(formData: FormData) {
   revalidatePath("/jadwal");
   keJadwal(
     `Kelas tambahan dibuat: ${hariWib(mulai)} pukul ${jamWib(mulai)}.`,
+    dari,
+  );
+}
+
+/* ── Terbitkan sesi dari aturan — UC-S01, BR-7.1 ───────────────────────────
+   Dulu ini cron harian. Sekarang tombol: studio ingin tahu KAPAN jadwalnya
+   bertambah, bukan menemukannya sudah bertambah. Fungsinya sama persis
+   (`generateSesi`), yang berubah cuma siapa yang memulai — dan karena ia
+   idempoten, menekannya dua kali tidak menerbitkan apa pun dua kali.
+
+   Menekan tombolnya operasional, jadi milik admin. Mengubah jangkanya syarat
+   studio, jadi milik owner (DS-35) — 26 minggu ke depan berarti menjanjikan
+   jadwal yang belum tentu ada coach-nya.                                  */
+
+export async function terbitkanJadwal(formData: FormData) {
+  const pengguna = await pastikanAdmin();
+  const dari = formData.get("dari");
+
+  const mentah = String(formData.get("minggu") ?? "").trim();
+  let ubah = "";
+  if (mentah) {
+    if (pengguna.peran !== "owner")
+      keJadwal("Jangka terbit hanya bisa diubah pemilik studio.", dari);
+
+    const [min, maks] = BATAS_TERBIT;
+    const minggu = angka(formData, "minggu", BATAS_TERBIT);
+    if (minggu === null) keJadwal(`Jangka terbit harus ${min}–${maks} minggu.`, dari);
+
+    const studio = await setelanLengkap(pg);
+    await simpanJangkaTerbit(pg, studio.id, minggu);
+    ubah = `Jangka terbit disimpan: ${minggu} minggu. `;
+  }
+
+  const { dibuat } = await generateSesi(pg, new Date());
+
+  revalidatePath("/admin/jadwal");
+  revalidatePath("/jadwal");
+  keJadwal(
+    ubah +
+      (dibuat === 0
+        ? "Tidak ada sesi baru — jadwal sudah terbit sampai batas jangkanya."
+        : `${dibuat} sesi diterbitkan dari aturan mingguan.`),
     dari,
   );
 }

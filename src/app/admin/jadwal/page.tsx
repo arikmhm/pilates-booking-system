@@ -2,9 +2,11 @@
 //
 // Jadwal studio disimpan sebagai aturan berulang mingguan, bukan sebagai
 // daftar tanggal (BR-7.1). Yang diketik di sini "Selasa 07.00 Reformer";
-// sesi nyatanya diterbitkan job harian sampai `generate_weeks_ahead` minggu
-// ke depan. Menambah aturan lewat layar ini langsung memanggil job yang sama
-// supaya hasilnya terlihat seketika.
+// sesi nyatanya terbit sampai `generate_weeks_ahead` minggu ke depan saat
+// tombol "Terbitkan sekarang" ditekan — tidak lagi tiap malam sendiri.
+// Menambah aturan lewat layar ini langsung menerbitkan sesinya juga, supaya
+// slot yang baru diketik tidak menghilang sampai ada yang ingat menekan
+// tombolnya.
 //
 // Menghentikan aturan TIDAK menghapus barisnya: `sessions.schedule_rule_id`
 // menunjuk ke sana, dan sesi yang sudah punya peserta tidak boleh hilang
@@ -47,12 +49,12 @@ export default async function A7({
       <div>
         <h1 className="text-app-title">Aturan jadwal</h1>
         <p className="text-app-body-sm text-muted-foreground">
-          {aktif.length} slot mingguan aktif · sesi diterbitkan otomatis tiap
-          malam
+          {aktif.length} slot mingguan aktif · sesi diterbitkan dari panel di
+          kanan, bukan otomatis
         </p>
       </div>
 
-      <div className="mt-dekat grid gap-dekat lg:grid-cols-[minmax(0,1fr)_26rem]">
+      <div className="mt-dekat grid gap-dekat lg:grid-cols-[minmax(0,1fr)_30rem]">
         <Kartu judul="Slot mingguan" padat>
           {aturan.length === 0 ? (
             <p className="p-4 text-app-body text-muted-foreground">
@@ -123,6 +125,7 @@ export default async function A7({
             }
             kembali="/admin/jadwal"
             sekarang={sekarang}
+            terbit
           />
         </div>
       </div>

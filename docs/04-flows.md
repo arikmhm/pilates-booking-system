@@ -271,7 +271,7 @@ jaring pengaman sesungguhnya ada di database: partial unique index
 `credit_ledger_hangus_key` (05-data-model.md bagian 4). Sama persis dengan alasan
 BR-2.3 tidak boleh memakai cek-lalu-insert.
 
-### 7.3 Generate sesi — harian · `UC-S01`
+### 7.3 Terbitkan sesi — ditekan di A7 · `UC-S01`
 
 ```mermaid
 flowchart LR
@@ -285,6 +285,17 @@ flowchart LR
 
 Kapasitas **disalin**, bukan di-join. Kalau nanti owner mengubah kapasitas jenis kelas,
 sesi yang sudah punya booking tidak ikut berubah.
+
+Satu-satunya dari empat job ini yang **tidak** terjadwal. Pemiliknya ingin tahu kapan
+jadwalnya bertambah, bukan menemukannya sudah bertambah — jadi pemicunya tombol
+"Terbitkan sekarang" di layar A7, dan `vercel.json` tidak memuat entri untuknya.
+Endpoint-nya tetap hidup: klien yang ingin kembali ke otomatis cukup menambah satu
+baris crontab.
+
+Idempotensinya justru jadi lebih penting, bukan kurang: tombol bisa ditekan dua kali
+karena halamannya lambat. Yang menjaganya index `sessions_rule_mulai_key`, sama seperti
+saat ia masih cron. Menurunkan jangka terbit tidak menghapus sesi yang terlanjur terbit
+di luar jangka baru — sebagian mungkin sudah ada pesertanya.
 
 ### 7.4 Tutup waitlist — tiap jam · `UC-S04`
 

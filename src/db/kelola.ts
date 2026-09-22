@@ -354,6 +354,58 @@ export async function hentikanAturan(sql: Sql, id: string) {
     update schedule_rules set berlaku_sampai = current_date - 1 where id = ${id}`;
 }
 
+/* ── Penerbitan sesi dari aturan — BR-7.1 ────────────────────────────────── */
+
+/**
+ * Jangka terbit: berapa minggu ke depan sesi dibangkitkan dari aturan.
+ *
+ * Batas atasnya bukan hiasan. Satu studio dengan 12 slot mingguan menerbitkan
+ * ~12 sesi per minggu; 26 minggu berarti ~312 baris sekali tekan, dan tiap
+ * baris itu kursi yang bisa dibooking orang. Menerbitkan setahun ke depan
+ * berarti menjanjikan jadwal yang belum tentu ada coach-nya.
+ */
+export const BATAS_TERBIT = [1, 26] as const;
+
+export type StatusTerbit = {
+  /** Sesi dari aturan yang masih akan datang. Sesi manual tidak dihitung. */
+  mendatang: number;
+  /** Sesi terjauh yang sudah terbit, atau null kalau belum ada. */
+  sampai: Date | null;
+  minggu: number;
+};
+
+export async function statusTerbit(
+  sql: Sql,
+  sekarang: Date,
+): Promise<StatusTerbit> {
+  const [r] = await sql<{ mendatang: number; sampai: string | null; minggu: number }[]>`
+    select count(s.id)::int as mendatang,
+           max(s.mulai_at) as sampai,
+           max(st.generate_weeks_ahead)::int as minggu
+      from studios st
+      left join sessions s
+        on s.studio_id = st.id
+       and s.schedule_rule_id is not null
+       and s.status = 'scheduled'
+       and s.mulai_at > ${ts(sekarang)}::timestamptz`;
+  return { ...r, sampai: r.sampai ? saat(r.sampai) : null };
+}
+
+/**
+ * Menurunkan jangka terbit TIDAK menghapus sesi yang terlanjur terbit di luar
+ * jangka baru — sebagian mungkin sudah ada pesertanya, dan menghapusnya
+ * membatalkan booking orang tanpa lewat Alur 5. Yang berubah cuma sampai mana
+ * penerbitan berikutnya berjalan.
+ */
+export async function simpanJangkaTerbit(
+  sql: Sql,
+  studio_id: string,
+  minggu: number,
+) {
+  await sql`
+    update studios set generate_weeks_ahead = ${minggu} where id = ${studio_id}`;
+}
+
 /** Hapus sesi mendatang yang belum punya booking sama sekali. */
 export async function bersihkanSesiKosong(sql: Sql, schedule_rule_id: string) {
   const baris = await sql<{ id: string }[]>`
