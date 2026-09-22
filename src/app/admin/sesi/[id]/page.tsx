@@ -89,7 +89,12 @@ export default async function A2({
                     {p.nomor_alat}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-app-body">{p.nama}</p>
+                    <Link
+                      href={`/admin/member/${p.user_id}`}
+                      className="text-app-body underline"
+                    >
+                      {p.nama}
+                    </Link>
                     <p className="text-app-body-sm text-muted-foreground">
                       {p.telepon}
                       {/* Penanda BR-3.5: orang ini baru dapat kursi dari

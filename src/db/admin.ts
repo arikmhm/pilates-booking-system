@@ -337,3 +337,97 @@ export async function koreksiNoShow(
     select (select count(*) from ubah) > 0 as ok`;
   return r.ok;
 }
+
+/* ── Layar A3 · Detail member ─────────────────────────────────────────── */
+
+export type Member = {
+  id: string;
+  nama: string;
+  telepon: string;
+  email: string | null;
+  peran: string;
+  created_at: Date;
+};
+
+export async function detailMember(sql: Sql, id: string): Promise<Member | null> {
+  const [u] = await sql<Member[]>`
+    select id, nama, telepon, email, peran, created_at
+      from users where id = ${id}`;
+  return u ? { ...u, created_at: saat(u.created_at) } : null;
+}
+
+export type BarisDompet = {
+  id: string;
+  paket: string;
+  dibeli_at: Date;
+  hangus_at: Date;
+  jumlah_kredit_awal: number;
+  sisa: number;
+  diperpanjang_at: Date | null;
+};
+
+/** Semua paket, termasuk yang sudah hangus — riwayat pembelian tidak dibuang.
+ *  BR-1.7: `sisa` dihitung dari buku besar, bukan kolom saldo. */
+export async function dompetMember(
+  sql: Sql,
+  user_id: string,
+): Promise<BarisDompet[]> {
+  const baris = await sql<BarisDompet[]>`
+    select mp.id, p.nama as paket, mp.dibeli_at, mp.hangus_at,
+           mp.jumlah_kredit_awal, mp.diperpanjang_at,
+           coalesce(sum(cl.delta), 0)::int as sisa
+      from member_packages mp
+      join packages p on p.id = mp.package_id
+      left join credit_ledger cl on cl.member_package_id = mp.id
+     where mp.user_id = ${user_id}
+     group by mp.id, p.nama
+     order by mp.hangus_at desc`;
+  return baris.map((b) => ({
+    ...b,
+    dibeli_at: saat(b.dibeli_at),
+    hangus_at: saat(b.hangus_at),
+    diperpanjang_at: b.diperpanjang_at ? saat(b.diperpanjang_at) : null,
+  }));
+}
+
+/** Batas wajar koreksi manual. Bukan aturan bisnis — pagar supaya salah ketik
+ *  tidak menambah 500 kredit dalam satu klik. */
+export const BATAS_KOREKSI = 20;
+
+/**
+ * BR-1.8 — koreksi manual ±, wajib isi alasan.
+ *
+ * Saldo tidak boleh jadi negatif: BR-1.7 menjadikan SUM(ledger) sebagai
+ * satu-satunya sumber kebenaran, dan saldo minus berarti angka yang
+ * ditampilkan ke member tidak punya arti. Dicek di dalam pernyataan yang
+ * sama, bukan dibaca dulu lalu ditulis — dua admin bisa mengoreksi bersamaan.
+ */
+export async function koreksiKredit(
+  sql: Sql,
+  args: {
+    member_package_id: string;
+    delta: number;
+    catatan: string;
+    pelaku_id: string;
+  },
+): Promise<{ ok: boolean; sisa: number }> {
+  const [r] = await sql<{ ok: boolean; sisa: number }[]>`
+    with sekarang as (
+      select coalesce(sum(delta), 0)::int as sisa
+        from credit_ledger
+       where member_package_id = ${args.member_package_id}
+    ), tulis as (
+      insert into credit_ledger
+        (member_package_id, booking_id, delta, alasan, pelaku_id, catatan)
+      select ${args.member_package_id}, null, ${args.delta}, 'koreksi',
+             ${args.pelaku_id}, ${args.catatan}
+        from sekarang
+       where sekarang.sisa + ${args.delta} >= 0
+      returning 1
+    )
+    select (select count(*) from tulis) > 0 as ok,
+           (select sisa from sekarang) + case
+             when (select count(*) from tulis) > 0 then ${args.delta} else 0
+           end as sisa`;
+  return r;
+}

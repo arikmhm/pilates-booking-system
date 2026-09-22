@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { pg } from "@/db";
 import {
+  BATAS_KOREKSI,
   BATAS_SETELAN,
   batalkanSesi,
+  koreksiKredit,
   detailSesi,
   koreksiNoShow,
   sesiSekelompok,
@@ -126,5 +128,46 @@ export async function koreksiHadir(formData: FormData) {
   keSesi(
     session_id,
     ok ? "Dikoreksi jadi hadir, 1 kredit dikembalikan." : "Booking itu bukan no-show.",
+  );
+}
+
+/* ── Layar A3 ─────────────────────────────────────────────────────────── */
+
+function keMember(id: string, pesan: string): never {
+  redirect(`/admin/member/${id}?kabar=${encodeURIComponent(pesan)}`);
+}
+
+/** BR-1.8 — koreksi kredit manual. Alasan wajib; itu yang membuat buku besar
+ *  bisa dipertanggungjawabkan saat member protes bulan depan. */
+export async function koreksiKreditManual(formData: FormData) {
+  const admin = await pastikanAdmin();
+  const user_id = String(formData.get("user_id"));
+  const member_package_id = String(formData.get("member_package_id"));
+  const delta = Number(formData.get("delta"));
+  const catatan = String(formData.get("catatan") ?? "").trim();
+
+  if (!Number.isInteger(delta) || delta === 0)
+    keMember(user_id, "Jumlah koreksi harus bilangan bulat dan tidak boleh 0.");
+  if (Math.abs(delta) > BATAS_KOREKSI)
+    keMember(user_id, `Koreksi maksimal ${BATAS_KOREKSI} kredit sekali jalan.`);
+  if (catatan.length < 3)
+    keMember(user_id, "Alasan koreksi wajib diisi, minimal 3 huruf.");
+
+  const hasil = await koreksiKredit(pg, {
+    member_package_id,
+    delta,
+    catatan,
+    pelaku_id: admin.id,
+  });
+
+  revalidatePath(`/admin/member/${user_id}`);
+  revalidatePath("/admin");
+  revalidatePath("/akun");
+
+  keMember(
+    user_id,
+    hasil.ok
+      ? `Koreksi ${delta > 0 ? "+" : ""}${delta} tercatat. Sisa paket sekarang ${hasil.sisa}.`
+      : `Ditolak — sisa paket cuma ${hasil.sisa}, koreksi itu membuatnya minus.`,
   );
 }

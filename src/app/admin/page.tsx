@@ -183,7 +183,12 @@ export default async function A1({
                   className="flex items-center justify-between gap-4 py-3"
                 >
                   <div>
-                    <p className="text-app-body">{o.nama}</p>
+                    <Link
+                      href={`/admin/member/${o.user_id}`}
+                      className="text-app-body underline"
+                    >
+                      {o.nama}
+                    </Link>
                     <p className="text-app-body-sm text-warn-foreground">
                       {o.sisa} kredit · hangus {selisihManusiawi(o.hangus_at, sekarang)}
                     </p>

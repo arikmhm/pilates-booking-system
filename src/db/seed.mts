@@ -11,6 +11,11 @@
 
 import postgres from "postgres";
 
+// CATATAN: tiap `sql(baris, ...)` di berkas ini menyebut kolomnya eksplisit.
+// postgres.js menyimpulkan daftar kolom dari kunci objek PERTAMA; satu objek
+// yang kekurangan kunci membuat kolom itu hilang dari INSERT tanpa galat apa
+// pun. Sudah dua kali menggigit di sini — lihat AGENTS.md.
+
 const STUDIO = "Studio Pilates Kenari";
 const WIB = 7; // UTC+7, tanpa DST
 
@@ -155,6 +160,7 @@ async function seed(sql: postgres.Sql) {
         durasi_menit: DURASI,
         warna: j.warna,
       })),
+      "studio_id", "nama", "kapasitas_default", "durasi_menit", "warna",
     )} returning id, nama, kapasitas_default`;
   const jenisId = Object.fromEntries(jenis.map((j) => [j.nama, j]));
 
@@ -167,12 +173,16 @@ async function seed(sql: postgres.Sql) {
   ];
   const orang = await sql`
     insert into users ${sql([
+      // Bentuk objek staf dan member HARUS sama persis — kalau salah satu
+      // kekurangan kunci, TypeScript menolak daftar kolomnya. Itu penjaga
+      // yang tepat: kunci yang hilang berarti kolom hilang dari INSERT.
       ...staf.map((s, i) => ({
         studio_id: studio.id,
         nama: s.nama,
         telepon: `08115500${String(i).padStart(2, "0")}`,
-        email: `${s.peran}${i}@kenari.test`,
+        email: `${s.peran}${i}@kenari.test` as string | null,
         peran: s.peran,
+        created_at: hariKe(-900), // studio berdiri lebih dulu dari membernya
       })),
       ...NAMA_MEMBER.map((nama, i) => ({
         studio_id: studio.id,
@@ -181,8 +191,13 @@ async function seed(sql: postgres.Sql) {
         // Sengaja tidak semua punya email — 02-rules.md pertanyaan terbuka 6.
         email: i % 3 === 0 ? null : `member${i}@kenari.test`,
         peran: "member",
+        // Tanpa ini semua member "bergabung hari ini", dan layar A3 studio
+        // yang katanya sudah jalan dua tahun terbaca seperti baru dipasang.
+        created_at: hariKe(-antara(20, 900)),
       })),
-    ])} returning id, nama, peran`;
+    ],
+      "studio_id", "nama", "telepon", "email", "peran", "created_at",
+    )} returning id, nama, peran`;
 
   const coach = orang.filter((o) => o.peran === "coach");
   const member = orang.filter((o) => o.peran === "member");
@@ -190,11 +205,13 @@ async function seed(sql: postgres.Sql) {
 
   /* 4 — paket. Harga dari seed demo 02-rules.md bagian 3. */
   const paket = await sql`
-    insert into packages ${sql([
+    insert into packages ${sql(
+    [
       { studio_id: studio.id, nama: "Drop-in", jumlah_kredit: 1, masa_berlaku_hari: 7, harga_rupiah: 150000 },
       { studio_id: studio.id, nama: "4 Sesi", jumlah_kredit: 4, masa_berlaku_hari: 30, harga_rupiah: 560000 },
       { studio_id: studio.id, nama: "10 Sesi Reformer", jumlah_kredit: 10, masa_berlaku_hari: 60, harga_rupiah: 1350000 },
-    ])} returning id, nama, jumlah_kredit, masa_berlaku_hari`;
+    ], "studio_id", "nama", "jumlah_kredit", "masa_berlaku_hari", "harga_rupiah",
+    )} returning id, nama, jumlah_kredit, masa_berlaku_hari`;
   const paketId = Object.fromEntries(paket.map((p) => [p.nama, p]));
 
   // BR-1.4 — "10 Sesi Reformer" hanya untuk kelas beralat; Mat tidak masuk.
@@ -206,7 +223,7 @@ async function seed(sql: postgres.Sql) {
     if (j.nama !== "Mat")
       izin.push({ package_id: paketId["10 Sesi Reformer"].id, class_type_id: jenisId[j.nama].id });
   }
-  await sql`insert into package_class_types ${sql(izin)}`;
+  await sql`insert into package_class_types ${sql(izin, "package_id", "class_type_id")}`;
 
   /* 5 — aturan jadwal berulang, 2 coach bergantian */
   const aturan: Record<string, unknown>[] = [];
@@ -228,7 +245,10 @@ async function seed(sql: postgres.Sql) {
     }
   }
   const aturanRows = await sql`
-    insert into schedule_rules ${sql(aturan)} returning id, hari, jam_mulai, class_type_id, coach_id`;
+    insert into schedule_rules ${sql(
+      aturan, "studio_id", "class_type_id", "coach_id", "hari", "jam_mulai",
+      "kapasitas", "level", "berlaku_dari", "berlaku_sampai",
+    )} returning id, hari, jam_mulai, class_type_id, coach_id`;
 
   /* 6 — sesi nyata, 1 minggu lampau + 3 minggu depan = 4 minggu (6.2) */
   const sesiBaris: Record<string, unknown>[] = [];
@@ -253,7 +273,7 @@ async function seed(sql: postgres.Sql) {
     }
   }
 
-  // Sesi "nanti malam" — 8 jam lagi. Di luar jendela tutup booking (1 jam),
+  // Sesi "dalam 8 jam" — di luar jendela tutup booking (1 jam),
   // di dalam jendela batal (12 jam): inilah yang mendemokan BR-3.2.
   sesiBaris.push({
     studio_id: studio.id,
@@ -267,7 +287,10 @@ async function seed(sql: postgres.Sql) {
   });
 
   const sesi = await sql`
-    insert into sessions ${sql(sesiBaris)}
+    insert into sessions ${sql(
+      sesiBaris, "studio_id", "schedule_rule_id", "class_type_id", "coach_id",
+      "mulai_at", "durasi_menit", "kapasitas", "status",
+    )}
     returning id, schedule_rule_id, class_type_id, mulai_at, kapasitas`;
 
   /* 7 — paket milik member + ledger pembelian */
@@ -295,7 +318,9 @@ async function seed(sql: postgres.Sql) {
     });
   }
   const mpRows = await sql`
-    insert into member_packages ${sql(mp)} returning id, user_id, package_id`;
+    insert into member_packages ${sql(
+      mp, "user_id", "package_id", "dibeli_at", "hangus_at", "jumlah_kredit_awal",
+    )} returning id, user_id, package_id`;
 
   const ledger: Record<string, unknown>[] = [];
   for (let i = 0; i < mpRows.length; i++) {
@@ -332,10 +357,16 @@ async function seed(sql: postgres.Sql) {
     kredit[i].sisa > (i < 5 ? 3 : antreanDijaga.has(i) ? 1 : 0) &&
     (!kredit[i].reformer_saja || ctId !== jenisId["Mat"].id);
 
-  // Sesi besok pagi paling awal → dipaksa penuh 8/8 + waitlist 3 (skenario B)
+  // Sesi besok pagi paling awal → dipaksa penuh 8/8 + waitlist 3 (skenario B).
+  //
+  // `schedule_rule_id !== null` WAJIB: sesi "dalam 8 jam" dibuat manual, dan
+  // kalau seed dijalankan sore hari, +8 jam jatuh besok pagi. Tanpa saringan
+  // ini sesi yang sama terpilih dua kali dan diisi dua kali — langsung
+  // melanggar unique index kapasitas. Bug yang cuma muncul sesudah ~16.00 WIB.
   const besokPagi = sesi
     .filter(
       (s) =>
+        s.schedule_rule_id !== null &&
         s.mulai_at >= jamWib(1, 0, 0) &&
         s.mulai_at < jamWib(2, 0, 0) &&
         s.kapasitas === 8,
@@ -352,11 +383,15 @@ async function seed(sql: postgres.Sql) {
 
   // Sesi penuh dan sesi nanti malam diproses DULU: keduanya wajib ada isinya,
   // dan kalau ikut antre di akhir bisa kehabisan member yang masih punya kredit.
+  // Dedupe lewat Map: kalaupun daftar di atas pernah memuat sesi yang sama
+  // dua kali lagi, tiap sesi tetap diproses sekali.
   const urutan = [
-    besokPagi,
-    malamIni,
-    ...sesi.filter((s) => s.id !== besokPagi?.id && s.id !== malamIni.id),
-  ].filter(Boolean);
+    ...new Map(
+      [besokPagi, malamIni, ...sesi]
+        .filter(Boolean)
+        .map((s) => [s.id, s] as const),
+    ).values(),
+  ];
 
   for (const s of urutan) {
     if (s.mulai_at > batasBooking) continue;
@@ -447,7 +482,10 @@ async function seed(sql: postgres.Sql) {
   }
 
   const bookingRows = await sql`
-    insert into bookings ${sql(bookingBaris)}
+    insert into bookings ${sql(
+      bookingBaris, "session_id", "user_id", "member_package_id", "nomor_alat",
+      "status", "sumber", "created_at", "dibatalkan_at",
+    )}
     returning id, status, session_id, user_id`;
 
   // Dipetakan lewat (session_id, user_id), bukan lewat urutan baris: urutan
@@ -462,7 +500,9 @@ async function seed(sql: postgres.Sql) {
   }
 
   if (waitlistBaris.length)
-    await sql`insert into waitlist_entries ${sql(waitlistBaris)}`;
+    await sql`insert into waitlist_entries ${sql(
+      waitlistBaris, "session_id", "user_id", "status", "created_at",
+    )}`;
 
   // Kolom ditulis eksplisit. postgres.js menyimpulkan daftar kolom dari kunci
   // objek PERTAMA; baris pertama di sini 'beli' yang tidak punya booking_id,
@@ -531,7 +571,7 @@ async function seed(sql: postgres.Sql) {
   console.log(`  baris ledger      ${cek.ledger}`);
   console.log(`  panel A1 ≤ 7 hari ${cek.panel_a1} orang`);
   console.log(`  sesi penuh besok  ${besokPagi ? besokPagi.mulai_at.toISOString() : "TIDAK ADA"}`);
-  console.log(`  sesi nanti malam  ${jamKe(8).toISOString()}`);
+  console.log(`  sesi dalam 8 jam  ${jamKe(8).toISOString()}`);
   console.log(`  admin demo        ${admin.nama}`);
   console.log(`  antrean berkredit ${antreSiap.n} dari ${waitlistBaris.length}`);
 
