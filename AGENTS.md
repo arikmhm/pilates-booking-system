@@ -1,0 +1,117 @@
+# AGENTS.md
+
+Sistem booking kelas pilates untuk satu studio di Kudus, Jawa Tengah. Model
+**class-based**: member memilih sesi yang sudah dijadwalkan studio.
+
+**Mulai tiap sesi dengan membaca `STATUS.md`** — tahap sekarang, yang sedang dikerjakan,
+langkah berikutnya, dan log perubahan. Akhiri tiap sesi yang mengubah sesuatu dengan
+memperbaruinya.
+
+---
+
+## Tiga invarian
+
+Sumber kebenaran tunggal. Langgar salah satu, sistemnya rusak diam-diam.
+
+| Invarian | Kenapa |
+|---|---|
+| **Kapasitas dijaga partial unique index di database**, bukan cek-dulu-baru-insert | BR-2.3 — pola cek-lalu-insert selalu bocor saat dua orang menyerbu kursi terakhir |
+| **Sisa kredit = `SUM(credit_ledger.delta)`.** Tidak ada kolom saldo | BR-1.7 — sengketa kredit harus bisa dibuktikan baris per baris |
+| **`timestamptz` disimpan UTC**, ditampilkan WIB | BR-7.5 — tanggal bertipe string dilarang |
+
+Delapan titik rawan turunannya ada di `docs/04-flows.md` bagian 9. Itu daftar yang wajib
+punya test begitu koding dimulai.
+
+---
+
+## Dokumen
+
+Rujuk selalu dengan ID tetap — `BR-3.2`, `UC-S05`, `Alur 4` — di kode, komentar, dan commit.
+
+| Buka | Saat |
+|---|---|
+| `docs/01-product.md` | Menimbang lingkup, prioritas, metrik, atau apa yang dijual |
+| `docs/02-rules.md` | **Menulis logika apa pun.** 53 aturan `BR-x.y`, setelan default, batas demo vs real |
+| `docs/03-use-cases.md` | Menambah layar atau aksi — pastikan use case-nya sudah terdaftar |
+| `docs/04-flows.md` | Menulis percabangan: booking, pembatalan, waitlist, job terjadwal |
+| `docs/05-data-model.md` | Menyentuh skema, query, constraint, atau index |
+| `docs/06-architecture.md` | Menimbang dependency, lapisan, atau target deploy |
+
+Fitur di luar daftar `docs/02-rules.md` bagian 5 adalah fase 2 — tawarkan, jangan bangun.
+
+---
+
+## Konvensi penamaan
+
+| Hal | Bahasa | Contoh |
+|---|---|---|
+| Nama tabel | Inggris, jamak | `bookings`, `member_packages`, `credit_ledger` |
+| Kolom domain | Indonesia | `hangus_at`, `nomor_alat`, `jumlah_kredit`, `alasan` |
+| Kolom baku | Inggris | `id`, `status`, `created_at`, `delta` |
+| Nilai enum | Inggris snake_case | `confirmed`, `no_show` |
+| Timestamp | Akhiran `_at` | `mulai_at`, `dibayar_at`, `dipromosikan_at` |
+| Teks ke pengguna | Indonesia | "Kredit kamu habis atau sudah lewat masa berlaku." |
+| Komentar dan commit | Indonesia | `// BR-3.2: batal telat, kredit dibiarkan hangus` |
+
+Pengecualian: nilai `credit_ledger.alasan` memakai Indonesia (`batal_telat`, `hangus`)
+karena tampil apa adanya di layar riwayat kredit member.
+
+**Uang:** integer Rupiah tanpa desimal — `harga_rupiah`, bukan `price`.
+
+---
+
+## Stack
+
+| Lapisan | Pilihan |
+|---|---|
+| Framework | Next.js App Router — Server Components + Server Actions, tanpa lapisan API |
+| Database | PostgreSQL |
+| Akses DB | Drizzle — `sql` mentah untuk query atomik dan agregat ledger |
+| UI | Tailwind + shadcn/ui |
+| Auth | Session token di tabel + cookie httpOnly |
+| Email | SMTP lewat nodemailer |
+| Test | Vitest — hanya 8 titik rawan |
+| Deploy | Demo: Vercel · Produksi: VPS per klien, Docker Compose |
+
+Alasan tiap pilihan dan daftar yang sengaja **tidak** dipakai: `docs/06-architecture.md`.
+
+## Aturan menulis kode
+
+**Portabel.** Tanpa API khusus platform — tanpa Vercel Blob, tanpa Edge runtime,
+tanpa SDK bawaan host. Target deploy diputuskan per klien saat serah terima, dan
+pilihan itu harus tetap terbuka.
+
+**Job lewat HTTP.** Empat job terjadwal jadi endpoint biasa berpenjaga secret,
+dipanggil Vercel Cron di demo dan `crontab` di VPS. Kode sama, beda satu baris config.
+
+**Aturan bisnis = fungsi murni.** `src/rules/` tidak mengimpor db, tidak async — hanya
+input → keputusan. Server action yang membaca dan menulis database. Seam ini yang
+membuat 8 titik rawan benar-benar bisa di-test.
+
+*Hapus bagian Stack begitu `package.json` ada — setelah itu environment yang jadi sumber kebenaran.*
+
+---
+
+## Merawat dokumen
+
+Satu perubahan menyentuh beberapa berkas. Rambatkan ke semuanya dalam sesi yang sama,
+selagi konteksnya masih di kepala.
+
+| Yang berubah | Ikut diperbarui |
+|---|---|
+| Aturan bisnis `BR-x.y` | `02-rules.md` · `04-flows.md` (alur yang memakainya) · `03-use-cases.md` kalau ada UC baru |
+| Kolom atau tabel | `05-data-model.md` (ERD, tabel, query, index) · `04-flows.md` kalau namanya disebut · konvensi di berkas ini kalau polanya baru |
+| Batas demo vs real | `02-rules.md` bagian 5 · kolom Demo dan rekap di `03-use-cases.md` · rilis di `01-product.md` |
+| Dependency atau lapisan | `06-architecture.md` · tabel Stack di berkas ini |
+| Use case baru | `03-use-cases.md` (diagram, tabel, rekap bagian 7) · `04-flows.md` kalau punya percabangan |
+| **Apa pun** | `STATUS.md` — tambah satu baris di Log |
+
+Angka yang diklaim dokumen (53 aturan, 44 use case, 12 tabel, 12 alur) harus tetap cocok
+dengan isinya. Jalankan sebelum commit:
+
+```bash
+./check-docs.sh
+```
+
+Skrip itu menghitung ulang keempat angka dan mencari link `.md` yang mati. Kalau meleset,
+perbaiki dokumennya lalu perbarui angka harapan di dalam skrip.
