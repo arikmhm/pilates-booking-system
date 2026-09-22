@@ -1,6 +1,8 @@
 # 07 — Sistem Desain
 
-Sumber: `thepilatesclass.com`. Disesuaikan untuk **aplikasi booking**, bukan halaman
+Sumber: `thepilatesclass.com` — ekstraksi mentahnya diarsipkan di
+[sumber/thepilatesclass.com-design.md](sumber/thepilatesclass.com-design.md), hanya
+sebagai rujukan asal. Disesuaikan untuk **aplikasi booking**, bukan halaman
 pemasaran. Identitas visual tetap: lapang, editorial, tenang, putih dominan, aksen
 lime hanya untuk aksi utama.
 
