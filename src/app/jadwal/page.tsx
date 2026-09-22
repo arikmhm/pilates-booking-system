@@ -345,18 +345,37 @@ export default async function M1({
     mode === "member" && pilih
       ? (baris.find((b) => b.id === pilih) ?? null)
       : null;
-  const bolehKonfirmasi =
-    sesiPilih !== null &&
-    sesiPilih.terisi < sesiPilih.kapasitas &&
-    bolehBooking({
-      sesi: sesiPilih,
-      setelan,
-      paket,
-      booking_aktif: aktif,
-      sekarang,
-    }).boleh;
+  const putusanPilih = sesiPilih
+    ? bolehBooking({
+        sesi: sesiPilih,
+        setelan,
+        paket,
+        booking_aktif: aktif,
+        sekarang,
+      })
+    : null;
+  const penuhPilih = sesiPilih ? sesiPilih.terisi >= sesiPilih.kapasitas : false;
+  const bolehKonfirmasi = putusanPilih?.boleh === true && !penuhPilih;
   const terpakai =
     sesiPilih && bolehKonfirmasi ? await alatTerpakai(pg, sesiPilih.id) : [];
+
+  /**
+   * `?pilih=` yang tidak bisa dibuka harus bersuara.
+   *
+   * Tanpa ini halaman kembali persis seperti semula dan kliknya terasa tidak
+   * terjadi — padahal justru ada yang terjadi: kursi terakhir keburu diambil
+   * antara halaman digambar dan bloknya diklik, atau tautannya sudah basi.
+   */
+  const kabarPilih =
+    !pilih || mode !== "member" || bolehKonfirmasi
+      ? undefined
+      : !sesiPilih
+        ? "Kelas itu tidak ada di minggu yang sedang dibuka."
+        : penuhPilih
+          ? "Kelas itu baru saja penuh. Bloknya sekarang jadi tombol daftar tunggu."
+          : putusanPilih && !putusanPilih.boleh
+            ? putusanPilih.pesan
+            : undefined;
 
   // Dikelompokkan per hari WIB, bukan per hari UTC — kelas 06.00 WIB jatuh di
   // tanggal sebelumnya kalau dihitung UTC (BR-7.5).
@@ -374,7 +393,7 @@ export default async function M1({
       peran={saya.peran}
       aktif="/jadwal"
       judul="Jadwal Kelas"
-      kabar={kabar}
+      kabar={kabar ?? kabarPilih}
     >
       {/* DS-40 — rentang tanggal, geser minggu, dan saringan alat jadi SATU
           bilah di kiri atas. Sebelumnya rentangnya judul besar sendiri dengan
