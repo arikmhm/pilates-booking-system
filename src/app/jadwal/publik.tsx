@@ -14,21 +14,22 @@
 import Link from "next/link";
 import { BilahPublik, FOTO } from "@/components/bilah-publik";
 
+/** Satu lebar untuk hero, jadwal, dan ajakan — supaya tepinya segaris. */
+const LEBAR = "mx-auto w-full max-w-6xl px-gutter";
+
 export function RangkaPublik({
   judul,
-  catatan,
   kabar,
   children,
 }: {
   judul: string;
-  catatan: string;
   /** Pesan sesudah aksi yang gagal — sama perannya dengan `kabar` di Kerangka. */
   kabar?: string;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex min-h-full flex-1 flex-col bg-background">
-      <BilahPublik aktif="/jadwal" />
+      <BilahPublik aktif="/jadwal" lebar="max-w-6xl" />
 
       {/* Hero pendek — DS-46. Sepertiga tinggi hero halaman profil: di sini
           orang datang untuk membaca jadwal, bukan untuk dibujuk, dan hero
@@ -61,7 +62,7 @@ export function RangkaPublik({
           Kenari
         </span>
 
-        <div className="relative mx-auto w-full max-w-[1200px] px-gutter pb-5">
+        <div className={`relative ${LEBAR} pb-5`}>
           <p className="text-app-label uppercase tracking-[0.18em] text-white/70">
             Studio Pilates Kenari
           </p>
@@ -69,25 +70,20 @@ export function RangkaPublik({
         </div>
       </section>
 
-      <main className="mx-auto w-full max-w-[1200px] flex-1 px-gutter py-sedang">
-        <p className="max-w-[60ch] text-app-body text-muted-foreground">
-          {catatan}
-        </p>
-
+      <main className={`${LEBAR} flex-1 py-sedang`}>
         {kabar && (
-          <p className="mt-dekat rounded-md border border-border bg-muted p-4 text-app-body-sm">
+          <p className="mb-dekat rounded-md border border-border bg-muted p-4 text-app-body-sm">
             {kabar}
           </p>
         )}
-
-        <div className="mt-sedang">{children}</div>
+        {children}
       </main>
 
       {/* Satu ajakan saja di kaki halaman. Tamu yang sudah melihat jadwalnya
           cuma punya dua langkah berikutnya yang masuk akal: punya kredit lalu
           masuk, atau belum punya dan perlu paketnya. */}
       <section className="border-t border-border bg-surface-sand">
-        <div className="mx-auto flex w-full max-w-[1200px] flex-wrap items-center justify-between gap-4 px-gutter py-sedang">
+        <div className={`${LEBAR} flex flex-wrap items-center justify-between gap-4 py-sedang`}>
           <div>
             <p className="text-app-section">Sudah punya kredit?</p>
             <p className="max-w-[46ch] text-app-body-sm text-muted-foreground">

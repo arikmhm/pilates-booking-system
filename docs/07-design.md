@@ -375,6 +375,23 @@ gantinya ada **keterangan warna** di atas kalender — tamu baru pertama kali
 melihat kalender ini, dan DS-14 cuma menjamin tiap blok berteks, bukan bahwa tiga
 rupa itu langsung terbaca maknanya.
 
+Tata letaknya dibaca dari atas ke bawah tanpa belokan: hero pendek (`DS-46`) →
+**saringan alat** → kalender → keterangan warna. Saringan naik ke atas karena
+pertanyaan pertama tamu adalah "ada kelas apa saja", bukan "minggu yang mana";
+kendali minggu duduk di ujung kanan baris yang sama (turun ke bawahnya di HP).
+Keterangan warna justru dipasang **di bawah** kalender: ia penjelasan, bukan
+pengantar — ditaruh di atas, ia jadi hal pertama yang dibaca padahal belum ada
+yang perlu dijelaskan.
+
+Hero, saringan, kalender, dan ajakan penutup memakai satu lebar — `max-w-6xl`,
+di tengah — dan bilah atasnya ikut lebar itu lewat prop `lebar`. Bilah yang
+tepinya meleset dari isi di bawahnya terbaca sebagai dua kolom yang tidak
+segaris, bukan satu halaman.
+
+Halaman ini **tidak punya paragraf pengantar**. Kalimat "jadwal lengkap studio,
+minggu per minggu" cuma menamai ulang apa yang sudah kelihatan sendiri di
+kalendernya, dan ia mendorong jadwalnya turun satu baris untuk itu.
+
 Dua hal yang membuat janji itu benar-benar bisa ditagih:
 
 - **Cookie basi diperlakukan sebagai tamu.** Sesudah `db:seed` id user berganti,
@@ -619,7 +636,18 @@ kalau tidak, pindah ke minggu yang kosong membuat pilihannya tidak bisa dilepas 
 **Kisi 12 kolom, 8 untuk kalender dan 4 untuk panel buat-kelas, pisah di 1280px** —
 sama seperti `DS-36`. Formulir itu dulu tinggal di layar Aturan Jadwal, padahal
 pertanyaan yang dijawabnya ("ada lubang di sini, isi apa?") selalu muncul sambil
-melihat kalendernya.
+melihat kalendernya. Delapan kolom itu berlaku **hanya kalau panelnya ada**:
+member, coach, dan tamu tidak melihat `BuatKelas`, jadi kalendernya memakai
+kedua belas kolom. Kalender yang menyisakan sepertiga layar kosong membayar
+ruang untuk panel yang tidak pernah digambar.
+
+**Saringan tidak pernah patah dua baris.** Lima chip yang turun ke baris kedua
+mendorong kalender setengah layar ke bawah, tepat di lebar yang layarnya paling
+sempit. Di bawah `sm` hurufnya yang mengecil (10px — satu-satunya tempat di luar
+skala `DS-4`), jaraknya merapat, dan "Semua alat" jadi "Semua"; tinggi sentuh
+44px tidak ikut dikorbankan (`DS-11`). Lima chip pas di 375px, dan
+`overflow-x-auto` tetap terpasang sebagai katup untuk studio yang punya jenis
+kelas keenam.
 
 **Satu formulir, dua mode, dua layar.** `BuatKelas` melayani kelas sekali jalan dan
 slot mingguan berulang; sakelarnya lewat URL (`?buat=berulang`), bukan state klien.

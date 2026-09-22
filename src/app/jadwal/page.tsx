@@ -233,6 +233,13 @@ function Geser({
  *
  * Angka di sebelah nama adalah jumlah sesi minggu INI, bukan total: yang
  * ditanya orang di depan kalender selalu "minggu ini ada berapa".
+ *
+ * Di HP barisnya TIDAK boleh turun — lima chip yang patah jadi dua baris
+ * mendorong kalender turun setengah layar. Karena itu hurufnya yang mengecil
+ * (10px, satu-satunya tempat di luar skala DS-4) dan "Semua alat" jadi
+ * "Semua"; tinggi sentuhnya tetap 44px (DS-11). Lima chip pas di 375px dengan
+ * sisa 2px, jadi `overflow-x-auto` tetap dipasang sebagai katup: studio yang
+ * punya jenis kelas kelima harus bisa menggesernya, bukan kehilangannya.
  */
 function Saringan({
   daftar,
@@ -244,8 +251,8 @@ function Saringan({
   tautan: (alat: string) => string;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-1 rounded-sm border border-border p-1">
-      {([["", "Semua alat", daftar.reduce((t, [, n]) => t + n, 0)]] as [
+    <div className="flex w-full items-center gap-0.5 overflow-x-auto rounded-sm border border-border p-1 sm:w-auto sm:gap-1">
+      {([["", "Semua", daftar.reduce((t, [, n]) => t + n, 0)]] as [
         string,
         string,
         number,
@@ -258,7 +265,7 @@ function Saringan({
               key={nilai || "semua"}
               href={tautan(nilai)}
               aria-current={dipilih ? "true" : undefined}
-              className={`inline-flex min-h-11 items-center gap-2 rounded-sm px-3 text-app-label uppercase transition-colors ${
+              className={`inline-flex min-h-11 shrink-0 items-center gap-1 rounded-sm px-1.5 text-[0.625rem] uppercase tracking-[0.04em] transition-colors sm:gap-2 sm:px-3 sm:text-app-label ${
                 dipilih
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground"
@@ -434,42 +441,55 @@ export default async function M1({
   // aplikasi rentang tanggal inilah satu-satunya judul halaman.
   const Judul = mode === "tamu" ? "h2" : "h1";
 
+  const bilahMinggu = (
+    <div className="flex items-center gap-3">
+      <Judul className="text-app-section tabular-nums whitespace-nowrap">
+        {rentang}
+      </Judul>
+      <div className="flex items-center gap-1">
+        <Geser
+          href={url({ minggu: geser - 1 })}
+          anak={<ChevronLeft className="size-4" />}
+          label="Minggu sebelumnya"
+        />
+        <Geser
+          href={url({ minggu: 0 })}
+          anak="Minggu ini"
+          label="Kembali ke minggu ini"
+        />
+        <Geser
+          href={url({ minggu: geser + 1 })}
+          anak={<ChevronRight className="size-4" />}
+          label="Minggu berikutnya"
+        />
+      </div>
+    </div>
+  );
+
+  const saringan = (
+    <Saringan daftar={daftarAlat} aktif={alat} tautan={(a) => url({ alat: a })} />
+  );
+
   const isi = (
     <>
       {/* DS-40 — rentang tanggal, geser minggu, dan saringan alat jadi SATU
           bilah di kiri atas. Sebelumnya rentangnya judul besar sendiri dengan
           subjudul di bawahnya; dua baris untuk keterangan yang cuma menamai
-          apa yang sudah terbaca di kepala kolom kalender. */}
-      <div className="flex flex-wrap items-center gap-dekat">
-        <div className="flex items-center gap-3">
-          <Judul className="text-app-section tabular-nums whitespace-nowrap">
-            {rentang}
-          </Judul>
-          <div className="flex items-center gap-1">
-            <Geser
-              href={url({ minggu: geser - 1 })}
-              anak={<ChevronLeft className="size-4" />}
-              label="Minggu sebelumnya"
-            />
-            <Geser
-              href={url({ minggu: 0 })}
-              anak="Minggu ini"
-              label="Kembali ke minggu ini"
-            />
-            <Geser
-              href={url({ minggu: geser + 1 })}
-              anak={<ChevronRight className="size-4" />}
-              label="Minggu berikutnya"
-            />
-          </div>
+          apa yang sudah terbaca di kepala kolom kalender.
+          Tamu membalik urutannya: sesudah hero yang cuma menamai halaman,
+          yang pertama dicari orang adalah kelas apa saja yang ada — barulah
+          minggu yang mana. */}
+      {mode === "tamu" ? (
+        <div className="flex flex-col gap-dekat sm:flex-row sm:items-center sm:justify-between">
+          {saringan}
+          {bilahMinggu}
         </div>
-
-        <Saringan
-          daftar={daftarAlat}
-          aktif={alat}
-          tautan={(a) => url({ alat: a })}
-        />
-      </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-dekat">
+          {bilahMinggu}
+          {saringan}
+        </div>
+      )}
 
       {mode === "member" && (
         <div className="mt-dekat">
@@ -506,18 +526,12 @@ export default async function M1({
         </div>
       )}
 
-      {mode === "tamu" && (
-        <div className="mt-dekat">
-          <Keterangan />
-        </div>
-      )}
-
       {/* DS-40 — 12 kolom: kalender 8, panel buat-kelas 4. Di bawah xl
           keduanya menumpuk; 8/12 dari 1024px menyisakan kalender 480px, dan
           kalender yang harus digulung mendatar sejak kolom pertama bukan
           kalender lagi. */}
       <div className="mt-dekat grid grid-cols-12 gap-dekat">
-        <div className="col-span-12 min-w-0 xl:col-span-8">
+        <div className={`col-span-12 min-w-0 ${staf ? "xl:col-span-8" : ""}`}>
           {/* Minggu kosong tetap menggambar kalendernya. Mengganti kalender
               dengan satu kalimat membuat sumbu harinya ikut hilang, dan yang
               justru ingin dibaca dari minggu kosong adalah bentuk kosongnya —
@@ -566,6 +580,15 @@ export default async function M1({
         )}
       </div>
 
+      {/* Keterangan warna duduk DI BAWAH jadwal: ia penjelasan, bukan
+          pengantar. Ditaruh di atas, ia jadi hal pertama yang dibaca orang
+          padahal belum ada yang perlu dijelaskan. */}
+      {mode === "tamu" && (
+        <div className="mt-dekat">
+          <Keterangan />
+        </div>
+      )}
+
       {sesiPilih && bolehKonfirmasi && (
         <Konfirmasi
           sesi={sesiPilih}
@@ -580,11 +603,7 @@ export default async function M1({
 
   if (!saya)
     return (
-      <RangkaPublik
-        judul="Jadwal Kelas"
-        catatan="Jadwal lengkap studio, minggu per minggu. Kelas yang masih punya kursi bisa diklik untuk masuk dan memesannya — satu kredit untuk satu kelas."
-        kabar={kabar}
-      >
+      <RangkaPublik judul="Jadwal Kelas" kabar={kabar}>
         {isi}
       </RangkaPublik>
     );
