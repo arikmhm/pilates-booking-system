@@ -2,7 +2,7 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** 13 layar + 4 job terjadwal selesai · sisa latihan presentasi dan deploy
+**Tahap:** 14 layar + 4 job terjadwal selesai · sisa latihan presentasi dan deploy
 **Terakhir diperbarui:** 2026-09-23
 
 ---
@@ -24,8 +24,8 @@ presentasi dan deploy.
 - [x] Model booking dipilih: class-based
 - [x] 53 aturan bisnis `BR-1.1`–`BR-9.5`
 - [x] Model data — 12 tabel inti, constraint, 4 query kunci
-- [x] 46 use case, 12 alur keputusan
-- [x] Lingkup demo: 38 dari 46 use case nyata, 11 layar
+- [x] 50 use case, 12 alur keputusan
+- [x] Lingkup demo: 42 dari 50 use case nyata, 14 layar
 - [x] Stack dan arsitektur diputuskan
 - [x] Notifikasi: email + tombol kirim-WA, WhatsApp API ditunda
 - [x] Sistem desain — token, tipografi, komponen, status, pemetaan 6 layar
@@ -88,6 +88,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-23 | **Layar Transaksi** — satu rute `/transaksi`, empat tampilan (UC-M14, UC-A17, UC-O09, UC-C03). Member melihat tiap paket yang dibelinya beserta nasib kreditnya (jadi kelas · kembali · hangus), coach melihat kredit yang terpakai di kelas yang ia ajar tanpa satu pun angka rupiah, admin melihat buku transaksi studio plus kredit yang dipindah tangan lewat koreksi manual, dan pemilik melihat buku yang sama **plus** omzet, rata-rata, dan nilai kredit hangus (BR-9.1). Tanpa tabel baru: `payments` masih fase dua (BR-8.1–8.2), jadi yang dibaca `member_packages` + `credit_ledger`. Dua test integrasi, dibuktikan lewat mutasi — kursi yang batal tepat waktu sempat terhitung memakan kredit karena query cuma membaca baris `booking` dan melewatkan baris balasannya |
 | 2026-09-23 | Sidebar staf dikelompokkan ulang menurut "saya mau mengurus apa": Dashboard berdiri sendiri, lalu **Jadwal** (Jadwal Kelas · Aturan Jadwal), **Member** (Direktori Member · Pesan Terkirim), **Studio** (Pelatih & Staf · Layanan & Paket · Halaman Publik), dan **Bisnis** (Laporan, hanya owner — BR-9.1). Sebelumnya sembilan butir dalam dua kelompok yang menamai waktu, bukan urusan. Akordeon sidebar-07 shadcn sempat dipasang lalu dilepas lagi: tiap kelompok cuma dua sampai tiga butir dan semuanya terbuka sejak awal, jadi yang ditambahkan hanya tombol untuk menyembunyikan isi sidebar plus satu komponen klien di kerangka yang selebihnya dirender server (DS-33) |
 | 2026-09-23 | Tata letak jadwal publik dirapikan: paragraf pengantar dihapus (ia cuma menamai ulang isi kalendernya), sesudah hero langsung **saringan alat** — pertanyaan pertama tamu adalah "ada kelas apa", bukan "minggu yang mana" — dengan kendali minggu di ujung kanan baris yang sama, dan keterangan warna pindah ke **bawah** kalender. Hero, saringan, kalender, dan ajakan penutup satu lebar `max-w-6xl` di tengah; bilah atas ikut lebar itu lewat prop `lebar` supaya tepinya segaris. Kalender memakai 12 kolom penuh kalau panel `BuatKelas` tidak digambar — sebelumnya member, coach, dan tamu menyisakan sepertiga layar kosong untuk panel yang memang tidak ada. Saringan tidak pernah patah dua baris di HP: huruf 10px, "Semua alat" jadi "Semua", lima chip pas di 375px dengan tinggi sentuh 44px utuh (DS-40, DS-45) |
 | 2026-09-23 | Jadwal publik dapat **hero pendek** — 160px di HP, 208px di laptop, 41% tinggi hero halaman profil supaya kalendernya sudah terlihat tanpa menggulung. Bahannya sama persis dengan halaman profil: blok gradien `photo-warm` (fotonya belum ada, DS-25) dengan tirai `photo-scrim` yang kali ini bergradasi dari bawah, karena judul "Jadwal Kelas" duduk di dasar hero. Di tepi bawah ada wordmark raksasa `text-white/10` yang terpotong batas hero — hiasan `aria-hidden`, disembunyikan di HP; yang diberi opasitas hiasannya, bukan judulnya. `FOTO` pindah ke `components/bilah-publik.tsx` supaya kedua hero memakai satu nilai (DS-46) |

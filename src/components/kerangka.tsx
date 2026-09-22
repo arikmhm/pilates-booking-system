@@ -18,6 +18,7 @@ import {
   LogOut,
   MessageSquare,
   Package,
+  Receipt,
   Repeat,
   Store,
   UserCog,
@@ -59,6 +60,16 @@ const JADWAL_KELAS: Butir = {
   href: "/jadwal",
   label: "Jadwal Kelas",
   ikon: CalendarDays,
+};
+
+// Satu rute, empat tampilan (UC-M14, UC-A17, UC-O09, UC-C03) — jadi satu nama
+// juga. Member melihat pembeliannya sendiri, coach melihat kredit yang terpakai
+// di kelasnya, staf melihat buku transaksi studio, dan pemilik melihat angka
+// uangnya (BR-9.1).
+const TRANSAKSI: Butir = {
+  href: "/transaksi",
+  label: "Transaksi",
+  ikon: Receipt,
 };
 
 // DS-33 — satu peran, satu daftar; yang tidak bisa dipakai peran itu tidak
@@ -106,29 +117,38 @@ const STAF: Grup[] = [
   },
 ];
 
-// BR-9.1 — angka uang hanya untuk pemilik. Staf resepsionis melihat semuanya
-// kecuali ini, dan kelompok sendiri membuat batas itu terbaca sekali lihat.
-const BISNIS: Grup = {
+// Buku transaksi dibuka staf mana pun; Laporan tidak (BR-9.1). Keduanya duduk
+// di kelompok yang sama supaya batas itu terbaca sekali lihat: admin melihat
+// kelompok Bisnis berisi satu butir, pemilik dua.
+const BISNIS: Grup = { judul: "Bisnis", butir: [TRANSAKSI] };
+const BISNIS_OWNER: Grup = {
   judul: "Bisnis",
-  butir: [{ href: "/admin/laporan", label: "Laporan", ikon: LineChart }],
+  butir: [TRANSAKSI, { href: "/admin/laporan", label: "Laporan", ikon: LineChart }],
 };
 
 // Member dan coach cukup satu kelompok tanpa judul: dua butir tidak perlu
 // dikategorikan, dan judul "Menu" hanya menamai bahwa ini menu.
 const NAV: Record<string, Grup[]> = {
   member: [
-    { butir: [JADWAL_KELAS, { href: "/akun", label: "Akun Saya", ikon: Wallet }] },
+    {
+      butir: [
+        JADWAL_KELAS,
+        { href: "/akun", label: "Akun Saya", ikon: Wallet },
+        TRANSAKSI,
+      ],
+    },
   ],
   coach: [
     {
       butir: [
         { href: "/pelatih", label: "Kelas Saya", ikon: ClipboardList },
         JADWAL_KELAS,
+        TRANSAKSI,
       ],
     },
   ],
-  admin: STAF,
-  owner: [...STAF, BISNIS],
+  admin: [...STAF, BISNIS],
+  owner: [...STAF, BISNIS_OWNER],
 };
 
 const PERAN: Record<string, string> = {

@@ -58,6 +58,7 @@ flowchart LR
     subgraph KREDIT["Kredit dan Paket"]
         M09(["UC-M09 Lihat sisa kredit dan tanggal hangus"]):::demo
         M10(["UC-M10 Lihat riwayat kredit"]):::demo
+        M14(["UC-M14 Lihat riwayat transaksi"]):::demo
         M11(["UC-M11 Beli paket"]):::palsu
     end
 
@@ -99,6 +100,7 @@ flowchart LR
 | UC-M11 | Beli paket dan bayar | BR-8.1–8.2 | ◐ |
 | UC-M12 | Masuk ke akun lewat magic link email | BR-9.1 | ◐ |
 | UC-M13 | Daftar jadi member baru | — | ⬜ |
+| UC-M14 | Riwayat transaksi sendiri — tiap paket yang dibeli beserta nasib kreditnya: jadi kelas, kembali, atau hangus | BR-1.7, 8.5 | ✅ |
 
 ---
 
@@ -133,6 +135,7 @@ flowchart LR
         A13(["UC-A13 Tambahkan paket ke member"]):::demo
     end
 
+    A17(["UC-A17 Buku transaksi studio"]):::demo
     A14(["UC-A14 Ubah setelan aturan"]):::demo
 
     A --> A01 --> A02
@@ -145,6 +148,7 @@ flowchart LR
     A --> A09 --> A10
     A --> A11 --> A12
     A11 -. "extend" .-> A13
+    A --> A17
     A --> A14
 
     classDef aktor fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px
@@ -169,6 +173,7 @@ flowchart LR
 | UC-A14 | Ubah setelan aturan: batas batal, jendela booking, maks waitlist | 02-rules.md bagian 3 | ✅ |
 | UC-A15 | Kalender mingguan seluruh studio, bisa geser ke minggu mana pun | BR-7.1 | ✅ |
 | UC-A16 | Direktori member: cari, lihat sisa kredit dan kapan terakhir hadir | BR-1.7 | ✅ |
+| UC-A17 | Buku transaksi studio: tiap paket yang berpindah ke member + kredit yang dipindah tangan (koreksi manual, perpanjangan karena kelas batal). **Tanpa penjumlahan uang** | BR-1.7, 1.8, 9.1 | ✅ |
 
 ---
 
@@ -243,8 +248,10 @@ flowchart LR
 | UC-O06 | Laporan pendapatan & okupansi | — | — | ✅ |
 | UC-O07 | Ekspor data | — | — | ⬜ |
 | UC-O08 | Lihat audit log | — | BR-9.5 | ⬜ |
+| UC-O09 | Angka uang di buku transaksi: omzet periode, rata-rata per transaksi, nilai kredit yang hangus | — | BR-9.1 | ✅ |
 | UC-C01 | Lihat jadwal mengajar sendiri | — | BR-9.4 | ✅ |
 | UC-C02 | Lihat daftar peserta kelasnya | — | BR-9.4 | ✅ |
+| UC-C03 | Lihat kredit yang terpakai di kelas yang diajarnya — kursi dan kredit, tanpa satu pun angka rupiah | — | BR-9.1, 9.4 | ✅ |
 
 **UC-S05 adalah use case paling bernilai di seluruh sistem.** Itu yang mengubah
 kursi kosong jadi uang, dan itu inti skenario B di presentasi.
@@ -381,12 +388,12 @@ sequenceDiagram
 
 | Kelompok | Total UC | Demo ✅ | Palsu ◐ | Real ⬜ |
 |---|:--:|:--:|:--:|:--:|
-| Member | 13 | 10 | 2 | 1 |
-| Admin | 16 | 16 | — | — |
+| Member | 14 | 11 | 2 | 1 |
+| Admin | 17 | 17 | — | — |
 | Sistem | 7 | 7 | — | — |
-| Owner | 8 | 3 | 2 | 3 |
-| Coach | 2 | 2 | — | — |
-| **Total** | **46** | **38** | **4** | **4** |
+| Owner | 9 | 4 | 2 | 3 |
+| Coach | 3 | 3 | — | — |
+| **Total** | **50** | **42** | **4** | **4** |
 
-Demo menjalankan **38 dari 46 use case secara nyata** — 83%. Yang tersisa hampir
+Demo menjalankan **42 dari 50 use case secara nyata** — 84%. Yang tersisa hampir
 seluruhnya modul pengelolaan master data dan laporan, bukan logika bisnis baru.

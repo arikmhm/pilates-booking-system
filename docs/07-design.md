@@ -514,13 +514,14 @@ menolak pemiliknya sendiri saat diklik lebih buruk daripada menu yang pendek.
 
 | Peran | Kelompok | Butir |
 |---|---|---|
-| Member | — | Jadwal Kelas · Akun Saya |
-| Coach | — | Kelas Saya · Jadwal Kelas |
+| Member | — | Jadwal Kelas · Akun Saya · Transaksi |
+| Coach | — | Kelas Saya · Jadwal Kelas · Transaksi |
 | Admin | — | Dashboard |
 | | Jadwal | Jadwal Kelas · Aturan Jadwal |
 | | Member | Direktori Member · Pesan Terkirim |
 | | Studio | Pelatih & Staf · Layanan & Paket · Halaman Publik |
-| Owner | | semua milik admin, **+ Bisnis: Laporan** |
+| | Bisnis | Transaksi |
+| Owner | | semua milik admin, **+ Laporan di kelompok Bisnis** |
 
 Tiga hal yang diputuskan tabel itu:
 
@@ -552,6 +553,14 @@ katalog tanpa formulir harga, di A7 melihat slot mingguan tanpa tombol Hentikan,
 melihat kartu setelan berisi penjelasan. Menyembunyikan seluruh layar akan membuat admin
 tidak tahu harga yang sedang berlaku — padahal itu yang ditanyakan calon member di meja
 depan.
+
+Layar `/transaksi` memperluas pola itu ke **isi**, bukan cuma tombol: satu rute,
+empat tampilan. Member melihat pembeliannya sendiri, coach melihat kredit yang
+terpakai di kelas yang ia ajar (tanpa satu pun angka rupiah), admin melihat buku
+transaksi studio, dan pemilik melihat buku yang sama **plus** penjumlahan
+uangnya. Yang dikunci untuk admin bukan harga per barisnya — meja depan harus
+bisa menjawab "paketnya berapa", sama seperti di A6 — melainkan omzet,
+rata-rata, dan nilai kredit yang hangus.
 
 Tiap tempat yang menyembunyikan tombol **wajib menjelaskan siapa yang bisa**, bukan
 sekadar kosong. Dan penjaga sesungguhnya tetap `pastikanOwner()` di server action:
