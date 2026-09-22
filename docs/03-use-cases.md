@@ -100,7 +100,7 @@ flowchart LR
 | UC-M11 | Beli paket dan bayar | BR-8.1–8.2 | ◐ |
 | UC-M12 | Masuk ke akun lewat magic link email | BR-9.1 | ◐ |
 | UC-M13 | Daftar jadi member baru | — | ⬜ |
-| UC-M14 | Riwayat transaksi sendiri — tiap paket yang dibeli beserta nasib kreditnya: jadi kelas, kembali, atau hangus | BR-1.7, 8.5 | ✅ |
+| UC-M14 | Riwayat transaksi sendiri — tiap paket yang dibeli beserta nasib kreditnya: jadi kelas, kembali, atau hangus. Satu transaksi bisa dibuka sampai buku besarnya | BR-1.7, 8.5 | ✅ |
 
 ---
 

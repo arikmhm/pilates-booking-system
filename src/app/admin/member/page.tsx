@@ -17,7 +17,7 @@ import { daftarMember, type BarisMember } from "@/db/kelola";
 import { pastikanAdmin } from "@/lib/masuk";
 import { selisihManusiawi, tanggalRingkasWib } from "@/lib/waktu";
 import { tautanWa } from "@/lib/wa";
-import { Angka, Kartu, Kerangka, Tombol } from "@/components/kerangka";
+import { Angka, Halaman, Kartu, Kerangka, Tombol } from "@/components/kerangka";
 import { StatusKredit, type StatusKredit as Status } from "@/components/status-kredit";
 
 export const dynamic = "force-dynamic";
@@ -254,26 +254,19 @@ export default async function A4({
                 ))}
               </div>
 
-              <div className="flex items-center gap-3">
-                <span className="text-app-body-sm tabular-nums text-muted-foreground">
-                  {semua.length === 0
-                    ? "0"
-                    : `${mulai + 1}–${mulai + baris.length}`}{" "}
-                  dari {semua.length}
-                </span>
-                <div className="flex gap-2">
-                  <Lompat
-                    ke={tautan(param, { hal: String(halaman - 1) })}
-                    bisa={halaman > 1}
-                    anak="Sebelumnya"
-                  />
-                  <Lompat
-                    ke={tautan(param, { hal: String(halaman + 1) })}
-                    bisa={mulai + baris.length < semua.length}
-                    anak="Berikutnya"
-                  />
-                </div>
-              </div>
+              <Halaman
+                mulai={mulai}
+                tampil={baris.length}
+                total={semua.length}
+                sebelum={
+                  halaman > 1 ? tautan(param, { hal: String(halaman - 1) }) : null
+                }
+                sesudah={
+                  mulai + baris.length < semua.length
+                    ? tautan(param, { hal: String(halaman + 1) })
+                    : null
+                }
+              />
             </div>
           </Kartu>
         </div>
@@ -375,30 +368,5 @@ export default async function A4({
         </div>
       </div>
     </Kerangka>
-  );
-}
-
-function Lompat({
-  ke,
-  bisa,
-  anak,
-}: {
-  ke: string;
-  bisa: boolean;
-  anak: string;
-}) {
-  const kelas =
-    "inline-flex min-h-11 items-center rounded-sm border px-3 text-app-label uppercase transition-colors";
-  return bisa ? (
-    <Link href={ke} className={`${kelas} border-border hover:border-foreground`}>
-      {anak}
-    </Link>
-  ) : (
-    <span
-      aria-disabled
-      className={`${kelas} border-border text-muted-foreground opacity-40`}
-    >
-      {anak}
-    </span>
   );
 }

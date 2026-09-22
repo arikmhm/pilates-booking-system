@@ -38,13 +38,16 @@ import {
   selisihManusiawi,
   tanggalRingkasWib,
 } from "@/lib/waktu";
-import { Angka, Chip, Kartu, Kerangka } from "@/components/kerangka";
+import { Angka, Chip, Halaman, Kartu, Kerangka } from "@/components/kerangka";
 
 export const dynamic = "force-dynamic";
 
 const TH =
   "px-3 py-2 text-left text-app-label uppercase tracking-[0.08em] text-muted-foreground font-medium";
 const TD = "px-3 py-2 align-middle";
+
+/** Buku transaksi dipotong per halaman di database, bukan di memori. */
+const PER_HALAMAN = 25;
 
 /** Pilihan periode. 30 hari jadi baku: sebulan penuh, tapi masih satu layar. */
 const PERIODE: [number, string][] = [
@@ -109,14 +112,14 @@ function Rincian({ p }: { p: Pembelian }) {
 export default async function Transaksi({
   searchParams,
 }: {
-  searchParams: Promise<{ hari?: string }>;
+  searchParams: Promise<{ hari?: string; hal?: string }>;
 }) {
   const user_id = await userSaatIni();
   if (!user_id) redirect("/masuk");
   const saya = await penggunaById(pg, user_id);
   if (!saya) redirect("/masuk");
 
-  const { hari: hariParam } = await searchParams;
+  const { hari: hariParam, hal } = await searchParams;
   const hari = PERIODE.some(([n]) => String(n) === hariParam)
     ? Number(hariParam)
     : 30;
@@ -196,7 +199,12 @@ export default async function Transaksi({
                           className="border-b border-border last:border-0"
                         >
                           <td className={`${TD} tabular-nums`}>
-                            {tanggalRingkasWib(p.dibeli_at)}
+                            <Link
+                              href={`/transaksi/${p.id}`}
+                              className="underline underline-offset-4"
+                            >
+                              {tanggalRingkasWib(p.dibeli_at)}
+                            </Link>
                           </td>
                           <td className={`${TD} text-app-body`}>{p.paket}</td>
                           <td className={`${TD} text-right tabular-nums`}>
@@ -342,17 +350,26 @@ export default async function Transaksi({
 
   /* ── Admin & owner — UC-A17, UC-O09 ───────────────────────────────────── */
   const owner = saya.peran === "owner";
-  const [baris, koreksi, uang] = await Promise.all([
-    bukuTransaksi(pg, { sejak }),
+  const halaman = Math.max(1, Math.trunc(Number(hal)) || 1);
+  const lewati = (halaman - 1) * PER_HALAMAN;
+
+  const [{ baris, total }, koreksi, uang] = await Promise.all([
+    bukuTransaksi(pg, { sejak, per: PER_HALAMAN, lewati }),
     koreksiTerakhir(pg),
     // BR-9.1 — penjumlahan uang tidak pernah diminta kalau yang membuka admin.
     owner ? ringkasUang(pg, { sejak }) : null,
   ]);
 
+  // Dua angka ini milik halaman yang sedang dibuka, bukan seluruh periode —
+  // dan labelnya menyebutkannya, supaya tidak terbaca sebagai total studio.
   const kreditTerjual = baris.reduce((t, b) => t + b.kredit_awal, 0);
-  const aktif = baris.filter(
-    (b) => b.sisa > 0 && b.hangus_at > sekarang,
-  ).length;
+  const aktif = baris.filter((b) => b.sisa > 0 && b.hangus_at > sekarang).length;
+
+  const tautanHal = (n: number) =>
+    `/transaksi?${new URLSearchParams({
+      ...(hari === 30 ? {} : { hari: String(hari) }),
+      ...(n === 1 ? {} : { hal: String(n) }),
+    })}`.replace(/\?$/, "");
 
   return (
     <Kerangka nama={saya.nama} peran={saya.peran} aktif="/transaksi">
@@ -392,19 +409,23 @@ export default async function Transaksi({
       <div className="mt-dekat grid gap-dekat sm:grid-cols-3">
         <Kartu>
           <Angka
-            nilai={baris.length}
+            nilai={total}
             label="Transaksi"
             catatan={`${hari} hari terakhir`}
           />
         </Kartu>
         <Kartu>
-          <Angka nilai={kreditTerjual} label="Kredit terjual" />
+          <Angka
+            nilai={kreditTerjual}
+            label="Kredit terjual"
+            catatan="Di halaman ini."
+          />
         </Kartu>
         <Kartu>
           <Angka
             nilai={aktif}
             label="Paket masih hidup"
-            catatan="Masih punya sisa kredit dan belum lewat tanggalnya."
+            catatan="Di halaman ini — masih bersisa dan belum lewat tanggalnya."
           />
         </Kartu>
       </div>
@@ -439,16 +460,17 @@ export default async function Transaksi({
                         className="border-b border-border last:border-0 transition-colors hover:bg-muted"
                       >
                         <td className={`${TD} tabular-nums`}>
-                          {tanggalRingkasWib(b.dibeli_at)}
-                        </td>
-                        <td className={TD}>
+                          {/* Satu baris = satu transaksi, jadi tautannya ke
+                              transaksi itu. Profil membernya satu klik lagi
+                              dari sana — bukan sebaliknya. */}
                           <Link
-                            href={`/admin/member/${b.member_id}`}
-                            className="text-app-body underline underline-offset-4"
+                            href={`/transaksi/${b.id}`}
+                            className="underline underline-offset-4"
                           >
-                            {b.member}
+                            {tanggalRingkasWib(b.dibeli_at)}
                           </Link>
                         </td>
+                        <td className={`${TD} text-app-body`}>{b.member}</td>
                         <td className={`${TD} text-app-body`}>{b.paket}</td>
                         <td className={`${TD} text-right tabular-nums`}>
                           {rupiah(b.harga_rupiah)}
@@ -467,6 +489,18 @@ export default async function Transaksi({
                   })}
                 </tbody>
               </table>
+
+              <div className="flex justify-end border-t border-border px-4 py-3">
+                <Halaman
+                  mulai={lewati}
+                  tampil={baris.length}
+                  total={total}
+                  sebelum={halaman > 1 ? tautanHal(halaman - 1) : null}
+                  sesudah={
+                    lewati + baris.length < total ? tautanHal(halaman + 1) : null
+                  }
+                />
+              </div>
             </div>
           )}
         </Kartu>

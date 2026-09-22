@@ -228,7 +228,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 |---|---|---|
 | M1 | Jadwal | Kalender mingguan di laptop, daftar per hari di HP · sisa kursi · blok membuka panel konfirmasi M2, blok penuh langsung mengantre · bisa geser minggu — `src/app/jadwal/`. **Terbuka untuk tamu**: pengunjung yang belum masuk melihat jadwal yang sama dalam kerangka publik, tanpa tombol booking dan tanpa kartu kredit (DS-45) |
 | M2 | Konfirmasi *(panel geser)* | Pilih nomor alat · info "1 kredit dipotong" + sisa sesudahnya · aturan batal tertulis · terbuka-tutup lewat `?pilih=` — `src/app/jadwal/konfirmasi.tsx` |
-| M4 | Transaksi | Pembelian paket sendiri + nasib tiap kreditnya (jadi kelas · kembali · hangus) — `src/app/transaksi/` |
+| M4 | Transaksi | Pembelian paket sendiri + nasib tiap kreditnya (jadi kelas · kembali · hangus). Tiap baris membuka **detail transaksi**: buku besar paket itu baris per baris — `src/app/transaksi/`, `src/app/transaksi/[id]/` |
 | M3 | Akun Saya | **Sisa kredit + tanggal hangus + hitung mundur** · booking aktif · **daftar tunggu + tombol keluar** (BR-4.7) · riwayat kredit — `src/app/akun/` |
 
 **Admin (tampilan laptop)**
@@ -242,7 +242,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | A5 | Pelatih & staf | Beban mengajar 7 hari · tombol chat-WA coach · siapa punya peran apa — `src/app/admin/tim/` |
 | A6 | Layanan & paket | Jenis kelas · katalog paket + harga · **buat paket baru** · sembunyikan paket lama — `src/app/admin/layanan/` |
 | A7 | Aturan jadwal | Slot mingguan *(owner)* · **kelas tambahan sekali jalan** *(admin)* — `src/app/admin/jadwal/` |
-| A9 | Buku transaksi | Tiap paket yang berpindah ke member + kredit yang dipindah tangan. **Angka uang hanya untuk pemilik**: omzet, rata-rata, dan nilai kredit hangus muncul di layar yang sama saat yang membuka owner (BR-9.1) — `src/app/transaksi/` |
+| A9 | Buku transaksi | Tiap paket yang berpindah ke member (25 per halaman) + kredit yang dipindah tangan. Baris tanggalnya membuka detail transaksi, bukan profil member — profilnya satu klik lagi dari sana. **Angka uang hanya untuk pemilik**: omzet, rata-rata, dan nilai kredit hangus muncul di layar yang sama saat yang membuka owner (BR-9.1) — `src/app/transaksi/` |
 | A8 | Pesan terkirim | Jejak semua notifikasi · tombol kirim-WA untuk yang mendesak (BR-4.3, BR-5.3) — `src/app/admin/pesan/` |
 
 **Owner (tampilan laptop)** — admin tidak melihat layar ini (BR-9.1)

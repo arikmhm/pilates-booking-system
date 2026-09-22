@@ -79,11 +79,18 @@ export async function pembelianMember(
 
 export type BarisTransaksi = Pembelian & { member: string; member_id: string };
 
+/**
+ * Satu halaman buku transaksi, plus jumlah seluruh barisnya.
+ *
+ * `count(*) over ()` ikut di query yang sama — dua query terpisah untuk baris
+ * dan totalnya bisa membaca dua keadaan berbeda kalau ada pembelian masuk di
+ * antaranya, dan halaman terakhir jadi kosong tanpa sebab yang kelihatan.
+ */
 export async function bukuTransaksi(
   sql: Sql,
-  args: { sejak: Date; batas?: number },
-): Promise<BarisTransaksi[]> {
-  const baris = await sql<BarisTransaksi[]>`
+  args: { sejak: Date; per: number; lewati: number },
+): Promise<{ baris: BarisTransaksi[]; total: number }> {
+  const baris = await sql<(BarisTransaksi & { total: string })[]>`
     select mp.id,
            mp.dibeli_at,
            mp.hangus_at,
@@ -100,21 +107,115 @@ export async function bukuTransaksi(
              where cl.delta > 0 and cl.alasan <> 'beli'), 0)::int as kembali,
            coalesce(-sum(cl.delta) filter (
              where cl.alasan in ('hangus', 'batal_telat', 'no_show')), 0)::int
-             as hangus
+             as hangus,
+           count(*) over ()::int as total
       from member_packages mp
       join users u on u.id = mp.user_id
       join packages p on p.id = mp.package_id
       left join credit_ledger cl on cl.member_package_id = mp.id
      where mp.dibeli_at >= ${ts(args.sejak)}::timestamptz
      group by mp.id, u.id, u.nama, p.nama, p.harga_rupiah
-     order by mp.dibeli_at desc
-     limit ${args.batas ?? 100}`;
+     order by mp.dibeli_at desc, mp.id
+     limit ${args.per} offset ${args.lewati}`;
+
+  return {
+    total: baris.length ? Number(baris[0].total) : 0,
+    baris: baris.map(({ total: _, ...b }) => ({
+      ...b,
+      dibeli_at: saat(b.dibeli_at),
+      hangus_at: saat(b.hangus_at),
+      diperpanjang_at: b.diperpanjang_at ? saat(b.diperpanjang_at) : null,
+    })),
+  };
+}
+
+/* ── Satu transaksi — layar detail ───────────────────────────────────────── */
+
+export type DetailTransaksi = BarisTransaksi & {
+  telepon: string;
+  masa_berlaku_hari: number;
+  jumlah_kredit_paket: number;
+};
+
+/**
+ * `user_id` diisi kalau yang membuka pemiliknya sendiri, sehingga kepemilikan
+ * ikut diperiksa di dalam query — bukan di pemanggil yang bisa lupa. Pola yang
+ * sama dengan `bookingById()` di booking.ts.
+ */
+export async function transaksiById(
+  sql: Sql,
+  id: string,
+  user_id?: string,
+): Promise<DetailTransaksi | null> {
+  const [baris] = await sql<DetailTransaksi[]>`
+    select mp.id,
+           mp.dibeli_at,
+           mp.hangus_at,
+           mp.diperpanjang_at,
+           u.id   as member_id,
+           u.nama as member,
+           u.telepon,
+           p.nama as paket,
+           p.harga_rupiah,
+           p.masa_berlaku_hari,
+           p.jumlah_kredit as jumlah_kredit_paket,
+           mp.jumlah_kredit_awal as kredit_awal,
+           coalesce(sum(cl.delta), 0)::int as sisa,
+           coalesce(-sum(cl.delta) filter (where cl.alasan = 'booking'), 0)::int
+             as dipakai,
+           coalesce(sum(cl.delta) filter (
+             where cl.delta > 0 and cl.alasan <> 'beli'), 0)::int as kembali,
+           coalesce(-sum(cl.delta) filter (
+             where cl.alasan in ('hangus', 'batal_telat', 'no_show')), 0)::int
+             as hangus
+      from member_packages mp
+      join users u on u.id = mp.user_id
+      join packages p on p.id = mp.package_id
+      left join credit_ledger cl on cl.member_package_id = mp.id
+     where mp.id = ${id}
+       and (${user_id ?? null}::uuid is null or mp.user_id = ${user_id ?? null}::uuid)
+     group by mp.id, u.id, u.nama, u.telepon, p.nama, p.harga_rupiah,
+              p.masa_berlaku_hari, p.jumlah_kredit`;
+
+  if (!baris) return null;
+  return {
+    ...baris,
+    dibeli_at: saat(baris.dibeli_at),
+    hangus_at: saat(baris.hangus_at),
+    diperpanjang_at: baris.diperpanjang_at ? saat(baris.diperpanjang_at) : null,
+  };
+}
+
+export type BarisBuku = {
+  id: string;
+  created_at: Date;
+  delta: number;
+  alasan: string;
+  catatan: string | null;
+  pelaku: string | null;
+  kelas: string | null;
+  mulai_at: Date | null;
+};
+
+/** BR-1.7 — isi transaksi adalah buku besarnya, baris per baris. */
+export async function bukuPaket(sql: Sql, id: string): Promise<BarisBuku[]> {
+  const baris = await sql<BarisBuku[]>`
+    select cl.id, cl.created_at, cl.delta, cl.alasan, cl.catatan,
+           pel.nama as pelaku,
+           ct.nama  as kelas,
+           s.mulai_at
+      from credit_ledger cl
+      left join users pel on pel.id = cl.pelaku_id
+      left join bookings b on b.id = cl.booking_id
+      left join sessions s on s.id = b.session_id
+      left join class_types ct on ct.id = s.class_type_id
+     where cl.member_package_id = ${id}
+     order by cl.created_at, cl.id`;
 
   return baris.map((b) => ({
     ...b,
-    dibeli_at: saat(b.dibeli_at),
-    hangus_at: saat(b.hangus_at),
-    diperpanjang_at: b.diperpanjang_at ? saat(b.diperpanjang_at) : null,
+    created_at: saat(b.created_at),
+    mulai_at: b.mulai_at ? saat(b.mulai_at) : null,
   }));
 }
 

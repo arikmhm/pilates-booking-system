@@ -412,3 +412,59 @@ export function Chip({ warna, anak }: { warna: string; anak: string }) {
     </span>
   );
 }
+
+/**
+ * Penomoran halaman — dipakai direktori member (A4) dan buku transaksi (A9).
+ *
+ * Bukan komponen pagination shadcn: yang itu menomori tiap halaman, dan nomor
+ * halaman baru berguna kalau orang punya alasan melompat ke halaman 7. Di dua
+ * daftar ini urutannya kronologis dan yang dicari selalu dekat ujung, jadi
+ * "sebelumnya / berikutnya" plus hitungan baris sudah menjawab semuanya —
+ * dengan tinggi sentuh 44px yang memang sudah jadi aturan di sini (DS-11).
+ */
+export function Halaman({
+  mulai,
+  tampil,
+  total,
+  sebelum,
+  sesudah,
+}: {
+  /** Indeks baris pertama di halaman ini, mulai dari 0. */
+  mulai: number;
+  /** Berapa baris yang benar-benar digambar halaman ini. */
+  tampil: number;
+  total: number;
+  /** URL halaman sebelumnya; null kalau sudah di halaman pertama. */
+  sebelum: string | null;
+  sesudah: string | null;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-app-body-sm tabular-nums text-muted-foreground">
+        {total === 0 ? "0" : `${mulai + 1}–${mulai + tampil}`} dari {total}
+      </span>
+      <div className="flex gap-2">
+        <Lompat ke={sebelum} anak="Sebelumnya" />
+        <Lompat ke={sesudah} anak="Berikutnya" />
+      </div>
+    </div>
+  );
+}
+
+/** Tombol lompat yang mati saat tidak ada tujuannya — bukan disembunyikan. */
+function Lompat({ ke, anak }: { ke: string | null; anak: string }) {
+  const kelas =
+    "inline-flex min-h-11 items-center rounded-sm border px-3 text-app-label uppercase transition-colors";
+  return ke ? (
+    <Link href={ke} className={`${kelas} border-border hover:border-foreground`}>
+      {anak}
+    </Link>
+  ) : (
+    <span
+      aria-disabled
+      className={`${kelas} border-border text-muted-foreground opacity-40`}
+    >
+      {anak}
+    </span>
+  );
+}

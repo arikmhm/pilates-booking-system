@@ -609,6 +609,17 @@ lebih mahal — kemampuan mata menyusuri satu kolom lurus. Aturannya:
 4. **Batas `?per=` divalidasi di server.** `?per=99999` cuma perlu diketik sekali.
 5. **Mengganti jumlah baris selalu kembali ke halaman 1** — halaman 4 dari 4 tidak ada
    lagi begitu isinya 50 per halaman.
+6. **Penomoran halamannya satu komponen**, `Halaman` di `components/kerangka.tsx`:
+   hitungan baris ("26–40 dari 40") plus Sebelumnya/Berikutnya yang **mati**, bukan
+   hilang, saat tidak ada tujuannya — tombol yang lenyap membuat baris kendali
+   bergeser tiap ganti halaman. Bukan komponen pagination shadcn: nomor halaman baru
+   berguna kalau orang punya alasan melompat ke halaman 7, dan di dua daftar ini
+   urutannya kronologis — yang dicari selalu dekat ujung.
+7. **Daftar panjang dipotong di database, bukan di memori.** A4 masih menarik semua
+   baris lalu mengiris (datanya puluhan, dan panel tindak lanjutnya memang butuh
+   seluruh daftar); buku transaksi memakai `limit`/`offset` dengan `count(*) over ()`
+   di query yang sama — dua query terpisah untuk baris dan totalnya bisa membaca dua
+   keadaan berbeda, dan halaman terakhir jadi kosong tanpa sebab yang kelihatan.
 
 Lebar tabel + panel tindak lanjut memakai kisi 12 kolom, **8 / 4, pisah di 1280px**.
 Bukan 1024px: di sana panel kanan tinggal ~227px dan tabelnya mulai menggulir, jadi
