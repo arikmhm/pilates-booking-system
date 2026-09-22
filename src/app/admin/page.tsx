@@ -19,7 +19,7 @@ import { pastikanAdmin } from "@/lib/masuk";
 import { hariWib, jamWib, selisihManusiawi } from "@/lib/waktu";
 import { tautanWa } from "@/lib/wa";
 import { Angka, Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
-import { resetDemo, ubahSetelan } from "./aksi";
+import { resetDemo, resetJadwalDemo, ubahSetelan } from "./aksi";
 
 export const dynamic = "force-dynamic";
 
@@ -240,16 +240,45 @@ export default async function A1({
           )}
 
           {/* Hanya muncul di database demo. Penjaga sebenarnya ada di seed()
-              yang menolak jalan kalau studionya bukan studio demo — ini cuma
-              supaya tombolnya tidak menggoda di instance klien. */}
+              dan resetJadwal() yang menolak jalan kalau studionya bukan studio
+              demo — ini cuma supaya tombolnya tidak menggoda di instance
+              klien. */}
           {setelan.nama === STUDIO_DEMO && (
             <Kartu
-              judul="Reset demo"
-              catatan="Kembalikan semua data ke keadaan awal. Tanggal dihitung ulang dari hari ini, dan kamu tetap login."
+              judul="Reset"
+              catatan="Dua keadaan awal yang berbeda. Kamu tetap login di keduanya."
             >
-              <form action={resetDemo}>
-                <Tombol gaya="halus" penuh anak="Reset Demo" />
-              </form>
+              {/* items-stretch + mt-auto: keterangan keduanya beda jumlah
+                  baris, dan tombol yang tidak sebaris terbaca sebagai dua
+                  kartu yang tidak sengaja bersebelahan. */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <form action={resetDemo} className="flex h-full flex-col gap-2">
+                  <p className="text-app-body-sm text-muted-foreground">
+                    Semua data ditulis ulang dari nol. Tanggal dihitung ulang
+                    dari hari ini.
+                  </p>
+                  <div className="mt-auto">
+                    <Tombol gaya="halus" penuh anak="Reset Demo" />
+                  </div>
+                </form>
+
+                {/* Panggung kosong, bukan database kosong: aturan mingguan dan
+                    kredit member tetap, jadi "Terbitkan sekarang" di A7 punya
+                    sesuatu untuk diterbitkan dan kursinya bisa langsung
+                    dipesan di depan klien. */}
+                <form
+                  action={resetJadwalDemo}
+                  className="flex h-full flex-col gap-2"
+                >
+                  <p className="text-app-body-sm text-muted-foreground">
+                    Jadwal dan seluruh pemesanannya dihapus. Aturan mingguan dan
+                    kredit member tetap.
+                  </p>
+                  <div className="mt-auto">
+                    <Tombol gaya="halus" penuh anak="Reset Jadwal" />
+                  </div>
+                </form>
+              </div>
             </Kartu>
           )}
         </div>

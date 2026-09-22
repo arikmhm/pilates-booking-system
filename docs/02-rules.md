@@ -213,6 +213,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | Peran owner & coach terpisah | ✅ | ✅ | Owner memegang **syarat studio** — harga, batas pembatalan, jendela booking, slot mingguan — dan satu-satunya yang melihat Laporan (BR-9.1). Admin menjalankan sisanya. Coach punya layar sendiri, hanya baca (BR-9.4) |
 | **Hanya di demo** | | | |
 | Tombol Reset Demo | ✅ | ⬜ | Wajib — skenario diulang puluhan kali. Ada di A1, hanya muncul di database demo |
+| Tombol Reset Jadwal | ✅ | ⬜ | Panggung kosong tanpa menulis ulang apa pun: jadwal dan seluruh pemesanannya hilang, **aturan mingguan dan kredit member tetap**. Untuk memperagakan BR-7.1 dari nol — kalender kosong, terbitkan, lalu booking di depan klien |
 | Ganti identitas studio cepat | ✅ | ⬜ | Nama, logo, warna — personalisasi per prospek |
 
 ---

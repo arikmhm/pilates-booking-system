@@ -651,3 +651,45 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
 }
 
 export type RingkasSeed = Awaited<ReturnType<typeof seed>>;
+
+/* ── Reset jadwal ─────────────────────────────────────────────────────────
+   Panggung kosong, bukan database kosong.
+
+   Menghapus semua yang bergantung pada satu sesi tertentu — sesi itu sendiri,
+   kursi yang dipesan, antrean, pesan terkirim, dan jejak kreditnya — lalu
+   berhenti. Yang tidak disentuh: studio dan setelannya, orang-orangnya, jenis
+   kelas, katalog paket, **aturan jadwal mingguan**, dan paket yang sudah
+   dibeli member.
+
+   Aturan mingguan sengaja dibiarkan: kalau ikut terhapus, tombol "Terbitkan
+   sekarang" tidak punya apa pun untuk diterbitkan, dan reset ini justru
+   mematikan fitur yang ingin dicoba.
+
+   Kredit member kembali seperti saat dibeli, bukan jadi nol. Baris ledger yang
+   dihapus hanya yang menunjuk sebuah booking (`booking`, `batal_tepat_waktu`,
+   `batal_telat`, `no_show`); baris `beli`, `hangus`, dan `koreksi` tinggal.
+   Karena BR-1.7 menghitung sisa dari SUM(delta), menghapus potongannya
+   MENGEMBALIKAN kreditnya — tidak ada kolom saldo yang perlu ikut disetel.
+
+   Penjaganya sama dengan seed(): menolak jalan kalau studionya bukan studio
+   demo. Menghapus semua booking di studio yang sungguh berjalan tidak bisa
+   dibatalkan.                                                             */
+export async function resetJadwal(sql: postgres.Sql | postgres.TransactionSql) {
+  await pastikanAman(sql);
+
+  // Urutannya mengikuti arah foreign key, dari daun ke akar.
+  const ledger = await sql`
+    delete from credit_ledger where booking_id is not null returning id`;
+  const booking = await sql`delete from bookings returning id`;
+  const waitlist = await sql`delete from waitlist_entries returning id`;
+  const pesan = await sql`delete from notifications returning id`;
+  const sesi = await sql`delete from sessions returning id`;
+
+  return {
+    sesi: sesi.length,
+    booking: booking.length,
+    waitlist: waitlist.length,
+    pesan: pesan.length,
+    ledger: ledger.length,
+  };
+}

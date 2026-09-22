@@ -19,7 +19,7 @@ import {
 import { batalkan, bookingkan } from "@/db/pesanan";
 import { berikanPaket } from "@/db/kelola";
 import { hariWib } from "@/lib/waktu";
-import { seed } from "@/db/seed";
+import { resetJadwal, seed } from "@/db/seed";
 import { pastikanAdmin, pastikanOwner } from "@/lib/masuk";
 
 function kembali(pesan: string): never {
@@ -291,5 +291,34 @@ export async function resetDemo() {
   keAdmin(
     `Demo direset · ${r.member} member · ${r.sesi} sesi · ${r.booking} booking · ` +
       `panel A1 ${r.panel_a1} orang · antrean berkredit ${r.antrean_berkredit}.`,
+  );
+}
+
+/**
+ * Kosongkan panggungnya saja.
+ *
+ * Bedanya dengan Reset Demo: yang ini TIDAK menulis ulang apa pun. Studio,
+ * orang-orangnya, katalog paket, aturan mingguan, dan paket yang sudah dibeli
+ * tetap di tempatnya; yang hilang cuma jadwal beserta seluruh jejak
+ * pemesanannya. Dipakai untuk memperagakan penerbitan jadwal dari nol —
+ * kalender kosong, tekan "Terbitkan sekarang", lalu booking di depan klien.
+ *
+ * Penjaganya ada di `resetJadwal()` sendiri, sama seperti `seed()`: tombol
+ * tersembunyi bukan tombol yang tidak bisa ditekan.
+ */
+export async function resetJadwalDemo() {
+  await pastikanAdmin();
+
+  // Satu transaksi. Gagal di tengah tidak boleh meninggalkan sesi yang
+  // bookingnya sudah hilang — itu keadaan yang tidak bisa dijelaskan ke klien.
+  const r = await pg.begin((tx) => resetJadwal(tx));
+
+  for (const jalur of ["/admin", "/admin/jadwal", "/admin/pesan", "/jadwal", "/akun"])
+    revalidatePath(jalur);
+
+  keAdmin(
+    `Jadwal dikosongkan · ${r.sesi} sesi, ${r.booking} booking, ${r.waitlist} antrean, ` +
+      `dan ${r.pesan} pesan dihapus. Aturan mingguan dan kredit member tetap — ` +
+      `terbitkan lagi dari layar Aturan Jadwal.`,
   );
 }

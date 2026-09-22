@@ -416,5 +416,11 @@ Yang dipalsukan tanpa tabel baru:
 - **Pembayaran** → tombol simulasi langsung membuat `member_packages` + ledger `+N`
 - **Email** → tulis ke `notifications` dengan `kanal='layar'`, tampilkan di panel admin
 - **Reset demo** → `TRUNCATE` semua tabel lalu jalankan ulang seed
+- **Reset jadwal** → hapus `sessions`, `bookings`, `waitlist_entries`,
+  `notifications`, dan baris `credit_ledger` yang menunjuk sebuah booking.
+  Tidak disentuh: `studios`, `users`, `class_types`, `packages`,
+  `package_class_types`, `schedule_rules`, `member_packages`. Kredit kembali
+  seperti saat dibeli tanpa menyetel apa pun — BR-1.7 menghitung sisa dari
+  SUM(delta), jadi menghapus potongannya sudah mengembalikannya
 
 Seed wajib membuat tanggal **relatif terhadap `now()`** — lihat 02-rules.md bagian 6.2.
