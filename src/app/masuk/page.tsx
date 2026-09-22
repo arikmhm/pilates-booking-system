@@ -18,8 +18,12 @@ export default async function Masuk() {
 
   async function pilih(formData: FormData) {
     "use server";
-    await masukSebagai(String(formData.get("user_id")));
-    redirect("/jadwal");
+    const id = String(formData.get("user_id"));
+    await masukSebagai(id);
+    // Admin dan owner mendarat di dashboard, member di jadwal. Tanpa ini
+    // presenter harus mengetik URL di tengah demo.
+    const peran = orang.find((o) => o.id === id)?.peran;
+    redirect(peran === "member" || peran === "coach" ? "/jadwal" : "/admin");
   }
 
   return (
