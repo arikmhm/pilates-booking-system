@@ -1,6 +1,6 @@
 # Model Data — Sistem Booking Studio Pilates
 
-> **Status:** Draft · **Terakhir diperbarui:** 2026-09-21
+> **Status:** Diterapkan di `src/db/schema.ts` · **Terakhir diperbarui:** 2026-09-22
 > Pendamping [02-rules.md](02-rules.md), [03-use-cases.md](03-use-cases.md), [04-flows.md](04-flows.md). Setiap tabel merujuk aturan `BR-x.y` yang dilayaninya.
 > Target: PostgreSQL. **12 tabel inti** + 2 tabel tambahan khusus versi real.
 
@@ -55,13 +55,15 @@ erDiagram
         int studio_cancel_extension_days "7"
         int waitlist_max "5"
         int noshow_after_hours "2"
+        int generate_weeks_ahead "8"
     }
 
     users {
         uuid id PK
         uuid studio_id FK
         text nama
-        text telepon "unik per studio"
+        text telepon "unik per studio, wajib"
+        text email "unik per studio, boleh null"
         text peran "member|admin|owner|coach"
         text foto_url
         timestamptz created_at
@@ -84,7 +86,7 @@ erDiagram
         int hari "1=Senin..7=Minggu"
         time jam_mulai "WIB"
         int kapasitas "null = pakai default"
-        text level "Beginner|Intermediate|null"
+        text level "beginner|intermediate|null"
         date berlaku_dari
         date berlaku_sampai "null = selamanya"
     }
@@ -236,6 +238,13 @@ erDiagram
 - **`waitlist_entries` tidak punya kolom posisi.** Urutan = `ORDER BY created_at`.
   Kolom posisi harus di-renumber tiap ada yang keluar; `created_at` tidak pernah salah.
 - **`bookings.status` tidak pernah dihapus.** `cancelled` tetap tersimpan sebagai riwayat.
+- **`users.telepon` wajib, `users.email` boleh kosong.** Studio menghubungi member
+  lewat WhatsApp; belum tentu tiap member punya email aktif (02-rules.md bagian 8,
+  pertanyaan terbuka 6). Magic link hanya tersedia bagi yang mengisi email — sisanya
+  dibukakan link login oleh admin (06-architecture.md bagian 6).
+- **Penjaga kapasitas menyalip penjaga duplikat.** Di sesi yang sudah penuh, query 5.1
+  mengembalikan 0 baris sebelum index `(session_id, user_id)` sempat tersentuh. Dua
+  invarian itu harus diuji di sesi yang berbeda — lihat `src/db/kapasitas.test.ts`.
 
 ---
 
@@ -260,6 +269,7 @@ Index pendukung (bukan invarian, hanya kecepatan):
 
 ```sql
 CREATE UNIQUE INDEX ON users (studio_id, telepon);
+CREATE UNIQUE INDEX ON users (studio_id, email);   -- magic link mencari lewat email
 CREATE INDEX ON sessions (studio_id, mulai_at);
 CREATE INDEX ON credit_ledger (member_package_id);
 CREATE INDEX ON member_packages (user_id, hangus_at);
@@ -363,7 +373,16 @@ apakah baris ledger `hangus` sudah ada sebelum menulis.
 
 ---
 
-## 8. Cakupan demo
+## 8. Belum ada tabelnya
+
+**Sesi login.** AGENTS.md menyebut "session token di tabel + cookie httpOnly", tapi
+12 tabel inti tidak memuatnya — demo memalsukan login lewat tombol "Masuk sebagai…"
+(bagian 9). Tabel ke-13 `auth_sessions` baru dibuat saat magic link sungguhan
+dibangun. Namanya **tidak boleh** `sessions` — itu sudah dipakai sesi kelas.
+
+---
+
+## 9. Cakupan demo
 
 Dibangun untuk demo: **12 tabel inti** (semua kecuali `payments` dan `audit_log`).
 

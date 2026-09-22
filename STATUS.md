@@ -2,7 +2,7 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** halaman profil publik jadi · siap menulis skema dan aturan
+**Tahap:** skema 12 tabel jalan + invarian kapasitas terbukti · siap menulis `src/rules/`
 **Terakhir diperbarui:** 2026-09-22
 
 ---
@@ -13,11 +13,11 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 
 ## Berikutnya — tiga langkah pertama
 
-1. Tulis 12 tabel di `src/db/schema.ts` ([05-data-model.md](docs/05-data-model.md)),
-   lalu `npm run db:generate && npm run db:migrate`
-2. Tulis `src/rules/` sebagai fungsi murni + test untuk 8 titik rawan
-   ([04-flows.md](docs/04-flows.md) bagian 9) — hapus `passWithNoTests` di `vitest.config.ts`
-3. Test integrasi kapasitas: 20 booking paralel ke kelas 8 kursi, tepat 8 berhasil
+1. Tulis `src/rules/` sebagai fungsi murni + test untuk 8 titik rawan
+   ([04-flows.md](docs/04-flows.md) bagian 9)
+2. Seed demo — tanggal relatif terhadap `now()` ([02-rules.md](docs/02-rules.md) bagian 6.2)
+3. Layar M1 Jadwal + server action booking (pindahkan query 5.1 dari
+   `src/db/kapasitas.test.ts` ke server action)
 
 ## Selesai
 
@@ -32,6 +32,8 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 - [x] Sistem desain — token, tipografi, komponen, status, pemetaan 6 layar
 - [x] Scaffold Next.js 16 + Tailwind v4 + Drizzle + Postgres Docker, token desain terpasang
 - [x] Halaman profil publik `/` — 10 pita, skala pemasaran, harga dari seed demo
+- [x] Skema 12 tabel + migrasi pertama, 3 partial unique index dan 4 CHECK terpasang
+- [x] Test integrasi kapasitas hijau — 20 booking paralel ke 8 kursi, tepat 8 berhasil
 
 ## Keputusan terbuka
 
@@ -60,6 +62,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | Skema 12 tabel ditulis dan dimigrasikan. ERD dilengkapi: `users.email` (login magic link, ketinggalan sejak 21 Sep) dan `studios.generate_weeks_ahead`. Tabel sesi login ditunda, dicatat di 05-data-model.md bagian 8 |
 | 2026-09-22 | Ekstraksi mentah desain rujukan diarsipkan ke `docs/sumber/`, ditandai bukan sumber kebenaran |
 | 2026-09-22 | Halaman profil publik `/` dibangun meniru gaya rujukan: pola pita berselang-seling, hero bertirai, tiga kartu paket. `07-design.md` bertambah bagian 8 dan DS-18–DS-25; DS-11 dipertegas ke semua tautan teks |
 | 2026-09-22 | Proyek di-scaffold: Next.js 16, Tailwind v4, Drizzle + postgres.js, Vitest, Docker Compose Postgres. Token `07-design.md` terpasang di `globals.css`, font Plus Jakarta Sans + Instrument Serif. `check-docs.sh` diperbaiki agar melewati `node_modules` |
