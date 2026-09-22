@@ -514,10 +514,12 @@ menolak pemiliknya sendiri saat diklik lebih buruk daripada menu yang pendek.
 
 | Peran | Kelompok | Butir |
 |---|---|---|
-| Member | Menu | Jadwal Kelas · Akun Saya |
-| Coach | Menu | Kelas Saya · Jadwal Kelas |
-| Admin | Harian | Dashboard · Jadwal Kelas · Member · Pesan Terkirim |
-| | Studio | Pelatih & Staf · Layanan & Paket · Aturan Jadwal · Halaman Publik |
+| Member | — | Jadwal Kelas · Akun Saya |
+| Coach | — | Kelas Saya · Jadwal Kelas |
+| Admin | — | Dashboard |
+| | Jadwal | Jadwal Kelas · Aturan Jadwal |
+| | Member | Direktori Member · Pesan Terkirim |
+| | Studio | Pelatih & Staf · Layanan & Paket · Halaman Publik |
 | Owner | | semua milik admin, **+ Bisnis: Laporan** |
 
 Tiga hal yang diputuskan tabel itu:
@@ -531,6 +533,18 @@ Tiga hal yang diputuskan tabel itu:
    seluruh member, tapi tidak perlu omzet. Pemisahan itu sendiri bagian dari yang
    dijual, jadi ia harus terlihat: admin yang membuka `/admin/laporan` dipantulkan
    ke dashboard, bukan ke halaman masuk — dia sudah masuk, cuma salah pintu.
+
+Kelompoknya menjawab "saya mau mengurus apa" — jadwalnya, membernya, atau
+studionya — dan dua butir yang berdiri sendiri menjepitnya: Dashboard di atas
+karena ia titik mendarat, Laporan di bawah karena hanya pemilik yang punya.
+
+**Kelompoknya judul, bukan akordeon.** Pola sidebar-07 shadcn (`Collapsible` +
+`SidebarMenuSub`, garis tegak, chevron berputar) sempat dipasang dan memang
+jalan. Yang dibelinya tidak sepadan: tiap kelompok berisi dua sampai tiga butir
+dan semuanya terbuka sejak awal, jadi yang benar-benar ditambahkan hanyalah tiga
+tombol untuk menyembunyikan isi sidebar — beserta satu komponen klien baru di
+kerangka yang selebihnya dirender server. Akordeon mulai membayar dirinya saat
+satu kelompok sudah tidak muat di layar; menu sembilan butir belum sampai situ.
 
 `DS-35` — **Kewenangan yang lebih sempit dari peran tidak memunculkan menu baru.**
 Admin dan owner membuka layar yang sama; yang berbeda tombolnya. Di A6 admin melihat

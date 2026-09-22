@@ -52,59 +52,83 @@ import {
 import { keluarAkun } from "@/app/masuk/aksi";
 
 type Butir = { href: string; label: string; ikon: typeof CalendarDays };
-type Grup = { judul: string; butir: Butir[] };
+/** Kelompok tanpa judul dipakai untuk butir tunggal yang berdiri sendiri. */
+type Grup = { judul?: string; butir: Butir[] };
 
-const JADWAL = { href: "/jadwal", label: "Jadwal Kelas", ikon: CalendarDays };
-const PUBLIK = { href: "/", label: "Halaman Publik", ikon: Store };
+const JADWAL_KELAS: Butir = {
+  href: "/jadwal",
+  label: "Jadwal Kelas",
+  ikon: CalendarDays,
+};
 
 // DS-33 — satu peran, satu daftar; yang tidak bisa dipakai peran itu tidak
-// ditampilkan. "Halaman Publik" sengaja hanya ada di sisi staf: itu alat kerja
-// mereka (menunjukkan harga ke calon member, menyalin tautannya), bukan menu
-// member — member sudah di dalam, mengembalikannya ke halaman jualan itu
-// jalan mundur.
-const HARIAN: Butir[] = [
-  { href: "/admin", label: "Dashboard", ikon: LayoutDashboard },
-  JADWAL,
-  { href: "/admin/member", label: "Member", ikon: Users },
-  { href: "/admin/pesan", label: "Pesan Terkirim", ikon: MessageSquare },
-];
-const STUDIO: Butir[] = [
-  { href: "/admin/tim", label: "Pelatih & Staf", ikon: UserCog },
-  { href: "/admin/layanan", label: "Layanan & Paket", ikon: Package },
-  { href: "/admin/jadwal", label: "Aturan Jadwal", ikon: Repeat },
-  PUBLIK,
+// ditampilkan.
+//
+// Sembilan butir datar membuat staf memindai seluruh daftar tiap kali, jadi
+// menunya dikelompokkan menurut "saya mau mengurus apa": jadwalnya, membernya,
+// atau studionya. Dashboard berdiri sendiri di atas karena ia titik mendarat,
+// Laporan sendiri di bawah karena hanya pemilik yang punya (BR-9.1) — dan
+// pemisahan itu sendiri yang dijual.
+//
+// Kelompoknya **tidak** dibungkus akordeon. Dicoba dengan pola sidebar-07
+// shadcn (`Collapsible` + `SidebarMenuSub`) dan memang jalan, tapi yang
+// dibelinya tidak sepadan: tiap kelompok cuma berisi dua sampai tiga butir dan
+// semuanya terbuka sejak awal, jadi yang tersisa hanyalah tiga tombol yang
+// bisa menyembunyikan isi sidebar — beserta chevron, garis tegak, dan satu
+// komponen klien baru. Judul kelompok sudah mengelompokkan.
+//
+// "Halaman Publik" sengaja hanya ada di sisi staf: itu alat kerja mereka
+// (menunjukkan harga ke calon member, menyalin tautannya), bukan menu member —
+// member sudah di dalam, mengembalikannya ke halaman jualan itu jalan mundur.
+const STAF: Grup[] = [
+  { butir: [{ href: "/admin", label: "Dashboard", ikon: LayoutDashboard }] },
+  {
+    judul: "Jadwal",
+    butir: [
+      JADWAL_KELAS,
+      { href: "/admin/jadwal", label: "Aturan Jadwal", ikon: Repeat },
+    ],
+  },
+  {
+    judul: "Member",
+    butir: [
+      { href: "/admin/member", label: "Direktori Member", ikon: Users },
+      { href: "/admin/pesan", label: "Pesan Terkirim", ikon: MessageSquare },
+    ],
+  },
+  {
+    judul: "Studio",
+    butir: [
+      { href: "/admin/tim", label: "Pelatih & Staf", ikon: UserCog },
+      { href: "/admin/layanan", label: "Layanan & Paket", ikon: Package },
+      { href: "/", label: "Halaman Publik", ikon: Store },
+    ],
+  },
 ];
 
+// BR-9.1 — angka uang hanya untuk pemilik. Staf resepsionis melihat semuanya
+// kecuali ini, dan kelompok sendiri membuat batas itu terbaca sekali lihat.
+const BISNIS: Grup = {
+  judul: "Bisnis",
+  butir: [{ href: "/admin/laporan", label: "Laporan", ikon: LineChart }],
+};
+
+// Member dan coach cukup satu kelompok tanpa judul: dua butir tidak perlu
+// dikategorikan, dan judul "Menu" hanya menamai bahwa ini menu.
 const NAV: Record<string, Grup[]> = {
   member: [
-    {
-      judul: "Menu",
-      butir: [JADWAL, { href: "/akun", label: "Akun Saya", ikon: Wallet }],
-    },
+    { butir: [JADWAL_KELAS, { href: "/akun", label: "Akun Saya", ikon: Wallet }] },
   ],
   coach: [
     {
-      judul: "Menu",
       butir: [
         { href: "/pelatih", label: "Kelas Saya", ikon: ClipboardList },
-        JADWAL,
+        JADWAL_KELAS,
       ],
     },
   ],
-  admin: [
-    { judul: "Harian", butir: HARIAN },
-    { judul: "Studio", butir: STUDIO },
-  ],
-  owner: [
-    { judul: "Harian", butir: HARIAN },
-    { judul: "Studio", butir: STUDIO },
-    // BR-9.1 — angka uang hanya untuk pemilik. Staf resepsionis melihat
-    // semuanya kecuali ini, dan pemisahan itu sendiri yang dijual.
-    {
-      judul: "Bisnis",
-      butir: [{ href: "/admin/laporan", label: "Laporan", ikon: LineChart }],
-    },
-  ],
+  admin: STAF,
+  owner: [...STAF, BISNIS],
 };
 
 const PERAN: Record<string, string> = {
@@ -168,11 +192,13 @@ export function Kerangka({
         </SidebarHeader>
 
         <SidebarContent>
-          {grup.map((g) => (
-            <SidebarGroup key={g.judul}>
-              <SidebarGroupLabel className="text-app-label uppercase">
-                {g.judul}
-              </SidebarGroupLabel>
+          {grup.map((g, i) => (
+            <SidebarGroup key={g.judul ?? i}>
+              {g.judul && (
+                <SidebarGroupLabel className="text-app-label uppercase">
+                  {g.judul}
+                </SidebarGroupLabel>
+              )}
               <SidebarGroupContent>
                 <SidebarMenu>
                   {g.butir.map(({ href, label, ikon: Ikon }) => (
