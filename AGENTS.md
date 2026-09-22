@@ -36,6 +36,7 @@ Rujuk selalu dengan ID tetap — `BR-3.2`, `UC-S05`, `Alur 4` — di kode, komen
 | `docs/04-flows.md` | Menulis percabangan: booking, pembatalan, waitlist, job terjadwal |
 | `docs/05-data-model.md` | Menyentuh skema, query, constraint, atau index |
 | `docs/06-architecture.md` | Menimbang dependency, lapisan, atau target deploy |
+| `docs/07-design.md` | **Menulis UI apa pun.** Token warna, skala huruf, komponen, status, 6 layar |
 
 Fitur di luar daftar `docs/02-rules.md` bagian 5 adalah fase 2 — tawarkan, jangan bangun.
 
@@ -60,20 +61,22 @@ karena tampil apa adanya di layar riwayat kredit member.
 
 ---
 
-## Stack
+## Menjalankan
 
-| Lapisan | Pilihan |
-|---|---|
-| Framework | Next.js App Router — Server Components + Server Actions, tanpa lapisan API |
-| Database | PostgreSQL |
-| Akses DB | Drizzle — `sql` mentah untuk query atomik dan agregat ledger |
-| UI | Tailwind + shadcn/ui |
-| Auth | Session token di tabel + cookie httpOnly |
-| Email | SMTP lewat nodemailer |
-| Test | Vitest — hanya 8 titik rawan |
-| Deploy | Demo: Vercel · Produksi: VPS per klien, Docker Compose |
+`package.json` adalah sumber kebenaran untuk stack dan versi. Alasan tiap pilihan dan
+daftar yang sengaja **tidak** dipakai: `docs/06-architecture.md`.
 
-Alasan tiap pilihan dan daftar yang sengaja **tidak** dipakai: `docs/06-architecture.md`.
+```bash
+npm run db:up        # Postgres lokal lewat Docker
+npm run dev          # http://localhost:3000
+npm run typecheck    # tsc --noEmit
+npm test             # Vitest — hanya 8 titik rawan
+npm run db:generate  # migrasi baru dari src/db/schema.ts
+npm run db:migrate   # terapkan migrasi
+./check-docs.sh      # angka dan link dokumen
+```
+
+Salin `.env.example` jadi `.env.local` sebelum menjalankan apa pun.
 
 ## Aturan menulis kode
 
@@ -88,8 +91,6 @@ dipanggil Vercel Cron di demo dan `crontab` di VPS. Kode sama, beda satu baris c
 input → keputusan. Server action yang membaca dan menulis database. Seam ini yang
 membuat 8 titik rawan benar-benar bisa di-test.
 
-*Hapus bagian Stack begitu `package.json` ada — setelah itu environment yang jadi sumber kebenaran.*
-
 ---
 
 ## Merawat dokumen
@@ -102,8 +103,9 @@ selagi konteksnya masih di kepala.
 | Aturan bisnis `BR-x.y` | `02-rules.md` · `04-flows.md` (alur yang memakainya) · `03-use-cases.md` kalau ada UC baru |
 | Kolom atau tabel | `05-data-model.md` (ERD, tabel, query, index) · `04-flows.md` kalau namanya disebut · konvensi di berkas ini kalau polanya baru |
 | Batas demo vs real | `02-rules.md` bagian 5 · kolom Demo dan rekap di `03-use-cases.md` · rilis di `01-product.md` |
-| Dependency atau lapisan | `06-architecture.md` · tabel Stack di berkas ini |
+| Dependency atau lapisan | `06-architecture.md` · `package.json` |
 | Use case baru | `03-use-cases.md` (diagram, tabel, rekap bagian 7) · `04-flows.md` kalau punya percabangan |
+| Token desain atau layar | `07-design.md` · `02-rules.md` bagian 6.1 kalau layarnya berubah |
 | **Apa pun** | `STATUS.md` — tambah satu baris di Log |
 
 Angka yang diklaim dokumen (53 aturan, 44 use case, 12 tabel, 12 alur) harus tetap cocok

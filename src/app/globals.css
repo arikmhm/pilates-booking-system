@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+/* Token dari docs/07-design.md bagian 2. Ubah di sini, jangan di komponen (DS-1). */
+:root {
+  /* permukaan dan teks */
+  --background: #ffffff;
+  --foreground: #222325;
+  --muted: #f7f7f8;
+  --muted-foreground: #6b6b6e;
+  --border: #e5e7eb;
+  --overlay: #4b3f3a;
+
+  /* aksi */
+  --primary: #bcff88;
+  --primary-foreground: #222325; /* DS-2 — tidak pernah putih */
+  --ring: #222325;
+
+  /* aksen editorial — dekoratif, bukan teks (1.80:1) */
+  --accent-warm: #cbbea3;
+  --accent-sand: #c8c0b2;
+
+  /* status domain — bagian 7, jangan karang warna baru */
+  --ok-surface: #edffe0;
+  --ok-foreground: #2f5b14;
+  --warn-surface: #f3ede0;
+  --warn-foreground: #7a6134;
+  --danger-surface: #f8e8e8;
+  --danger-foreground: #a33a3a;
+  --danger: #c94b4b;
+  --neutral-surface: #f1f2f4;
+  --neutral-foreground: #6b6b6e;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-overlay: var(--overlay);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-accent-warm: var(--accent-warm);
+  --color-accent-sand: var(--accent-sand);
+  --color-ok-surface: var(--ok-surface);
+  --color-ok-foreground: var(--ok-foreground);
+  --color-warn-surface: var(--warn-surface);
+  --color-warn-foreground: var(--warn-foreground);
+  --color-danger-surface: var(--danger-surface);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger: var(--danger);
+  --color-neutral-surface: var(--neutral-surface);
+  --color-neutral-foreground: var(--neutral-foreground);
+
+  --font-sans: var(--font-jakarta);
+  --font-serif: var(--font-instrument);
+
+  /* DS-9 — tanpa bayangan; radius berhenti di 12px */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* skala jarak 07-design.md bagian 5 */
+  --spacing-xs: 10px;
+  --spacing-sm: 20px;
+  --spacing-md: 40px;
+  --spacing-lg: 60px;
+  --spacing-xl: 100px;
+  --spacing-gutter: 24px;
+
+  /* DS-4 — skala aplikasi, dipakai di semua layar M1–A3 */
+  --text-app-title: 24px;
+  --text-app-title--line-height: 32px;
+  --text-app-section: 18px;
+  --text-app-section--line-height: 26px;
+  --text-app-body: 15px;
+  --text-app-body--line-height: 24px;
+  --text-app-body-sm: 13px;
+  --text-app-body-sm--line-height: 20px;
+  --text-app-label: 12px;
+  --text-app-label--line-height: 16px;
+  --text-app-label--letter-spacing: 0.04em;
+  --text-app-number: 32px;
+  --text-app-number--line-height: 36px;
+
+  /* DS-4 — skala pemasaran, HANYA beranda publik dan halaman harga */
+  --text-display: 60px;
+  --text-display--line-height: 72px;
+  --text-display--letter-spacing: -0.6px;
+  --text-serif-hero: 53px;
+  --text-serif-hero--line-height: 64px;
+  --text-serif-hero--letter-spacing: 1.28px;
+  --text-marketing-h2: 41px;
+  --text-marketing-h2--line-height: 49px;
+  --text-marketing-h2--letter-spacing: -0.3px;
+  --text-marketing-lead: 36px;
+  --text-marketing-lead--line-height: 59px;
+  --text-marketing-lead--letter-spacing: -0.36px;
+}
+
+@layer base {
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans), system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 24px;
+  }
+
+  /* DS-12 — fokus keyboard selalu terlihat, sekali di sini untuk semua elemen */
+  *:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}

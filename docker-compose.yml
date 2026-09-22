@@ -1,0 +1,27 @@
+# Postgres untuk pengembangan lokal.
+# Kredensial di sini sengaja polos — hanya dipakai di mesin developer.
+# Saat deploy ke VPS klien, service `app` ditambahkan di sini dan semua
+# nilai diambil dari file .env di server, bukan dari berkas ini.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: pilates-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pilates
+      POSTGRES_PASSWORD: pilates
+      POSTGRES_DB: pilates
+      TZ: UTC          # BR-7.5 — server selalu UTC, WIB hanya urusan tampilan
+      PGTZ: UTC
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pilates -d pilates"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

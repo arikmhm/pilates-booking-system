@@ -19,8 +19,10 @@ cek "alur"          12 "$(grep -c '```mermaid'            docs/04-flows.md)"
 while read -r src tgt; do
   dir=$(dirname "$src")
   [ -e "$dir/$tgt" ] || { echo "LINK MATI $src -> $tgt"; gagal=1; }
-done < <(grep -roE '\]\([^)#]+\.md\)' --include='*.md' . \
-         | sed 's/:](/ /; s/)$//' | sed 's/\](/ /')
+done < <(grep -roE '\]\([^)#]+\.md\)' --include='*.md' \
+              --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=.git . \
+         | sed 's/:](/ /; s/)$//' | sed 's/\](/ /' \
+         | grep -v ' http')
 
 [ $gagal -eq 0 ] && echo "semua cocok"
 exit $gagal

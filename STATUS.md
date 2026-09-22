@@ -2,20 +2,21 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** perancangan selesai · belum ada kode · siap mulai bangun demo
+**Tahap:** proyek ter-scaffold · konfigurasi selesai · siap menulis skema dan aturan
 **Terakhir diperbarui:** 2026-09-22
 
 ---
 
 ## Sedang dikerjakan
 
-Belum ada. Menunggu aba-aba mulai koding.
+Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 
 ## Berikutnya — tiga langkah pertama
 
-1. Scaffold Next.js + Drizzle + Postgres, jalankan migrasi pertama
+1. Tulis 12 tabel di `src/db/schema.ts` ([05-data-model.md](docs/05-data-model.md)),
+   lalu `npm run db:generate && npm run db:migrate`
 2. Tulis `src/rules/` sebagai fungsi murni + test untuk 8 titik rawan
-   ([04-flows.md](docs/04-flows.md) bagian 9)
+   ([04-flows.md](docs/04-flows.md) bagian 9) — hapus `passWithNoTests` di `vitest.config.ts`
 3. Test integrasi kapasitas: 20 booking paralel ke kelas 8 kursi, tepat 8 berhasil
 
 ## Selesai
@@ -28,6 +29,8 @@ Belum ada. Menunggu aba-aba mulai koding.
 - [x] Lingkup demo dikunci: 31 use case nyata, 5 layar
 - [x] Stack dan arsitektur diputuskan
 - [x] Notifikasi: email + tombol kirim-WA, WhatsApp API ditunda
+- [x] Sistem desain — token, tipografi, komponen, status, pemetaan 6 layar
+- [x] Scaffold Next.js 16 + Tailwind v4 + Drizzle + Postgres Docker, token desain terpasang
 
 ## Keputusan terbuka
 
@@ -56,6 +59,8 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | Proyek di-scaffold: Next.js 16, Tailwind v4, Drizzle + postgres.js, Vitest, Docker Compose Postgres. Token `07-design.md` terpasang di `globals.css`, font Plus Jakarta Sans + Instrument Serif. `check-docs.sh` diperbaiki agar melewati `node_modules` |
+| 2026-09-22 | Sistem desain masuk `07-design.md` — token siap tempel, skala aplikasi dipisah dari skala pemasaran, warna status domain ditambahkan, font berbayar diganti Plus Jakarta Sans + Instrument Serif |
 | 2026-09-22 | Notifikasi diubah: email + tombol kirim-WA di admin, WhatsApp API ditunda. Login jadi magic link email |
 | 2026-09-22 | Arsitektur diputuskan — `06-architecture.md`. VPS per klien, Drizzle, demo di Vercel |
 | 2026-09-22 | Dokumen dirombak: `AGENTS.md` dipisah dari `README.md`, dokumen perancangan pindah ke `docs/` |
