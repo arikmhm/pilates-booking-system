@@ -12,6 +12,7 @@ import { redirect } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { pg } from "@/db";
 import {
+  alatTerpakai,
   bookingAktif,
   jadwal,
   paketMember,
@@ -32,7 +33,8 @@ import {
 import { Angka, Chip, Kartu, Kerangka } from "@/components/kerangka";
 import { Kalender, type IsiBlok } from "./kalender";
 import { BuatKelas, type ModeBuat } from "./buat-kelas";
-import { booking, ikutWaitlist } from "./aksi";
+import { Konfirmasi } from "./konfirmasi";
+import { ikutWaitlist } from "./aksi";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +46,10 @@ type Konteks = {
   paket: PaketMember[];
   aktif: { session_id: string; mulai_at: Date; durasi_menit: number }[];
   sekarang: Date;
+  /** URL layar ini dengan panel konfirmasi (M2) sesi itu terbuka. */
+  tautanPilih: (session_id: string) => string;
+  /** URL layar ini apa adanya — dibawa formulir supaya minggunya tidak hilang. */
+  sini: string;
 };
 
 /** Alasan tolak diringkas jadi dua kata — kalimat penuh tidak muat di blok. */
@@ -109,6 +115,7 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
       bungkus: (anak) => (
         <form action={ikutWaitlist} className="h-full">
           <input type="hidden" name="session_id" value={b.id} />
+          <input type="hidden" name="kembali" value={k.sini} />
           <button type="submit" className="h-full w-full">
             {anak}
           </button>
@@ -116,18 +123,17 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
       ),
     };
 
+  // Bloknya tidak lagi memesan langsung: ia membuka panel konfirmasi M2, dan
+  // di sanalah nomor alat dipilih serta aturan batal dibaca (BR-2.6).
   if (putusan.boleh)
     return {
       warna:
         "border-foreground bg-background transition-colors hover:bg-primary hover:text-primary-foreground",
       catatan: `${sisa} kursi · Booking`,
       bungkus: (anak) => (
-        <form action={booking} className="h-full">
-          <input type="hidden" name="session_id" value={b.id} />
-          <button type="submit" className="h-full w-full">
-            {anak}
-          </button>
-        </form>
+        <Link href={k.tautanPilih(b.id)} className="block h-full">
+          {anak}
+        </Link>
       ),
     };
 
@@ -243,12 +249,13 @@ export default async function M1({
     minggu?: string;
     alat?: string;
     buat?: string;
+    pilih?: string;
   }>;
 }) {
   const user_id = await userSaatIni();
   if (!user_id) redirect("/masuk");
 
-  const { kabar, minggu, alat: alatParam, buat } = await searchParams;
+  const { kabar, minggu, alat: alatParam, buat, pilih } = await searchParams;
   const geser = Math.trunc(Number(minggu)) || 0;
   const alat = (alatParam ?? "").trim();
   const modeBuat: ModeBuat = buat === "berulang" ? "berulang" : "sekali";
@@ -274,11 +281,15 @@ export default async function M1({
       : saya.peran === "coach"
         ? "coach"
         : "member";
-  const k: Konteks = { mode, setelan, paket, aktif, sekarang };
   const staf = mode === "staf";
 
   /** URL layar ini dengan satu bagian diganti — sisanya ikut terbawa. */
-  const url = (ubah: { minggu?: number; alat?: string; buat?: ModeBuat }) => {
+  const url = (ubah: {
+    minggu?: number;
+    alat?: string;
+    buat?: ModeBuat;
+    pilih?: string;
+  }) => {
     const q = new URLSearchParams();
     const m = ubah.minggu ?? geser;
     const a = ubah.alat ?? alat;
@@ -286,8 +297,21 @@ export default async function M1({
     if (m) q.set("minggu", String(m));
     if (a) q.set("alat", a);
     if (b === "berulang") q.set("buat", b);
+    // `pilih` sengaja TIDAK diwarisi: geser minggu atau ganti saringan berarti
+    // orang sedang melihat-lihat lagi, dan panelnya harus ikut tertutup.
+    if (ubah.pilih) q.set("pilih", ubah.pilih);
     const sisa = q.toString();
     return sisa ? `/jadwal?${sisa}` : "/jadwal";
+  };
+
+  const k: Konteks = {
+    mode,
+    setelan,
+    paket,
+    aktif,
+    sekarang,
+    tautanPilih: (id) => url({ pilih: id }),
+    sini: url({}),
   };
 
   // Saringan alat dihitung dari minggu yang sedang dibuka, bukan dari katalog
@@ -311,6 +335,27 @@ export default async function M1({
   )[0];
   const mepet =
     terdekat && terdekat.hangus_at.getTime() - sekarang.getTime() < 7 * 86_400_000;
+
+  // Panel konfirmasi M2. `?pilih=` bisa diketik siapa saja, jadi syaratnya
+  // diperiksa ulang di sini — bukan dipercaya dari tautan yang membukanya.
+  // Kapasitas tetap TIDAK dijamin: kursi terakhir bisa hilang antara panel
+  // terbuka dan tombol ditekan, dan yang memutuskan itu tetap INSERT-nya.
+  const sesiPilih =
+    mode === "member" && pilih
+      ? (baris.find((b) => b.id === pilih) ?? null)
+      : null;
+  const bolehKonfirmasi =
+    sesiPilih !== null &&
+    sesiPilih.terisi < sesiPilih.kapasitas &&
+    bolehBooking({
+      sesi: sesiPilih,
+      setelan,
+      paket,
+      booking_aktif: aktif,
+      sekarang,
+    }).boleh;
+  const terpakai =
+    sesiPilih && bolehKonfirmasi ? await alatTerpakai(pg, sesiPilih.id) : [];
 
   // Dikelompokkan per hari WIB, bukan per hari UTC — kelas 06.00 WIB jatuh di
   // tanggal sebelumnya kalau dihitung UTC (BR-7.5).
@@ -454,6 +499,15 @@ export default async function M1({
         )}
       </div>
 
+      {sesiPilih && bolehKonfirmasi && (
+        <Konfirmasi
+          sesi={sesiPilih}
+          terpakai={terpakai}
+          setelan={setelan}
+          sisa={sisa}
+          tutup={url({})}
+        />
+      )}
     </Kerangka>
   );
 }

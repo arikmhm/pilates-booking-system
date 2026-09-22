@@ -136,6 +136,44 @@ test("dipromosikan_at tersimpan saat kursi diisi dari waitlist (titik 6)", async
   expect(new Date(baris.dipromosikan_at).toISOString()).toBe(naik.toISOString());
 });
 
+test("alat pilihan member dihormati, dan tidak menggagalkan booking (BR-2.6)", async () => {
+  // Sesi bersih, disalin dari yang sudah ada supaya studio dan jenis kelasnya
+  // ikut tanpa perlu menyimpan id-nya di ruang modul.
+  const [s] = await sql`
+    insert into sessions (studio_id, class_type_id, mulai_at, durasi_menit, kapasitas)
+    select studio_id, class_type_id, now() + interval '4 days', durasi_menit, kapasitas
+      from sessions where id = ${sesiKedua}
+    returning id`;
+
+  // Memilih alat 5 di kelas yang masih kosong harus memberi alat 5 — bukan
+  // alat 1 yang akan diberikan kalau klausa urutannya hilang.
+  const pertama = await pesanKursi(sql, {
+    session_id: s.id,
+    user_id: member[1].user_id,
+    member_package_id: member[1].member_package_id,
+    alat_pilihan: 5,
+  });
+  expect(pertama?.nomor_alat).toBe(5);
+
+  // Orang kedua meminta alat yang sama. BR-2.6 adalah urutan, bukan syarat:
+  // dia tetap dapat kursi, yaitu alat kosong terkecil.
+  const kedua = await pesanKursi(sql, {
+    session_id: s.id,
+    user_id: member[2].user_id,
+    member_package_id: member[2].member_package_id,
+    alat_pilihan: 5,
+  });
+  expect(kedua?.nomor_alat).toBe(1);
+
+  // Tanpa pilihan, perilaku lamanya tidak berubah.
+  const ketiga = await pesanKursi(sql, {
+    session_id: s.id,
+    user_id: member[3].user_id,
+    member_package_id: member[3].member_package_id,
+  });
+  expect(ketiga?.nomor_alat).toBe(2);
+});
+
 /* ══ Normalisasi timestamptz ═══════════════════════════════════════════════
    postgres.js mengembalikan Date di node dan string mentah di runtime Next.
    Salah parse di sini tidak melempar apa-apa — cuma menggeser kelas 7 jam,

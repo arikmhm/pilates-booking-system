@@ -47,7 +47,7 @@ flowchart TD
     E -->|tidak| F["Cari kredit valid<br/>lihat Alur 2"]
     F --> G{"Ada kredit yang cocok?"}
     G -->|tidak| X5["Tolak<br/>kredit habis atau hangus"]:::tolak
-    G -->|ya| H["INSERT booking atomik<br/>spot diturunkan dari kapasitas sesi"]
+    G -->|ya| H["INSERT booking atomik<br/>spot diturunkan dari kapasitas sesi<br/>urut dari alat pilihan, BR-2.6"]
     H --> I{"Dapat kursi?"}
     I -->|tidak, penuh| J{"Member mau antre?"}
     I -->|ya| K["credit_ledger minus 1<br/>alasan booking"]

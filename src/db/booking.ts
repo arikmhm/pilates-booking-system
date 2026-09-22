@@ -50,6 +50,14 @@ export async function pesanKursi(
     member_package_id: string;
     sumber?: "member" | "admin" | "waitlist";
     dipromosikan_at?: Date | null;
+    /**
+     * BR-2.6 — alat yang diminta member di layar M2. Sekadar urutan, bukan
+     * syarat: kalau keburu diambil orang lain, yang terdekat tetap didapat.
+     * Menjadikannya syarat berarti booking bisa gagal padahal kursi ada —
+     * persis kursi hilang yang mau diselamatkan sistem ini. Kosong = sistem
+     * yang menentukan, dan itu tetap jalur waitlist dan admin.
+     */
+    alat_pilihan?: number | null;
   },
 ): Promise<{ id: string; nomor_alat: number } | null> {
   const baris = await sql<{ id: string; nomor_alat: number }[]>`
@@ -65,10 +73,22 @@ export async function pesanKursi(
         select nomor_alat from bookings
         where session_id = s.id and status = 'confirmed'
       )
-    order by alat
+    order by (alat = ${args.alat_pilihan ?? null}::int) desc, alat
     limit 1
     returning id, nomor_alat`;
   return baris[0] ?? null;
+}
+
+/** Nomor alat yang sudah terisi di satu sesi — pemilih alat layar M2 (BR-2.6). */
+export async function alatTerpakai(
+  sql: Sql,
+  session_id: string,
+): Promise<number[]> {
+  const baris = await sql<{ nomor_alat: number }[]>`
+    select nomor_alat from bookings
+     where session_id = ${session_id} and status = 'confirmed'
+     order by nomor_alat`;
+  return baris.map((b) => b.nomor_alat);
 }
 
 /** Nama constraint yang bisa dilanggar `pesanKursi` — dua-duanya 23505,

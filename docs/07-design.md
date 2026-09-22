@@ -611,6 +611,25 @@ selalu dibaca per hari. Tab Senin–Minggu plus "Semua", masing-masing membawa j
 lewat URL (`?hari=2`). Bawaannya tetap "Semua": yang baru membuka layar ingin melihat
 seluruhnya dulu.
 
+`DS-42` — **Panel konfirmasi M2 hidup di URL, bukan di state klien.**
+
+Blok yang bisa dipesan tidak lagi memesan saat diklik: ia membuka `?pilih=<session_id>`,
+dan halaman yang sama menggambar panel gesernya di atas kalender. Tiga hal yang didapat
+gratis dari situ: tombol kembali browser menutup panel, panelnya bisa ditautkan, dan
+tidak ada JavaScript yang harus dimuat lebih dulu sebelum seseorang bisa merebut kursi
+terakhir. Pemilih alatnya `<input type="radio">` yang disembunyikan `sr-only` dengan
+chip-nya diwarnai `peer-checked` — kisi chip yang diminta bagian 9, tanpa satu baris pun
+kode klien.
+
+Yang **tidak** dijaga panel ini: kapasitas. Kursi bisa hilang antara panel terbuka dan
+tombol ditekan, dan itu tetap urusan INSERT atomik (BR-2.3). Panelnya memeriksa ulang
+syarat booking saat digambar — `?pilih=` bisa diketik siapa saja — lalu berhenti di situ.
+
+Radio pertama yang masih kosong sudah tercentang, jadi member yang tidak peduli nomor
+alat tetap cuma menekan satu tombol. Alat yang sudah terisi tampil tercoret dan tidak
+bisa dipilih; angkanya tetap terbaca karena "alat 3 sudah diambil" adalah informasi,
+bukan kekosongan.
+
 | Layar | Perangkat | Yang menentukan tampilannya |
 |---|---|---|
 | **M1 Jadwal** | HP | Daftar `card` per sesi. Sisa kursi pakai `app-body` + chip status bagian 7. Tombol `button-primary` lebar penuh; saat penuh berubah jadi `button-secondary` "Ikut Waitlist" |

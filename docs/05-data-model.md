@@ -300,7 +300,7 @@ WHERE s.id = $session
     SELECT nomor_alat FROM bookings
     WHERE session_id = s.id AND status = 'confirmed'
   )
-ORDER BY alat
+ORDER BY (alat = $pilihan) DESC, alat
 LIMIT 1;
 -- 0 baris terinsert = kelas penuh, arahkan ke waitlist.
 ```
@@ -308,6 +308,13 @@ LIMIT 1;
 Nomor alat **diturunkan dari kapasitas sesi**, jadi tidak mungkin di luar rentang.
 Unique index menangani balapan. Tidak perlu lock, tidak perlu transaksi rumit.
 Potong kredit (`credit_ledger` −1) di transaksi yang sama.
+
+`$pilihan` adalah alat yang diminta member di layar M2 (BR-2.6). Ia hanya menggeser
+**urutan**, bukan menambah syarat: kalau alatnya keburu terisi, klausa `NOT IN` yang
+sama tetap memberi alat kosong terkecil. Menjadikannya syarat — `AND alat = $pilihan` —
+berarti booking bisa gagal padahal kursi masih ada. `NULL` (waitlist, jalur admin, dan
+member yang tidak memilih) membuat perbandingannya `NULL` untuk semua baris, jadi
+urutannya kembali persis seperti sebelum kolom ini ada.
 
 ### 5.2 Sisa kredit + paket mana yang dipakai (BR-1.5, BR-1.7)
 

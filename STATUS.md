@@ -2,8 +2,8 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** 12 layar + 4 job terjadwal selesai · sisa latihan presentasi dan deploy
-**Terakhir diperbarui:** 2026-09-22
+**Tahap:** 13 layar + 4 job terjadwal selesai · sisa latihan presentasi dan deploy
+**Terakhir diperbarui:** 2026-09-23
 
 ---
 
@@ -17,7 +17,8 @@ presentasi dan deploy.
 1. Latihan skrip presentasi 5 menit dari ujung ke ujung, rekam video 90 detik
 2. Deploy demo ke Vercel — `DATABASE_URL` sudah menunjuk Neon, `vercel.json` sudah
    memuat jadwal cron. `CRON_SECRET` harus diisi di environment Vercel
-3. M2 panel konfirmasi (pemilih nomor alat) — sekarang alat masih ditentukan sistem
+3. Keputusan terbuka #6 — kode tolak X7 sendiri untuk BR-1.4 (paket tidak mencakup
+   jenis kelasnya), supaya tidak lagi dibilang "kredit kamu habis"
 
 ## Selesai
 
@@ -41,7 +42,9 @@ presentasi dan deploy.
 - [x] Layar A1 Dashboard — okupansi hari ini, panel kredit hangus + tombol WA, setelan bisa diubah
 - [x] Layar A2 Detail sesi — kehadiran, koreksi no-show, Batalkan Kelas satuan & massal (Alur 5)
 - [x] Layar A3 Detail member — dompet kredit, buku besar lengkap, koreksi manual (BR-1.8)
-- [x] **Keenam layar demo selesai** — M1 M2* M3 A1 A2 A3 (*M2 masih ditentukan sistem)
+- [x] **Keenam layar demo selesai** — M1 M2 M3 A1 A2 A3
+- [x] M2 panel konfirmasi — pemilih nomor alat (BR-2.6), sisa kredit sesudahnya,
+      aturan batal tertulis sebelum tombolnya ditekan
 - [x] Tombol Reset Demo — satu transaksi, id user tetap, presenter tidak terlempar keluar
 - [x] Navigasi sidebar shadcn + kalender mingguan M1 (DS-31–DS-34)
 - [x] **Lima layar pengelolaan**: direktori member (A4), pelatih & staf (A5),
@@ -84,6 +87,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-23 | **Layar M2 selesai** — blok yang bisa dipesan berhenti memesan saat diklik: ia membuka panel konfirmasi `?pilih=<session_id>` dengan pemilih nomor alat (BR-2.6), sisa kredit sesudah potongan, dan aturan batal tertulis sebelum tombolnya ditekan. Pilihan alat sengaja cuma menggeser `ORDER BY` query 5.1, bukan menambah syarat — alat yang keburu terisi tetap memberi kursi, dan pesan baliknya menyebut alat yang benar-benar didapat. Panelnya server murni: radio `sr-only` + `peer-checked`, tanpa satu baris kode klien, jadi tombol kembali browser menutupnya. Sekalian redirect sesudah booking membawa minggu dan saringan yang sedang dibuka — sebelumnya memesan kelas minggu depan melemparkan orang kembali ke minggu ini (DS-42) |
 | 2026-09-23 | Kartu Buat kelas disederhanakan (DS-41): tiap tab berdiri sendiri — Sekali jalan (tanggal · jam · alat · pelatih · kursi · durasi → **Buat kelas**) dan Tiap minggu (hari · jam · alat · pelatih · kursi · durasi · jangka terbit → **Buat & terbitkan jadwal mingguan**). Membuat kelas rutin tidak lagi butuh dua tombol di dua tempat. Jam jadi dua `<select>` 24 jam, bukan `<input type="time">` yang rupanya ikut locale browser. Kolom baru `schedule_rules.durasi_menit` (nullable, migrasi 0003) supaya durasi bisa ditimpa per aturan seperti kapasitas. Daftar kelas rutin dipecah tab Senin–Minggu. Sekalian `min-w-0` pada butir grid — lebar min-content sebuah `<select>` sempat melarkan seluruh halaman di 375px |
 | 2026-09-23 | Aturan jadwal yang dihentikan bisa **Jalankan lagi** (owner) — sebelumnya satu klik "Hentikan" hanya bisa dibatalkan lewat Reset Demo, padahal ia ikut menghapus sesi kosongnya. Pesan "Terbitkan sekarang" berhenti menyamakan dua sebab nol sesi: jadwal sudah lengkap vs tidak ada slot yang berjalan; panelnya memberi peringatan sebelum tombolnya ditekan. Subjudul A7 jadi "N dari M slot mingguan berjalan" |
 | 2026-09-23 | Pesan setelah menambah slot mingguan sekarang menyebut **tanggal sesi pertamanya** — "8 sesi terbit, mulai Selasa, 29 September". Slot Selasa yang dibuat hari Rabu tidak punya sesi minggu ini, kalender membuka di minggu ini, dan "8 sesi terbit" saja terbaca sebagai gagal. Sekalian `berlaku_dari`/`berlaku_sampai` dipindah ke tanggal dinding WIB: `current_date` Postgres berjalan di UTC dan salah sehari antara 00.00–07.00 WIB (BR-7.5) |

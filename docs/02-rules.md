@@ -97,7 +97,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | 2.3 | **Kapasitas keras** — dijamin di lapisan database, bukan kode aplikasi | D |
 | 2.4 | Satu member maks 1 booking aktif per sesi | D |
 | 2.5 | Tidak bisa booking dua sesi yang jamnya bentrok | D |
-| 2.6 | Member pilih nomor alat; jika tidak memilih, sistem yang menentukan | D |
+| 2.6 | Member pilih nomor alat; jika tidak memilih **atau alatnya keburu terisi**, sistem yang menentukan — pilihan menggeser urutan, tidak pernah menggagalkan booking | D |
 | 2.7 | Tidak punya kredit valid → booking ditolak, diarahkan beli paket | D |
 
 ### BR-3 · Pembatalan oleh member
@@ -226,8 +226,8 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 
 | ID | Layar | Isi |
 |---|---|---|
-| M1 | Jadwal | Kalender mingguan di laptop, daftar per hari di HP · sisa kursi · blok jadi tombol "Booking" / "Penuh — Antre" · bisa geser minggu — `src/app/jadwal/` |
-| M2 | Konfirmasi *(panel geser)* | Pilih nomor alat · info "1 kredit dipotong" · aturan batal tertulis |
+| M1 | Jadwal | Kalender mingguan di laptop, daftar per hari di HP · sisa kursi · blok membuka panel konfirmasi M2, blok penuh langsung mengantre · bisa geser minggu — `src/app/jadwal/` |
+| M2 | Konfirmasi *(panel geser)* | Pilih nomor alat · info "1 kredit dipotong" + sisa sesudahnya · aturan batal tertulis · terbuka-tutup lewat `?pilih=` — `src/app/jadwal/konfirmasi.tsx` |
 | M3 | Akun Saya | **Sisa kredit + tanggal hangus + hitung mundur** · booking aktif · **daftar tunggu + tombol keluar** (BR-4.7) · riwayat kredit — `src/app/akun/` |
 
 **Admin (tampilan laptop)**

@@ -66,9 +66,11 @@ export async function bookingkan(
     /** Siapa yang menekan tombol; sama dengan user_id kalau member sendiri. */
     pelaku_id: string;
     sekarang: Date;
+    /** BR-2.6 — alat pilihan member (M2). Kosong = sistem yang menentukan. */
+    alat_pilihan?: number | null;
   },
 ): Promise<HasilPesan> {
-  const { session_id, user_id, sumber, pelaku_id, sekarang } = args;
+  const { session_id, user_id, sumber, pelaku_id, sekarang, alat_pilihan } = args;
 
   const [setelan, paket, aktif, sesi] = await Promise.all([
     setelanStudio(sql),
@@ -97,6 +99,7 @@ export async function bookingkan(
           user_id,
           member_package_id: putusan.paket.id,
           sumber,
+          alat_pilihan,
         });
         if (!k) return null; // kelas penuh
 
