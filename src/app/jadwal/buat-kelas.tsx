@@ -313,6 +313,17 @@ export async function BuatKelas({
                 : "Belum ada sesi terbit dari aturan mingguan."}
             </p>
 
+            {/* Tombol yang tidak mungkin berhasil harus mengatakannya SEBELUM
+                ditekan. Tanpa baris ini, "Terbitkan sekarang" di studio tanpa
+                slot berjalan terasa seperti tombol rusak. */}
+            {status.aturan_aktif === 0 && (
+              <p className="mt-2 rounded-sm bg-warn-surface px-3 py-2 text-app-body-sm text-warn-foreground">
+                Tidak ada slot mingguan yang berjalan, jadi belum ada yang bisa
+                diterbitkan. Buat slot lewat tab “Tiap minggu”, atau jalankan
+                lagi slot yang dihentikan di daftar sebelah.
+              </p>
+            )}
+
             <form action={terbitkanJadwal} className="mt-3 space-y-3">
               <input type="hidden" name="dari" value={kembali} />
 

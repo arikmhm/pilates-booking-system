@@ -18,6 +18,7 @@ import {
   buatPaket,
   buatSesiManual,
   hentikanAturan,
+  jalankanAturan,
   simpanJangkaTerbit,
   ubahAktifPaket,
 } from "@/db/kelola";
@@ -181,6 +182,32 @@ export async function berhentikanAturan(formData: FormData) {
   );
 }
 
+export async function jalankanLagiAturan(formData: FormData) {
+  await pastikanOwner();
+
+  const id = String(formData.get("id"));
+  await jalankanAturan(pg, id);
+
+  // Sesi yang dibersihkan saat dihentikan tidak kembali sendiri — yang
+  // mengembalikannya penerbitan, dan itu dikerjakan di sini supaya slotnya
+  // tidak tampak "berjalan" dengan kalender yang masih kosong.
+  await generateSesi(pg, new Date());
+  const [{ milik_slot, perdana }] = await pg<
+    { milik_slot: number; perdana: string | null }[]
+  >`
+    select count(*)::int as milik_slot, min(mulai_at) as perdana
+      from sessions
+     where schedule_rule_id = ${id} and mulai_at > now()`;
+
+  revalidatePath("/admin/jadwal");
+  revalidatePath("/jadwal");
+  keJadwal(
+    `Slot dijalankan lagi — ${milik_slot} sesi terbit` +
+      (perdana ? `, mulai ${hariWib(saat(perdana))}.` : "."),
+    formData.get("dari"),
+  );
+}
+
 /* ── Sesi sekali jalan — kewenangan admin ────────────────────────────────── */
 
 export async function tambahSesi(formData: FormData) {
@@ -252,11 +279,21 @@ export async function terbitkanJadwal(formData: FormData) {
 
   revalidatePath("/admin/jadwal");
   revalidatePath("/jadwal");
+
+  // Nol sesi punya DUA sebab yang berlawanan, dan menyamakannya membuat pesan
+  // ini berbohong: jadwalnya sudah lengkap, atau tidak ada satu pun slot
+  // mingguan yang berjalan. Yang kedua itu keadaan buntu — tombol ini tidak
+  // akan pernah menghasilkan apa pun sampai ada aturan yang dijalankan.
+  const [{ aktif }] = await pg<{ aktif: number }[]>`
+    select count(*)::int as aktif from schedule_rules where berlaku_sampai is null`;
+
   keJadwal(
     ubah +
-      (dibuat === 0
-        ? "Tidak ada sesi baru — jadwal sudah terbit sampai batas jangkanya."
-        : `${dibuat} sesi diterbitkan dari aturan mingguan.`),
+      (dibuat > 0
+        ? `${dibuat} sesi diterbitkan dari aturan mingguan.`
+        : aktif === 0
+          ? "Tidak ada yang bisa diterbitkan: semua slot mingguan berstatus Dihentikan. Jalankan lagi salah satunya di daftar sebelah kiri."
+          : "Tidak ada sesi baru — jadwal sudah terbit sampai batas jangkanya."),
     dari,
   );
 }

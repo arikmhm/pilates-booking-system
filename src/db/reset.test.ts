@@ -104,3 +104,18 @@ test("menolak jalan di database yang bukan demo", async () => {
   await expect(resetJadwal(sql)).rejects.toThrow(/menolak jalan/i);
   await sql`update studios set nama = 'Studio Pilates Kenari'`;
 });
+
+test("aturan yang dihentikan bisa dijalankan lagi — bukan jalan satu arah", async () => {
+  const { hentikanAturan, jalankanAturan, statusTerbit } = await import("./kelola");
+
+  const semua = await sql<{ id: string }[]>`select id from schedule_rules`;
+  expect(semua.length).toBeGreaterThan(0);
+
+  for (const r of semua) await hentikanAturan(sql, r.id);
+  // Nol aturan aktif adalah keadaan buntu: "Terbitkan sekarang" tidak akan
+  // pernah menghasilkan apa pun, dan layarnya harus bisa mengatakan itu.
+  expect((await statusTerbit(sql, new Date())).aturan_aktif).toBe(0);
+
+  await jalankanAturan(sql, semua[0].id);
+  expect((await statusTerbit(sql, new Date())).aturan_aktif).toBe(1);
+});

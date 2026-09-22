@@ -358,6 +358,16 @@ export async function buatAturan(
  * beserta bookingnya — tetap utuh. Menghapus barisnya akan memutus
  * `sessions.schedule_rule_id`.
  */
+/**
+ * Kebalikan `hentikanAturan()`. Tanpa ini, menekan "Hentikan" sekali adalah
+ * jalan satu arah: satu-satunya cara mengembalikannya Reset Demo, yang
+ * membuang seluruh data lain sekalian. Menjalankan lagi tidak mengembalikan
+ * sesi yang terlanjur dibersihkan — itu dikerjakan penerbitan berikutnya.
+ */
+export async function jalankanAturan(sql: Sql, id: string) {
+  await sql`update schedule_rules set berlaku_sampai = null where id = ${id}`;
+}
+
 export async function hentikanAturan(sql: Sql, id: string) {
   await sql`
     update schedule_rules
@@ -383,22 +393,39 @@ export type StatusTerbit = {
   /** Sesi terjauh yang sudah terbit, atau null kalau belum ada. */
   sampai: Date | null;
   minggu: number;
+  /**
+   * Slot mingguan yang masih berjalan. Nol berarti "Terbitkan sekarang" tidak
+   * akan menghasilkan apa pun — bukan karena jadwalnya sudah lengkap, tapi
+   * karena tidak ada polanya. Dua sebab itu harus dibedakan di layar.
+   */
+  aturan_aktif: number;
 };
 
 export async function statusTerbit(
   sql: Sql,
   sekarang: Date,
 ): Promise<StatusTerbit> {
-  const [r] = await sql<{ mendatang: number; sampai: string | null; minggu: number }[]>`
+  const [r] = await sql<
+    {
+      mendatang: number;
+      sampai: string | null;
+      minggu: number;
+      aturan_aktif: number;
+    }[]
+  >`
     select count(s.id)::int as mendatang,
            max(s.mulai_at) as sampai,
-           max(st.generate_weeks_ahead)::int as minggu
+           max(st.generate_weeks_ahead)::int as minggu,
+           (select count(*)::int from schedule_rules r
+             where r.studio_id = st.id and r.berlaku_sampai is null)
+             as aturan_aktif
       from studios st
       left join sessions s
         on s.studio_id = st.id
        and s.schedule_rule_id is not null
        and s.status = 'scheduled'
-       and s.mulai_at > ${ts(sekarang)}::timestamptz`;
+       and s.mulai_at > ${ts(sekarang)}::timestamptz
+     group by st.id`;
   return { ...r, sampai: r.sampai ? saat(r.sampai) : null };
 }
 

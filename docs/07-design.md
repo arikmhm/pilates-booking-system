@@ -555,6 +555,23 @@ operasional, menentukan sampai berapa minggu ke depan studio terikat jadwal itu 
 studio. Admin tidak melihat inputnya sama sekali — dan karena field `minggu` memang
 tidak ikut terkirim, tidak ada yang bisa diubah, bukan sekadar tidak terlihat.
 
+**Nol sesi punya dua sebab yang berlawanan, dan layar harus membedakannya.** Jadwal
+sudah lengkap sampai batas jangkanya, atau tidak ada satu pun slot mingguan yang
+berjalan. Yang kedua itu keadaan buntu: tombolnya tidak akan pernah menghasilkan apa
+pun. Stripnya memasang peringatan `warn-surface` **sebelum** tombolnya ditekan —
+tombol yang tidak mungkin berhasil harus mengatakannya lebih dulu.
+
+**Tiap aksi yang mematikan sesuatu wajib punya pasangan yang menghidupkannya.**
+"Hentikan" pada slot mingguan ikut membersihkan sesi kosongnya, jadi tanpa "Jalankan
+lagi" satu klik keliru hanya bisa dibatalkan dengan Reset Demo — yang membuang seluruh
+data lain sekalian. Barisnya menampilkan tombol itu di tempat chip "Dihentikan" untuk
+owner; admin tetap melihat chipnya, karena menjalankan slot mingguan kewenangan owner.
+
+**Pesan setelah aksi menyebut tanggal, bukan cuma jumlah.** "8 sesi terbit" tidak bisa
+dibedakan dari gagal oleh orang yang sedang menatap kalender minggu ini yang kosong;
+"8 sesi terbit, mulai Selasa, 29 September" bisa. Slot Selasa yang dibuat hari Rabu
+memang tidak punya sesi minggu ini.
+
 | Layar | Perangkat | Yang menentukan tampilannya |
 |---|---|---|
 | **M1 Jadwal** | HP | Daftar `card` per sesi. Sisa kursi pakai `app-body` + chip status bagian 7. Tombol `button-primary` lebar penuh; saat penuh berubah jadi `button-secondary` "Ikut Waitlist" |

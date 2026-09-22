@@ -17,7 +17,7 @@ import { daftarAturan, HARI } from "@/db/kelola";
 import { pastikanAdmin } from "@/lib/masuk";
 import { Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
 import { BuatKelas, type ModeBuat } from "@/app/jadwal/buat-kelas";
-import { berhentikanAturan } from "../kelola-aksi";
+import { berhentikanAturan, jalankanLagiAturan } from "../kelola-aksi";
 
 export const dynamic = "force-dynamic";
 
@@ -49,8 +49,8 @@ export default async function A7({
       <div>
         <h1 className="text-app-title">Aturan jadwal</h1>
         <p className="text-app-body-sm text-muted-foreground">
-          {aktif.length} slot mingguan aktif · sesi diterbitkan dari panel di
-          kanan, bukan otomatis
+          {aktif.length} dari {aturan.length} slot mingguan berjalan · sesi
+          diterbitkan dari panel di kanan, bukan otomatis
         </p>
       </div>
 
@@ -90,11 +90,26 @@ export default async function A7({
                       {a.sesi_mendatang} sesi mendatang
                     </div>
 
+                    {/* Dihentikan bukan keadaan akhir — tanpa "Jalankan
+                        lagi", satu klik Hentikan cuma bisa dibatalkan dengan
+                        Reset Demo, yang membuang seluruh data lain sekalian. */}
                     {berhenti ? (
-                      <Chip
-                        warna="bg-neutral-surface text-neutral-foreground"
-                        anak="Dihentikan"
-                      />
+                      owner ? (
+                        <form action={jalankanLagiAturan} className="shrink-0">
+                          <input type="hidden" name="id" value={a.id} />
+                          <input
+                            type="hidden"
+                            name="dari"
+                            value="/admin/jadwal"
+                          />
+                          <Tombol gaya="halus" kecil anak="Jalankan lagi" />
+                        </form>
+                      ) : (
+                        <Chip
+                          warna="bg-neutral-surface text-neutral-foreground"
+                          anak="Dihentikan"
+                        />
+                      )
                     ) : owner ? (
                       <form action={berhentikanAturan} className="shrink-0">
                         <input type="hidden" name="id" value={a.id} />
