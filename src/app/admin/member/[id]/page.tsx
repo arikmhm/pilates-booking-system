@@ -139,8 +139,8 @@ export default async function A3({
         </a>
       </div>
 
-      <div className="mt-md grid items-start gap-md lg:grid-cols-[3fr_2fr]">
-        <div className="space-y-md">
+      <div className="mt-sedang grid items-start gap-sedang lg:grid-cols-[3fr_2fr]">
+        <div className="space-y-sedang">
           <Kartu judul="Dompet kredit" padat>
             <ul className="divide-y divide-border">
               {dompet.map((p) => (
@@ -167,7 +167,7 @@ export default async function A3({
           </Kartu>
         </div>
 
-        <div className="space-y-md">
+        <div className="space-y-sedang">
           <Kartu>
             <Angka nilai={sisa} label="Kredit aktif" catatan={`${dompet.length} paket tercatat`} />
           </Kartu>

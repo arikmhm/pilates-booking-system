@@ -80,12 +80,16 @@
   --radius-md: 8px;
   --radius-lg: 12px;
 
-  /* skala jarak 07-design.md bagian 5 */
-  --spacing-xs: 10px;
-  --spacing-sm: 20px;
-  --spacing-md: 40px;
-  --spacing-lg: 60px;
-  --spacing-xl: 100px;
+  /* Skala jarak 07-design.md bagian 5.
+     Namanya Bahasa Indonesia BUKAN gaya-gayaan: di Tailwind v4 utilitas
+     `max-w-*` ikut membaca namespace `--spacing-*`, jadi `--spacing-lg: 60px`
+     membuat `max-w-lg` bernilai 60px, bukan 512px. Nama xs/sm/md/lg/xl
+     bertabrakan persis dengan skala container bawaan — DS-29. */
+  --spacing-rapat: 10px;
+  --spacing-dekat: 20px;
+  --spacing-sedang: 40px;
+  --spacing-lega: 60px;
+  --spacing-luas: 100px;
   --spacing-gutter: 24px;
 
   /* DS-4 — skala aplikasi, dipakai di semua layar M1–A3 */

@@ -113,7 +113,7 @@ export default async function M3({
         )}
       </Kartu>
 
-      <div className="mt-sm">
+      <div className="mt-dekat">
         <Kartu judul="Kelas mendatang" padat>
           {booking.length === 0 ? (
             <p className="p-4 text-app-body-sm text-muted-foreground">
@@ -158,7 +158,7 @@ export default async function M3({
         </Kartu>
       </div>
 
-      <div className="mt-sm">
+      <div className="mt-dekat">
         {/* DS — daftar sederhana, tanpa tabel bergaris. */}
         <Kartu
           judul="Riwayat kredit"

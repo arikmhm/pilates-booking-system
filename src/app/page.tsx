@@ -52,7 +52,7 @@ function Pita({
 }) {
   // DS-24 — 40px di HP, 100px di laptop. Ini sumber kesan lapangnya.
   return (
-    <section className={`py-md lg:py-xl ${latar}`}>
+    <section className={`py-sedang lg:py-luas ${latar}`}>
       <div className="mx-auto w-full max-w-[1200px] px-gutter">{children}</div>
     </section>
   );
@@ -77,7 +77,7 @@ export default function Profil() {
       {/* 1 — site-header. Di HP navigasi disembunyikan, wordmark dan CTA tetap. */}
       <header className="border-b border-border bg-background">
         <div className="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between px-gutter">
-          <nav className="hidden flex-1 gap-sm md:flex">
+          <nav className="hidden flex-1 gap-dekat md:flex">
             {NAV.map((t) => (
               <a key={t} href="#" className="min-h-11 inline-flex items-center text-app-body-sm hover:underline">
                 {t}
@@ -112,14 +112,14 @@ export default function Profil() {
               "linear-gradient(90deg, var(--photo-scrim) 0%, var(--photo-scrim) 40%, transparent 78%)",
           }}
         />
-        <div className="relative mx-auto w-full max-w-[1200px] px-gutter py-lg">
+        <div className="relative mx-auto w-full max-w-[1200px] px-gutter py-lega">
           <p className="font-serif text-app-section text-white/90">
             Kudus, Jawa Tengah
           </p>
-          <h1 className="mt-xs max-w-[15ch] text-display text-white">
+          <h1 className="mt-rapat max-w-[15ch] text-display text-white">
             Bergerak tenang, pulang bertenaga.
           </h1>
-          <div className="mt-sm">
+          <div className="mt-dekat">
             <Tombol anak="Lihat Jadwal Minggu Ini" penuh />
           </div>
         </div>
@@ -138,11 +138,11 @@ export default function Profil() {
 
       {/* 4 — kelas, pita sand */}
       <Pita latar="bg-surface-sand">
-        <div className="grid items-center gap-md lg:grid-cols-2">
+        <div className="grid items-center gap-sedang lg:grid-cols-2">
           <div aria-hidden className={`${FOTO} aspect-[4/3] w-full rounded-md`} />
           <div>
             <h2 className="text-marketing-h2">Empat cara memulai</h2>
-            <dl className="mt-sm divide-y divide-border-warm">
+            <dl className="mt-dekat divide-y divide-border-warm">
               {KELAS.map(([nama, kursi, ket]) => (
                 <div key={nama} className="py-4">
                   <dt className="flex items-baseline justify-between gap-4">
@@ -163,7 +163,7 @@ export default function Profil() {
 
       {/* 5 — angka */}
       <Pita>
-        <div className="grid grid-cols-2 gap-md lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-sedang lg:grid-cols-4">
           {ANGKA.map(([n, label]) => (
             <div key={label}>
               {/* DS-5 — angka selalu tabular-nums */}
@@ -179,7 +179,7 @@ export default function Profil() {
       {/* 6 — instruktur, pita sand. Geser mendatar pakai scroll asli, tanpa JS. */}
       <Pita latar="bg-surface-sand">
         <h2 className="text-marketing-h2">Instruktur kami</h2>
-        <ul className="mt-sm -mx-gutter flex snap-x gap-4 overflow-x-auto px-gutter">
+        <ul className="mt-dekat -mx-gutter flex snap-x gap-4 overflow-x-auto px-gutter">
           {INSTRUKTUR.map(([nama, ket]) => (
             <li key={nama} className="w-56 shrink-0 snap-start">
               <div aria-hidden className={`${FOTO} aspect-[3/4] w-full rounded-md`} />
@@ -194,19 +194,19 @@ export default function Profil() {
       <Pita>
         <div className="mx-auto max-w-[52ch] text-center">
           <h2 className="text-marketing-h2">Untuk setiap tubuh</h2>
-          <p className="mt-xs text-app-body text-muted-foreground">
+          <p className="mt-rapat text-app-body text-muted-foreground">
             Member Kenari berumur 19 sampai 64 tahun. Ada yang baru pulih dari
             cedera, ada yang sudah delapan tahun berlatih. Kelasnya sama, porsinya
             yang menyesuaikan.
           </p>
         </div>
-        <ul className="mt-md -mx-gutter flex gap-4 overflow-x-auto px-gutter">
+        <ul className="mt-sedang -mx-gutter flex gap-4 overflow-x-auto px-gutter">
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <li
               key={i}
               aria-hidden
               className={`${FOTO} aspect-[3/4] w-40 shrink-0 rounded-md ${
-                i % 2 ? "mt-sm" : ""
+                i % 2 ? "mt-dekat" : ""
               }`}
             />
           ))}
@@ -218,12 +218,12 @@ export default function Profil() {
       <Pita latar="bg-surface-sand-deep">
         <div className="mx-auto max-w-[44ch] text-center">
           <h2 className="text-marketing-h2">Kelas pertama gratis</h2>
-          <p className="mt-xs text-app-body text-emphasis-sand">
+          <p className="mt-rapat text-app-body text-emphasis-sand">
             Datang dulu, rasakan dulu. Paket dibeli setelah kamu yakin.
           </p>
         </div>
 
-        <div className="mt-md grid gap-4 lg:grid-cols-3">
+        <div className="mt-sedang grid gap-4 lg:grid-cols-3">
           {PAKET.map((p) => (
             <div
               key={p.nama}
@@ -248,7 +248,7 @@ export default function Profil() {
         </div>
 
         {/* DS-13 — satu tombol utama per layar; ini satu-satunya di halaman. */}
-        <div className="mt-md text-center">
+        <div className="mt-sedang text-center">
           <Tombol anak="Ambil Kelas Gratis" penuh />
         </div>
       </Pita>
@@ -260,7 +260,7 @@ export default function Profil() {
             &ldquo;Dulu saya harus chat dulu, nunggu dibalas, baru tahu kelasnya
             penuh. Sekarang tinggal lihat sisa kursinya sendiri.&rdquo;
           </blockquote>
-          <figcaption className="mt-sm text-app-label uppercase text-muted-foreground">
+          <figcaption className="mt-dekat text-app-label uppercase text-muted-foreground">
             Sari — member sejak 2024
           </figcaption>
         </figure>
@@ -268,8 +268,8 @@ export default function Profil() {
 
       {/* 10 — site-footer */}
       <footer className="bg-surface-sand-deep">
-        <div className="mx-auto w-full max-w-[1200px] px-gutter py-md lg:py-lg">
-          <div className="grid gap-md lg:grid-cols-4">
+        <div className="mx-auto w-full max-w-[1200px] px-gutter py-sedang lg:py-lega">
+          <div className="grid gap-sedang lg:grid-cols-4">
             <div>
               <p className="text-app-section">Studio Pilates Kenari</p>
               <p className="mt-2 max-w-[28ch] text-app-body-sm text-emphasis-sand">
@@ -298,7 +298,7 @@ export default function Profil() {
             ))}
           </div>
 
-          <p className="mt-lg border-t border-border-warm pt-sm text-center text-marketing-h2 tracking-[0.12em]">
+          <p className="mt-lega border-t border-border-warm pt-dekat text-center text-marketing-h2 tracking-[0.12em]">
             KENARI
           </p>
         </div>

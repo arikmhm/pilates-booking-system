@@ -98,7 +98,7 @@ export default async function A1({
         </nav>
       </div>
 
-      <div className="mt-sm grid gap-4 sm:grid-cols-3">
+      <div className="mt-dekat grid gap-4 sm:grid-cols-3">
         <Kartu>
           <Angka nilai={sesi.length} label={geser ? "Kelas besok" : "Kelas hari ini"} />
         </Kartu>
@@ -110,7 +110,7 @@ export default async function A1({
         </Kartu>
       </div>
 
-      <div className="mt-md grid items-start gap-md lg:grid-cols-[3fr_2fr]">
+      <div className="mt-sedang grid items-start gap-sedang lg:grid-cols-[3fr_2fr]">
         <Kartu judul={geser ? "Kelas besok" : "Kelas hari ini"} padat>
           {sesi.length === 0 ? (
             <p className="p-4 text-app-body-sm text-muted-foreground">
@@ -149,7 +149,7 @@ export default async function A1({
           )}
         </Kartu>
 
-        <div className="space-y-md">
+        <div className="space-y-sedang">
           {/* Satu-satunya blok berwarna di halaman — DS, supaya mata langsung
               ke sini. Ini yang ditunjuk saat presentasi. */}
           <Kartu

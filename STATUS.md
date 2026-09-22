@@ -73,6 +73,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | **Bug tata letak besar diperbaiki**: nama token `--spacing-lg` dll. bertabrakan dengan skala container Tailwind, sehingga `max-w-lg` = 60px dan `max-w-md` = 40px. Semua layar member dan halaman masuk selama ini selebar 40–60px. Token diganti nama Indonesia, lebar isi jadi nilai eksplisit, ditambah test penjaga (DS-29, DS-30) |
 | 2026-09-22 | Pembenahan tampilan kelima layar aplikasi: kerangka bersama (bilah atas + latar muted + kartu putih), primitif `Kartu`/`Tombol`/`Chip`/`Angka`, DS-26–DS-28. Sesi demo batas 12 jam tidak lagi dibuat manual — dulu bisa mendarat pukul 01.18 di jadwal |
 | 2026-09-22 | Reset Demo jadi. Seed dipecah: `seed.ts` fungsi murni, `seed-cli.mts` pembungkus CLI. Id user dibuat tetap supaya reset tidak melempar presenter keluar. Paket jadi ESM (`"type": "module"`) — menghilangkan peringatan Node tiap seed dijalankan |
 | 2026-09-22 | Layar A3 selesai — enam layar demo lengkap. Seed: kolom ditulis eksplisit di semua insert massal setelah bug yang sama menggigit kedua kali, dan satu bug laten ketahuan — sesi "dalam 8 jam" terpilih ganda sebagai "sesi penuh besok pagi" kalau seed dijalankan setelah ~16.00 WIB |

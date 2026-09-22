@@ -52,7 +52,7 @@ export default async function Masuk() {
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-muted">
-      <main className="mx-auto w-full max-w-lg px-gutter py-md">
+      <main className="mx-auto w-full max-w-[34rem] px-gutter py-sedang">
         <p className="text-app-label uppercase tracking-[0.14em] text-muted-foreground">
           Studio Pilates Kenari
         </p>
@@ -61,7 +61,7 @@ export default async function Masuk() {
           Mode demo — pilih siapa saja, tanpa kata sandi.
         </p>
 
-        <section className="mt-md rounded-md border border-border bg-background">
+        <section className="mt-sedang rounded-md border border-border bg-background">
           <h2 className="border-b border-border px-4 py-3 text-app-label uppercase text-muted-foreground">
             Staf studio
           </h2>
@@ -72,7 +72,7 @@ export default async function Masuk() {
           </ul>
         </section>
 
-        <section className="mt-sm rounded-md border border-border bg-background">
+        <section className="mt-dekat rounded-md border border-border bg-background">
           <h2 className="border-b border-border px-4 py-3 text-app-label uppercase text-muted-foreground">
             Member · {member.length} orang
           </h2>

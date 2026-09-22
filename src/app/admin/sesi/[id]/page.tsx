@@ -86,7 +86,7 @@ export default async function A2({
         )}
       </div>
 
-      <div className="mt-md grid items-start gap-md lg:grid-cols-[3fr_2fr]">
+      <div className="mt-sedang grid items-start gap-sedang lg:grid-cols-[3fr_2fr]">
         <Kartu judul="Peserta" padat>
           <ul className="divide-y divide-border">
             {peserta.map((p) => {
@@ -154,7 +154,7 @@ export default async function A2({
           </ul>
         </Kartu>
 
-        <div className="space-y-md">
+        <div className="space-y-sedang">
           <Kartu judul="Daftar tunggu" padat>
             {antrean.length === 0 ? (
               <p className="p-4 text-app-body-sm text-muted-foreground">

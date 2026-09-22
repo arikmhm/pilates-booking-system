@@ -158,12 +158,12 @@ export default async function M1({
       </Kartu>
 
       {perHari.size === 0 && (
-        <p className="mt-md text-app-body text-muted-foreground">
+        <p className="mt-sedang text-app-body text-muted-foreground">
           Belum ada kelas dalam {setelan.booking_opens_days} hari ke depan.
         </p>
       )}
 
-      <div className="mt-md space-y-sm">
+      <div className="mt-sedang space-y-dekat">
         {[...perHari.entries()].map(([kunci, sesi]) => (
           <Kartu key={kunci} judul={hariWib(sesi[0].mulai_at)} padat>
             <ul className="divide-y divide-border">

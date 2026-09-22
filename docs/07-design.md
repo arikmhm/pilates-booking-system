@@ -196,7 +196,25 @@ di layar HP murah. Antarmuka aplikasi memakai 400 dan 500 saja.
 
 ## 5. Jarak, bentuk, kedalaman
 
-**Skala jarak:** 10 · 20 · 40 · 60 · 100 px. Selokan 24px.
+**Skala jarak:** `rapat` 10 · `dekat` 20 · `sedang` 40 · `lega` 60 · `luas` 100 px.
+Selokan `gutter` 24px.
+
+`DS-29` — **Nama token jarak tidak boleh `xs`/`sm`/`md`/`lg`/`xl`.** Di Tailwind v4
+utilitas `max-w-*` ikut membaca namespace `--spacing-*`, sedangkan skala container
+bawaan memakai nama yang sama persis. `--spacing-lg: 60px` membuat `max-w-lg` bernilai
+**60px**, bukan 512px — seluruh kolom isi menyusut jadi selebar dua kata.
+
+Gagalnya senyap total: tidak ada galat, tidak ada luapan mendatar, `typecheck` dan
+`lint` tetap hijau, dan pemeriksaan otomatis yang hanya mencari luapan tidak melihat
+apa pun. Yang menemukannya adalah orang yang membuka halamannya.
+
+Karena itu namanya Bahasa Indonesia, dan `src/app/globals.test.ts` menolak tiap nama
+yang bertabrakan dengan skala container.
+
+`DS-30` — **Lebar isi ditulis sebagai nilai eksplisit**, bukan diambil dari skala tema:
+`max-w-[34rem]` untuk layar member, `max-w-[1200px]` untuk layar admin dan halaman
+publik. Lebar kolom itu konstanta tata letak, dan menuliskannya apa adanya membuatnya
+kebal terhadap tabrakan nama berikutnya.
 
 `DS-8` — Jarak antar bagian: **80px di laptop, 40px di HP.** Skala pemasaran yang lapang
 itu bagus di beranda, memboroskan layar di jadwal kelas.

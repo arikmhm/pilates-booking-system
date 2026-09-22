@@ -36,7 +36,7 @@ export function Kerangka({
   const wadah =
     lebar === "admin"
       ? "mx-auto w-full max-w-[1200px] px-gutter"
-      : "mx-auto w-full max-w-lg px-gutter";
+      : "mx-auto w-full max-w-[34rem] px-gutter";
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-muted">
@@ -80,9 +80,9 @@ export function Kerangka({
         </div>
       </header>
 
-      <main className={`${wadah} w-full flex-1 py-md`}>
+      <main className={`${wadah} w-full flex-1 py-sedang`}>
         {kabar && (
-          <p className="mb-sm rounded-md border border-border bg-background p-4 text-app-body-sm">
+          <p className="mb-dekat rounded-md border border-border bg-background p-4 text-app-body-sm">
             {kabar}
           </p>
         )}
