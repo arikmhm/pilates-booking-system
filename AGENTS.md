@@ -96,6 +96,13 @@ pilihan itu harus tetap terbuka.
 **Job lewat HTTP.** Empat job terjadwal jadi endpoint biasa berpenjaga secret,
 dipanggil Vercel Cron di demo dan `crontab` di VPS. Kode sama, beda satu baris config.
 
+**Waktu dinormalisasi di `src/db/`, bukan di layar.** Parser tipe postgres.js tidak
+terpasang di runtime server Next: kolom `timestamptz` kembali sebagai string mentah,
+dan `Date` yang dikirim sebagai parameter ditolak. Di node biasa (seed, test) keduanya
+jalan — jadi typecheck dan test **tidak** akan menangkapnya. Tiap query yang menyentuh
+waktu memakai `saat()` saat membaca dan `ts()` + `::timestamptz` saat menulis
+(`src/db/booking.ts`). Jangan pernah menyerahkan baris mentah ke `src/rules/`.
+
 **Aturan bisnis = fungsi murni.** `src/rules/` tidak mengimpor db, tidak async — hanya
 input → keputusan. Server action yang membaca dan menulis database. Seam ini yang
 membuat 8 titik rawan benar-benar bisa di-test.

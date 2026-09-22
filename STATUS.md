@@ -2,7 +2,7 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** seed demo jalan di Neon · siap membangun layar M1
+**Tahap:** M1 + booking jalan ujung ke ujung · siap membangun M3 dan A1
 **Terakhir diperbarui:** 2026-09-22
 
 ---
@@ -13,9 +13,9 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 
 ## Berikutnya — tiga langkah pertama
 
-1. Layar M1 Jadwal + server action booking: baca db → panggil `bolehBooking()` →
-   query 5.1 (pindahkan dari `src/db/kapasitas.test.ts`) → `credit_ledger` −1
-2. Layar M3 Akun Saya — sisa kredit, hitung mundur hangus, riwayat ledger
+1. Layar M3 Akun Saya — sisa kredit, hitung mundur hangus, riwayat ledger
+2. Layar M2 Konfirmasi (panel geser) — pilih nomor alat, aturan batal tertulis.
+   Sekarang nomor alat ditentukan sistem (BR-2.6 cabang kedua)
 3. Layar A1 Dashboard — panel "kredit hangus ≤ 7 hari" (5 orang sudah ada di seed)
 
 ## Selesai
@@ -35,6 +35,7 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 - [x] Test integrasi kapasitas hijau — 20 booking paralel ke 8 kursi, tepat 8 berhasil
 - [x] `src/rules/` — 8 titik rawan tertutup, 38 test, diverifikasi lewat mutasi
 - [x] Seed demo deterministik — 40 member, 168 sesi, sesi penuh 8/8 + 3 antre, panel A1 5 orang
+- [x] Layar M1 Jadwal + server action booking & waitlist, diuji ujung ke ujung di browser
 
 ## Keputusan terbuka
 
@@ -45,6 +46,7 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 | 3 | Batas batal 12 jam belum divalidasi | Tidak ada — default aman | Pertanyaan meeting pertama |
 | 4 | Provider VPS | Baru perlu setelah deal | Bandingkan Biznet / IDCloudHost |
 | 5 | API key Neon ber-scope akun ditulis ke 7 config agent | Tidak ada | Cabut yang tak terpakai: `neon api-keys revoke 3355921` |
+| 6 | Pesan X5 dipakai untuk dua sebab berbeda | Tidak ada — kosmetik | Member berkredit 3 yang membuka kelas Mat dibilang "kredit kamu habis", padahal sebabnya BR-1.4. Perlu kode X7 sendiri? |
 
 Tidak ada yang memblokir pembangunan demo.
 
@@ -64,6 +66,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | Layar M1 + server action booking/waitlist jalan. Query 5.1 pindah ke `src/db/booking.ts`, dipakai bersama oleh action dan test. Ditemukan: postgres.js tidak memparse `timestamptz` di runtime Next — normalisasi waktu sekarang milik lapisan `src/db/`, dicatat di AGENTS.md |
 | 2026-09-22 | Seed demo `src/db/seed.mts` jalan di lokal dan Neon. Deterministik, tanggal relatif. Booking dibatasi jendela 7 hari (BR-2.1). Seed menolak jalan kalau menemukan studio yang bukan studio demo |
 | 2026-09-22 | `src/rules/` ditulis sebagai fungsi murni: 7 titik rawan keputusan + 1 dijaga database. 38 test, semuanya dibuktikan lewat mutasi. Tabel titik rawan di 04-flows.md bagian 9 kini menyebut fungsi penjaganya |
 | 2026-09-22 | Neon dipasang sebagai Postgres demo (`purple-moon-87115116`, Singapura). 12 tabel termigrasi ke branch `production`. Test dikunci ke `TEST_DATABASE_URL` lokal supaya `TRUNCATE` tidak pernah kena database sungguhan |

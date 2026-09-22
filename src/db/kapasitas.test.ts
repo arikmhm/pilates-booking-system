@@ -5,8 +5,9 @@
 // Nilainya melebihi 50 unit test: kalau partial unique index di schema.ts hilang,
 // test ini merah. Tidak ada cara lain menangkapnya.
 
-import { afterAll, beforeAll, expect, test } from "vitest";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import postgres from "postgres";
+import { pesanKursi, saat } from "./booking";
 
 const KAPASITAS = 8;
 const PENYERBU = 20;
@@ -99,29 +100,11 @@ afterAll(async () => {
   await sql.end();
 });
 
-// Query 5.1 docs/05-data-model.md. Nomor alat diturunkan dari kapasitas sesi,
-// jadi mustahil di luar rentang. Pindah ke server action saat booking dibangun.
-async function pesanKursi(
-  user_id: string,
-  member_package_id: string,
-  session_id: string = sesi,
-) {
-  const baris = await sql`
-    insert into bookings (session_id, user_id, member_package_id, nomor_alat, status, sumber)
-    select s.id, ${user_id}, ${member_package_id}, alat, 'confirmed', 'member'
-    from sessions s
-    cross join lateral generate_series(1, s.kapasitas) as alat
-    where s.id = ${session_id}
-      and s.status = 'scheduled'
-      and alat not in (
-        select nomor_alat from bookings
-        where session_id = s.id and status = 'confirmed'
-      )
-    order by alat
-    limit 1
-    returning nomor_alat`;
-  return baris.length === 1;
-}
+// Query 5.1 sekarang tinggal di src/db/booking.ts dan dipakai server action
+// juga. Test ini menyuntikkan koneksi lokalnya sendiri — itu yang menahan
+// TRUNCATE supaya tidak pernah kena Neon.
+const pesan = (user_id: string, member_package_id: string, session_id = sesi) =>
+  pesanKursi(sql, { session_id, user_id, member_package_id }).then((r) => r !== null);
 
 test("20 booking paralel ke kelas 8 kursi → tepat 8 berhasil (BR-2.3)", async () => {
   const hasil = await Promise.all(
@@ -131,7 +114,7 @@ test("20 booking paralel ke kelas 8 kursi → tepat 8 berhasil (BR-2.3)", async 
       // Inilah yang dilakukan server action nanti.
       for (let coba = 0; coba < PENYERBU; coba++) {
         try {
-          return await pesanKursi(m.user_id, m.member_package_id);
+          return await pesan(m.user_id, m.member_package_id);
         } catch (e) {
           if ((e as { code?: string }).code !== "23505") throw e;
         }
@@ -158,11 +141,33 @@ test("20 booking paralel ke kelas 8 kursi → tepat 8 berhasil (BR-2.3)", async 
 test("member yang sama tidak bisa dua kursi di satu sesi (BR-2.4)", async () => {
   const m = member[0];
   // Kursi pertama di sesi kosong: berhasil.
-  await expect(pesanKursi(m.user_id, m.member_package_id, sesiKedua)).resolves.toBe(
-    true,
-  );
+  await expect(pesan(m.user_id, m.member_package_id, sesiKedua)).resolves.toBe(true);
   // Kursi kedua di sesi yang sama: ditolak index, bukan ditolak kode aplikasi.
   await expect(
-    pesanKursi(m.user_id, m.member_package_id, sesiKedua),
+    pesan(m.user_id, m.member_package_id, sesiKedua),
   ).rejects.toMatchObject({ code: "23505" });
+});
+
+/* ══ Normalisasi timestamptz ═══════════════════════════════════════════════
+   postgres.js mengembalikan Date di node dan string mentah di runtime Next.
+   Salah parse di sini tidak melempar apa-apa — cuma menggeser kelas 7 jam,
+   yang artinya hari yang salah di layar jadwal.                            */
+describe("saat() — timestamptz dari postgres.js", () => {
+  test("string offset +00 dibaca sebagai UTC", () => {
+    expect(saat("2026-09-22 09:00:00+00").toISOString()).toBe(
+      "2026-09-22T09:00:00.000Z",
+    );
+  });
+
+  test("string offset +07 (WIB) digeser ke UTC, bukan dianggap UTC", () => {
+    expect(saat("2026-09-22 16:00:00+07").toISOString()).toBe(
+      "2026-09-22T09:00:00.000Z",
+    );
+  });
+
+  test("Date yang sudah jadi dilewatkan apa adanya — idempoten", () => {
+    const d = new Date("2026-09-22T09:00:00.000Z");
+    expect(saat(d).toISOString()).toBe(d.toISOString());
+    expect(saat(saat(d)).toISOString()).toBe(d.toISOString());
+  });
 });

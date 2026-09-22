@@ -225,7 +225,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 
 | ID | Layar | Isi |
 |---|---|---|
-| M1 | Jadwal | Sesi per hari · sisa kursi · tombol "Booking" / "Penuh — Ikut Waitlist" |
+| M1 | Jadwal | Sesi per hari · sisa kursi · tombol "Booking" / "Penuh — Ikut Waitlist" — `src/app/jadwal/` |
 | M2 | Konfirmasi *(panel geser)* | Pilih nomor alat · info "1 kredit dipotong" · aturan batal tertulis |
 | M3 | Akun Saya | **Sisa kredit + tanggal hangus + hitung mundur** · booking aktif · riwayat kredit |
 

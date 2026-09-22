@@ -11,3 +11,8 @@ if (process.env.NODE_ENV !== "production") global_._pg = client;
 
 // casing sama dengan drizzle.config.ts supaya nama kolom runtime dan migrasi tidak melenceng
 export const db = drizzle(client, { schema, casing: "snake_case" });
+
+// Klien mentah untuk query atomik dan agregat ledger — AGENTS.md.
+// Fungsi yang memakainya menerima klien sebagai argumen supaya test bisa
+// menyuntikkan koneksi lokalnya sendiri.
+export const pg = client;
