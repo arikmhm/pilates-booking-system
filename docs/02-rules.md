@@ -227,7 +227,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 |---|---|---|
 | M1 | Jadwal | Sesi per hari · sisa kursi · tombol "Booking" / "Penuh — Ikut Waitlist" — `src/app/jadwal/` |
 | M2 | Konfirmasi *(panel geser)* | Pilih nomor alat · info "1 kredit dipotong" · aturan batal tertulis |
-| M3 | Akun Saya | **Sisa kredit + tanggal hangus + hitung mundur** · booking aktif · riwayat kredit |
+| M3 | Akun Saya | **Sisa kredit + tanggal hangus + hitung mundur** · booking aktif · riwayat kredit — `src/app/akun/` |
 
 **Admin (tampilan laptop)**
 
@@ -252,6 +252,9 @@ Semua tanggal **relatif terhadap hari ini**, bukan tanggal mati. Wajib ada:
 - 1 sesi **nanti malam** → untuk mendemokan batas 12 jam
 - Riwayat campuran: hadir, no-show, batal tepat waktu, batal telat
 - 2 coach, jadwal 4 minggu dengan okupansi bervariasi (penuh / hampir penuh / sepi)
+- **Orang di daftar tunggu wajib punya kredit valid.** BR-4.4 melewati antrean yang
+  kreditnya mati, jadi antrean tanpa kredit membuat pembatalan tidak menaikkan siapa
+  pun — skenario B mati diam-diam. Seed menolak jalan kalau ini tidak terpenuhi.
 
 Booking **hanya** dibuat untuk sesi dalam jendela `booking_opens_days` (7 hari). Mengisi
 sesi tiga minggu lagi akan menampilkan keadaan yang BR-2.1 tidak izinkan terjadi —

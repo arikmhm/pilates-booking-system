@@ -14,8 +14,7 @@ export default async function Masuk() {
              where mp.user_id = u.id and mp.hangus_at > now()
            ), 0)::int as sisa
       from users u
-     order by (u.peran = 'member'), u.nama
-     limit 12`;
+     order by (u.peran = 'member'), u.nama`;
 
   async function pilih(formData: FormData) {
     "use server";
@@ -27,7 +26,8 @@ export default async function Masuk() {
     <main className="mx-auto w-full max-w-md px-gutter py-md">
       <h1 className="text-app-title">Masuk sebagai</h1>
       <p className="mt-xs text-app-body-sm text-muted-foreground">
-        Mode demo — pilih siapa saja, tanpa kata sandi.
+        Mode demo — pilih siapa saja, tanpa kata sandi. Staf di atas, member
+        di bawahnya.
       </p>
 
       <ul className="mt-sm divide-y divide-border">

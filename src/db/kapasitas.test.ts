@@ -148,6 +148,27 @@ test("member yang sama tidak bisa dua kursi di satu sesi (BR-2.4)", async () => 
   ).rejects.toMatchObject({ code: "23505" });
 });
 
+test("dipromosikan_at tersimpan saat kursi diisi dari waitlist (titik 6)", async () => {
+  // src/rules/ sudah diuji mengembalikan dipromosikan_at. Yang belum terjaga
+  // adalah sisi database: kalau kolomnya tidak ikut tertulis, BR-3.5 diam-diam
+  // berhenti bekerja dan orang yang baru naik 3 jam sebelum kelas kena hangus.
+  const m = member[PENYERBU - 1];
+  const naik = new Date("2026-09-22T03:00:00Z");
+  const kursi = await pesanKursi(sql, {
+    session_id: sesiKedua,
+    user_id: m.user_id,
+    member_package_id: m.member_package_id,
+    sumber: "waitlist",
+    dipromosikan_at: naik,
+  });
+  expect(kursi).not.toBeNull();
+
+  const [baris] = await sql`
+    select sumber, dipromosikan_at from bookings where id = ${kursi!.id}`;
+  expect(baris.sumber).toBe("waitlist");
+  expect(new Date(baris.dipromosikan_at).toISOString()).toBe(naik.toISOString());
+});
+
 /* ══ Normalisasi timestamptz ═══════════════════════════════════════════════
    postgres.js mengembalikan Date di node dan string mentah di runtime Next.
    Salah parse di sini tidak melempar apa-apa — cuma menggeser kelas 7 jam,

@@ -2,7 +2,7 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** M1 + booking jalan ujung ke ujung · siap membangun M3 dan A1
+**Tahap:** skenario A dan B jalan ujung ke ujung · sisa layar admin A1–A3
 **Terakhir diperbarui:** 2026-09-22
 
 ---
@@ -13,10 +13,12 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 
 ## Berikutnya — tiga langkah pertama
 
-1. Layar M3 Akun Saya — sisa kredit, hitung mundur hangus, riwayat ledger
-2. Layar M2 Konfirmasi (panel geser) — pilih nomor alat, aturan batal tertulis.
+1. Layar A1 Dashboard — sesi hari ini + okupansi · panel "kredit hangus ≤ 7 hari"
+   (5 orang sudah ada di seed) · kartu setelan
+2. Layar A2 Detail sesi — peserta, waitlist, centang kehadiran, **Batalkan Kelas**
+   (Alur 5; `prosesWaitlist()` di `src/app/akun/aksi.ts` tinggal dipakai ulang)
+3. Layar M2 Konfirmasi (panel geser) — pilih nomor alat, aturan batal tertulis.
    Sekarang nomor alat ditentukan sistem (BR-2.6 cabang kedua)
-3. Layar A1 Dashboard — panel "kredit hangus ≤ 7 hari" (5 orang sudah ada di seed)
 
 ## Selesai
 
@@ -36,6 +38,7 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 - [x] `src/rules/` — 8 titik rawan tertutup, 38 test, diverifikasi lewat mutasi
 - [x] Seed demo deterministik — 40 member, 168 sesi, sesi penuh 8/8 + 3 antre, panel A1 5 orang
 - [x] Layar M1 Jadwal + server action booking & waitlist, diuji ujung ke ujung di browser
+- [x] Layar M3 Akun Saya + pembatalan → promosi waitlist otomatis (Alur 3 + Alur 4)
 
 ## Keputusan terbuka
 
@@ -66,6 +69,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | Layar M3 + pembatalan dengan promosi waitlist (BR-3.3). Seed diperbaiki dua kali: ledger kini tertaut `booking_id` supaya riwayat menyebut kelasnya, dan kredit orang di antrean dijaga — sebelumnya ketiganya nol dan momen uang demo menit 3:00 tidak menaikkan siapa pun |
 | 2026-09-22 | Layar M1 + server action booking/waitlist jalan. Query 5.1 pindah ke `src/db/booking.ts`, dipakai bersama oleh action dan test. Ditemukan: postgres.js tidak memparse `timestamptz` di runtime Next — normalisasi waktu sekarang milik lapisan `src/db/`, dicatat di AGENTS.md |
 | 2026-09-22 | Seed demo `src/db/seed.mts` jalan di lokal dan Neon. Deterministik, tanggal relatif. Booking dibatasi jendela 7 hari (BR-2.1). Seed menolak jalan kalau menemukan studio yang bukan studio demo |
 | 2026-09-22 | `src/rules/` ditulis sebagai fungsi murni: 7 titik rawan keputusan + 1 dijaga database. 38 test, semuanya dibuktikan lewat mutasi. Tabel titik rawan di 04-flows.md bagian 9 kini menyebut fungsi penjaganya |

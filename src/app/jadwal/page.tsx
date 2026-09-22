@@ -125,6 +125,8 @@ export default async function M1({
     .filter((p) => p.hangus_at > sekarang && p.sisa_kredit > 0)
     .sort((a, b) => a.hangus_at.getTime() - b.hangus_at.getTime())[0];
 
+  if (!saya) redirect("/masuk"); // cookie menunjuk user yang sudah tidak ada
+
   // Dikelompokkan per hari WIB, bukan per hari UTC — kelas 06.00 WIB jatuh di
   // tanggal sebelumnya kalau dihitung UTC (BR-7.5).
   const perHari = new Map<string, BarisJadwal[]>();
@@ -138,11 +140,16 @@ export default async function M1({
       <header className="flex items-baseline justify-between gap-4">
         <div>
           <h1 className="text-app-title">Jadwal</h1>
-          <p className="text-app-body-sm text-muted-foreground">{saya?.nama}</p>
+          <p className="text-app-body-sm text-muted-foreground">{saya.nama}</p>
         </div>
-        <Link href="/masuk" className="min-h-11 inline-flex items-center text-app-body-sm">
-          Ganti
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/akun" className="inline-flex min-h-11 items-center text-app-body-sm underline">
+            Akun Saya
+          </Link>
+          <Link href="/masuk" className="inline-flex min-h-11 items-center text-app-body-sm">
+            Ganti
+          </Link>
+        </div>
       </header>
 
       <div className="mt-sm rounded-md border border-border p-4">

@@ -318,11 +318,17 @@ async function seed(sql: postgres.Sql) {
   const bookingBaris: Record<string, unknown>[] = [];
   const waitlistBaris: Record<string, unknown>[] = [];
 
-  // Lima member panel A1 disisakan kreditnya: kalau ikut di-booking acak
-  // sampai habis, mereka hilang dari panel dan senjata presentasi menit 2:15
-  // ikut hilang. Batas 3 supaya sisanya tetap terlihat "masih ada, hampir hangus".
+  // Dua kelompok member kreditnya dijaga jangan sampai habis:
+  //
+  //  i < 5            panel A1 — kalau kreditnya nol mereka hilang dari panel
+  //                   "hangus ≤ 7 hari", dan senjata presentasi menit 2:15 ikut hilang.
+  //  antreanDijaga    orang di daftar tunggu — BR-4.4 melewati antrean yang
+  //                   kreditnya tidak valid. Kalau ketiganya nol, pembatalan
+  //                   di menit 3:00 tidak menaikkan siapa pun dan momen uang
+  //                   demo menampilkan layar yang tidak berubah.
+  const antreanDijaga = new Set<number>();
   const bolehIkut = (i: number, ctId: string) =>
-    kredit[i].sisa > (i < 5 ? 3 : 0) &&
+    kredit[i].sisa > (i < 5 ? 3 : antreanDijaga.has(i) ? 1 : 0) &&
     (!kredit[i].reformer_saja || ctId !== jenisId["Mat"].id);
 
   // Sesi besok pagi paling awal → dipaksa penuh 8/8 + waitlist 3 (skenario B)
@@ -390,10 +396,13 @@ async function seed(sql: postgres.Sql) {
         dibatalkan_at: dibatalkan,
       });
 
-      // BR-2.2 — kredit dipotong saat booking, apa pun hasilnya nanti
+      // BR-2.2 — kredit dipotong saat booking, apa pun hasilnya nanti.
+      // `_kunci` diisi id booking-nya setelah insert: tanpa tautan itu, layar
+      // M3 cuma bisa bilang "booking", bukan kelas apa dan kapan.
       ledger.push({
         member_package_id: kredit[i].mp_id,
         booking_id: null,
+        _kunci: `${s.id}:${m.id}`,
         delta: -1,
         alasan: "booking",
         created_at: new Date(s.mulai_at.getTime() - 3 * 86_400_000),
@@ -406,6 +415,7 @@ async function seed(sql: postgres.Sql) {
         ledger.push({
           member_package_id: kredit[i].mp_id,
           booking_id: null,
+          _kunci: `${s.id}:${m.id}`,
           delta: 1,
           alasan: "batal_tepat_waktu",
           created_at: dibatalkan,
@@ -422,20 +432,34 @@ async function seed(sql: postgres.Sql) {
         ),
         3,
       );
-      antre.forEach((m, k) =>
+      antre.forEach((m, k) => {
+        antreanDijaga.add(idxMember[m.id]);
         waitlistBaris.push({
           session_id: s.id,
           user_id: m.id,
           status: "waiting",
           // BR-4.2 — urutan antrean murni created_at
           created_at: new Date(SEKARANG.getTime() - (3 - k) * 3_600_000),
-        }),
-      );
+        });
+      });
     }
   }
 
   const bookingRows = await sql`
-    insert into bookings ${sql(bookingBaris)} returning id, status`;
+    insert into bookings ${sql(bookingBaris)}
+    returning id, status, session_id, user_id`;
+
+  // Dipetakan lewat (session_id, user_id), bukan lewat urutan baris: urutan
+  // hasil INSERT ... RETURNING tidak dijamin SQL.
+  const idBooking = new Map(
+    bookingRows.map((b) => [`${b.session_id}:${b.user_id}`, b.id as string]),
+  );
+  for (const baris of ledger) {
+    const kunci = baris._kunci as string | undefined;
+    if (kunci) baris.booking_id = idBooking.get(kunci) ?? null;
+    delete baris._kunci;
+  }
+
   if (waitlistBaris.length)
     await sql`insert into waitlist_entries ${sql(waitlistBaris)}`;
   await sql`insert into credit_ledger ${sql(ledger)}`;
@@ -470,6 +494,13 @@ async function seed(sql: postgres.Sql) {
                where member_package_id = mp.id) > 0) as panel_a1,
       (select count(*)::int from credit_ledger where delta < 0) as potongan`;
 
+  const [antreSiap] = await sql`
+    select count(*)::int as n from waitlist_entries w
+     where w.status = 'waiting'
+       and (select coalesce(sum(cl.delta), 0) from member_packages mp
+             join credit_ledger cl on cl.member_package_id = mp.id
+            where mp.user_id = w.user_id and mp.hangus_at > now()) > 0`;
+
   const [saldoMinus] = await sql`
     select count(*)::int as n from (
       select member_package_id from credit_ledger
@@ -485,6 +516,16 @@ async function seed(sql: postgres.Sql) {
   console.log(`  sesi penuh besok  ${besokPagi ? besokPagi.mulai_at.toISOString() : "TIDAK ADA"}`);
   console.log(`  sesi nanti malam  ${jamKe(8).toISOString()}`);
   console.log(`  admin demo        ${admin.nama}`);
+  console.log(`  antrean berkredit ${antreSiap.n} dari ${waitlistBaris.length}`);
+
+  // BR-4.4 — antrean tanpa kredit valid akan dilewati saat ada kursi kosong.
+  // Kalau tidak ada satu pun yang berkredit, skenario B mati diam-diam.
+  if (antreSiap.n === 0) {
+    throw new Error(
+      "Seed rusak: tidak ada antrean yang punya kredit valid. " +
+        "Pembatalan tidak akan menaikkan siapa pun (BR-4.4).",
+    );
+  }
 
   // BR-1.7 — saldo negatif berarti seed menulis potongan tanpa kredit.
   if (saldoMinus.n > 0) {

@@ -180,3 +180,101 @@ export async function setelanStudio(sql: Sql): Promise<Setelan> {
       from studios limit 1`;
   return s;
 }
+
+/* ── Layar M3 · Akun Saya ─────────────────────────────────────────────── */
+
+export type BookingSaya = {
+  id: string;
+  session_id: string;
+  member_package_id: string;
+  nomor_alat: number;
+  dipromosikan_at: Date | null;
+  mulai_at: Date;
+  durasi_menit: number;
+  kelas: string;
+  coach: string | null;
+};
+
+/** Booking confirmed yang kelasnya belum lewat, paling dekat duluan. */
+export async function bookingSaya(
+  sql: Sql,
+  user_id: string,
+): Promise<BookingSaya[]> {
+  const baris = await sql<BookingSaya[]>`
+    select b.id, b.session_id, b.member_package_id, b.nomor_alat,
+           b.dipromosikan_at, s.mulai_at, s.durasi_menit,
+           ct.nama as kelas, c.nama as coach
+      from bookings b
+      join sessions s on s.id = b.session_id
+      join class_types ct on ct.id = s.class_type_id
+      left join users c on c.id = s.coach_id
+     where b.user_id = ${user_id}
+       and b.status = 'confirmed'
+       and s.mulai_at >= now()
+     order by s.mulai_at`;
+  return baris.map((b) => ({
+    ...b,
+    mulai_at: saat(b.mulai_at),
+    dipromosikan_at: b.dipromosikan_at ? saat(b.dipromosikan_at) : null,
+  }));
+}
+
+export type BarisLedger = {
+  id: string;
+  delta: number;
+  alasan: string;
+  catatan: string | null;
+  created_at: Date;
+  kelas: string | null;
+  mulai_at: Date | null;
+};
+
+/** BR-1.7 — riwayat baris per baris. Inilah yang membuat sengketa kredit
+ *  bisa dibuktikan, dan alasan tidak adanya kolom saldo di mana pun. */
+export async function riwayatKredit(
+  sql: Sql,
+  user_id: string,
+  batas = 40,
+): Promise<BarisLedger[]> {
+  const baris = await sql<BarisLedger[]>`
+    select cl.id, cl.delta, cl.alasan, cl.catatan, cl.created_at,
+           ct.nama as kelas, s.mulai_at
+      from credit_ledger cl
+      join member_packages mp on mp.id = cl.member_package_id
+      left join bookings b on b.id = cl.booking_id
+      left join sessions s on s.id = b.session_id
+      left join class_types ct on ct.id = s.class_type_id
+     where mp.user_id = ${user_id}
+     order by cl.created_at desc, cl.id desc
+     limit ${batas}`;
+  return baris.map((b) => ({
+    ...b,
+    created_at: saat(b.created_at),
+    mulai_at: b.mulai_at ? saat(b.mulai_at) : null,
+  }));
+}
+
+export async function bookingById(sql: Sql, id: string, user_id: string) {
+  const [b] = await sql<
+    {
+      id: string;
+      session_id: string;
+      member_package_id: string;
+      dipromosikan_at: Date | null;
+    }[]
+  >`select id, session_id, member_package_id, dipromosikan_at
+      from bookings
+     where id = ${id} and user_id = ${user_id} and status = 'confirmed'`;
+  return b
+    ? { ...b, dipromosikan_at: b.dipromosikan_at ? saat(b.dipromosikan_at) : null }
+    : null;
+}
+
+/* ── Alur 4 · antrean satu sesi, urut FIFO (BR-4.2) ───────────────────── */
+
+export async function antreanSesi(sql: Sql, session_id: string) {
+  return sql<{ id: string; user_id: string }[]>`
+    select id, user_id from waitlist_entries
+     where session_id = ${session_id} and status = 'waiting'
+     order by created_at`;
+}
