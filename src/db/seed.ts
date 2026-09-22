@@ -150,6 +150,9 @@ const NAMA_MEMBER = [
 
 const DURASI = 70; // grid 70 menit
 
+/** Nilai default kolom `studios` — dipakai seed sebelum studionya dibuat. */
+const setelanDefault = { cancel_window_hours: 12 };
+
 /**
  * UUID tetap untuk user, supaya Reset Demo tidak melempar presenter keluar.
  *
@@ -298,19 +301,6 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
     }
   }
 
-  // Sesi "dalam 8 jam" — di luar jendela tutup booking (1 jam),
-  // di dalam jendela batal (12 jam): inilah yang mendemokan BR-3.2.
-  sesiBaris.push({
-    studio_id: studio.id,
-    schedule_rule_id: null,
-    class_type_id: jenisId["Reformer"].id,
-    coach_id: coach[0].id,
-    mulai_at: iso(jamKe(8)),
-    durasi_menit: DURASI,
-    kapasitas: 8,
-    status: "scheduled",
-  });
-
   const sesiMentah = await sql<
     {
       id: string;
@@ -410,7 +400,16 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
     )
     .sort((a, b) => a.mulai_at.getTime() - b.mulai_at.getTime())[0];
 
-  const malamIni = sesi.find((s) => s.schedule_rule_id === null)!;
+  // Sesi untuk mendemokan batas 12 jam (BR-3.2) diambil dari jadwal yang
+  // SUDAH ada, tidak dibuatkan sendiri. Sesi buatan waktunya mengikuti jam
+  // seed dijalankan, jadi bisa mendarat pukul 01.18 — di layar jadwal itu
+  // terbaca seperti bug. Grid harian 06.00–18.40 menjamin selalu ada kelas
+  // di dalam jendela 12 jam, jam berapa pun seed dijalankan.
+  const dalamJendela = sesi.find(
+    (s) =>
+      s.mulai_at > jamKe(0.5) &&
+      s.mulai_at < jamKe(setelanDefault.cancel_window_hours),
+  );
 
   // BR-2.1 — member tidak bisa booking lebih dari `booking_opens_days` (7 hari)
   // ke depan. Seed yang mengisi sesi 3 minggu lagi akan menampilkan keadaan
@@ -424,9 +423,9 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
   // dua kali lagi, tiap sesi tetap diproses sekali.
   const urutan = [
     ...new Map(
-      [besokPagi, malamIni, ...sesi]
+      [besokPagi, dalamJendela, ...sesi]
         .filter(Boolean)
-        .map((s) => [s.id, s] as const),
+        .map((s) => [s!.id, s!] as const),
     ).values(),
   ];
 
@@ -608,6 +607,19 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
     );
   }
 
+  // Demo batas 12 jam butuh satu kelas di dalam jendela yang ADA pesertanya.
+  // Tanpa itu skrip menit 1:30 tidak punya apa pun untuk ditunjuk.
+  const [jendela] = await sql<{ n: number }[]>`
+    select count(*)::int as n
+      from sessions s join bookings b on b.session_id = s.id
+     where s.status = 'scheduled' and b.status = 'confirmed'
+       and s.mulai_at between now() and now() + make_interval(hours => 12)`;
+  if (jendela.n === 0) {
+    throw new Error(
+      "Seed rusak: tidak ada kelas berpeserta di dalam jendela batal 12 jam.",
+    );
+  }
+
   // BR-4.4 — antrean tanpa kredit valid akan dilewati saat ada kursi kosong.
   // Kalau tidak ada satu pun yang berkredit, skenario B mati diam-diam.
   if (antreSiap.n === 0) {
@@ -633,7 +645,7 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
     panel_a1: cek.panel_a1 as number,
     antrean_berkredit: antreSiap.n as number,
     sesi_penuh_besok: besokPagi ? besokPagi.mulai_at : null,
-    sesi_dalam_8_jam: jamKe(8),
+    sesi_jendela_batal: dalamJendela?.mulai_at ?? null,
     admin: admin.nama as string,
   };
 }

@@ -14,10 +14,11 @@ import {
   setelanLengkap,
   type SesiHariIni,
 } from "@/db/admin";
+import { STUDIO_DEMO } from "@/db/seed";
 import { pastikanAdmin } from "@/lib/masuk";
 import { hariWib, jamWib, selisihManusiawi } from "@/lib/waktu";
 import { tautanWa } from "@/lib/wa";
-import { STUDIO_DEMO } from "@/db/seed";
+import { Angka, Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
 import { resetDemo, ubahSetelan } from "./aksi";
 
 export const dynamic = "force-dynamic";
@@ -28,39 +29,15 @@ const LABEL_SETELAN: Record<string, string> = {
   waitlist_max: "Maksimal daftar tunggu",
 };
 
-function Okupansi({ s }: { s: SesiHariIni }) {
-  const batal = s.status === "cancelled";
-  const penuh = s.terisi >= s.kapasitas;
-  const warna = batal
-    ? "bg-danger-surface text-danger-foreground"
-    : penuh
-      ? "bg-neutral-surface text-neutral-foreground"
-      : "bg-ok-surface text-ok-foreground";
-  const teks = batal
-    ? "Dibatalkan"
-    : penuh
-      ? `Penuh${s.antre ? ` · ${s.antre} antre` : ""}`
-      : `${s.kapasitas - s.terisi} kursi`;
-
-  return (
-    <tr className="border-b border-border last:border-0">
-      <td className="py-3 pr-4 text-app-body tabular-nums">
-        <Link href={`/admin/sesi/${s.id}`} className="underline">
-          {jamWib(s.mulai_at)}
-        </Link>
-      </td>
-      <td className="py-3 pr-4 text-app-body">{s.kelas}</td>
-      <td className="py-3 pr-4 text-app-body text-muted-foreground">
-        {s.coach ?? "—"}
-      </td>
-      <td className="py-3 pr-4 text-app-body tabular-nums">
-        {s.terisi}/{s.kapasitas}
-      </td>
-      <td className="py-3">
-        <span className={`rounded-full px-3 py-1 text-app-label ${warna}`}>{teks}</span>
-      </td>
-    </tr>
-  );
+function chipSesi(s: SesiHariIni): [string, string] {
+  if (s.status === "cancelled")
+    return ["bg-danger-surface text-danger-foreground", "Dibatalkan"];
+  if (s.terisi >= s.kapasitas)
+    return [
+      "bg-neutral-surface text-neutral-foreground",
+      s.antre ? `Penuh · ${s.antre} antre` : "Penuh",
+    ];
+  return ["bg-ok-surface text-ok-foreground", `${s.kapasitas - s.terisi} kursi`];
 }
 
 export default async function A1({
@@ -87,145 +64,152 @@ export default async function A1({
   const kursi = sesi.reduce((t, s) => t + s.kapasitas, 0);
 
   return (
-    <main className="mx-auto w-full max-w-[1200px] px-gutter py-sm">
-      <header className="flex flex-wrap items-baseline justify-between gap-4">
+    <Kerangka
+      nama={pengguna.nama}
+      peran={pengguna.peran}
+      aktif="/admin"
+      kabar={kabar}
+      lebar="admin"
+    >
+      <div className="flex flex-wrap items-baseline justify-between gap-4">
         <div>
           <h1 className="text-app-title">{setelan.nama}</h1>
           <p className="text-app-body-sm text-muted-foreground">
-            {hariWib(tanggal)} · {pengguna.nama}
+            {hariWib(tanggal)}
           </p>
         </div>
-        <Link href="/masuk" className="inline-flex min-h-11 items-center text-app-body-sm">
-          Ganti pengguna
-        </Link>
-      </header>
-
-      {kabar && (
-        <p className="mt-sm rounded-md bg-muted p-4 text-app-body-sm">{kabar}</p>
-      )}
-
-      <div className="mt-sm grid gap-4 sm:grid-cols-3">
-        {[
-          [sesi.length, geser ? "kelas besok" : "kelas hari ini"],
-          [`${terisi}/${kursi}`, "kursi terisi"],
-          [hangus.length, "kredit hangus ≤ 7 hari"],
-        ].map(([angka, label]) => (
-          <div key={String(label)} className="rounded-md border border-border p-4">
-            <p className="text-app-number tabular-nums">{angka}</p>
-            <p className="text-app-body-sm text-muted-foreground">{label}</p>
-          </div>
-        ))}
+        <nav className="flex gap-2">
+          {[
+            ["/admin", "Hari ini", 0],
+            ["/admin?hari=besok", "Besok", 1],
+          ].map(([href, label, g]) => (
+            <Link
+              key={String(label)}
+              href={String(href)}
+              className={`inline-flex min-h-11 items-center rounded-sm border px-4 text-app-label uppercase transition-colors ${
+                g === geser
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border bg-background hover:border-foreground"
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
       </div>
 
-      <div className="mt-md grid gap-md lg:grid-cols-[3fr_2fr]">
-        <section>
-          <div className="flex items-baseline justify-between gap-4">
-            <h2 className="text-app-section">
-              {geser ? "Kelas besok" : "Kelas hari ini"}
-            </h2>
-            <nav className="flex gap-4">
-              {[
-                ["", "Hari ini"],
-                ["?hari=besok", "Besok"],
-              ].map(([href, label]) => (
-                <Link
-                  key={label}
-                  href={`/admin${href}`}
-                  className={`inline-flex min-h-11 items-center text-app-body-sm ${
-                    (href === "?hari=besok") === Boolean(geser) ? "underline" : "text-muted-foreground"
-                  }`}
-                >
-                  {label}
-                </Link>
-              ))}
-            </nav>
-          </div>
+      <div className="mt-sm grid gap-4 sm:grid-cols-3">
+        <Kartu>
+          <Angka nilai={sesi.length} label={geser ? "Kelas besok" : "Kelas hari ini"} />
+        </Kartu>
+        <Kartu>
+          <Angka nilai={`${terisi}/${kursi}`} label="Kursi terisi" />
+        </Kartu>
+        <Kartu>
+          <Angka nilai={hangus.length} label="Kredit hangus ≤ 7 hari" />
+        </Kartu>
+      </div>
+
+      <div className="mt-md grid items-start gap-md lg:grid-cols-[3fr_2fr]">
+        <Kartu judul={geser ? "Kelas besok" : "Kelas hari ini"} padat>
           {sesi.length === 0 ? (
-            <p className="mt-2 text-app-body-sm text-muted-foreground">
+            <p className="p-4 text-app-body-sm text-muted-foreground">
               Tidak ada kelas terjadwal.
             </p>
           ) : (
-            <div className="mt-3 overflow-x-auto rounded-md border border-border">
-              <table className="w-full min-w-[32rem]">
-                <thead>
-                  <tr className="border-b border-border text-left">
-                    {["Jam", "Kelas", "Coach", "Isi", "Status"].map((h) => (
-                      <th
-                        key={h}
-                        className="px-0 py-3 pr-4 text-app-label uppercase text-muted-foreground first:pl-4 last:pr-4"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="[&_td:first-child]:pl-4 [&_td:last-child]:pr-4">
-                  {sesi.map((s) => (
-                    <Okupansi key={s.id} s={s} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ul className="divide-y divide-border">
+              {sesi.map((s) => {
+                const [warna, teks] = chipSesi(s);
+                return (
+                  <li key={s.id}>
+                    <Link
+                      href={`/admin/sesi/${s.id}`}
+                      className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted"
+                    >
+                      <span className="w-14 shrink-0 text-app-section tabular-nums">
+                        {jamWib(s.mulai_at)}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-app-body">{s.kelas}</span>
+                        <span className="block truncate text-app-body-sm text-muted-foreground">
+                          {s.coach ?? "—"}
+                        </span>
+                      </span>
+                      <span className="w-14 shrink-0 text-right text-app-body tabular-nums">
+                        {s.terisi}/{s.kapasitas}
+                      </span>
+                      <span className="w-28 shrink-0 text-right">
+                        <Chip warna={warna} anak={teks} />
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-        </section>
+        </Kartu>
 
         <div className="space-y-md">
           {/* Satu-satunya blok berwarna di halaman — DS, supaya mata langsung
               ke sini. Ini yang ditunjuk saat presentasi. */}
-          <section className="rounded-md bg-warn-surface p-4">
-            <h2 className="text-app-section">Kredit hangus ≤ 7 hari</h2>
-            <p className="text-app-body-sm text-warn-foreground">
-              {hangus.length} orang. Sistem yang mencari, bukan kamu.
-            </p>
-            <ul className="mt-3 divide-y divide-border-warm">
-              {hangus.map((o) => (
-                <li
-                  key={o.user_id + o.hangus_at.toISOString()}
-                  className="flex items-center justify-between gap-4 py-3"
-                >
-                  <div>
-                    <Link
-                      href={`/admin/member/${o.user_id}`}
-                      className="text-app-body underline"
-                    >
-                      {o.nama}
-                    </Link>
-                    <p className="text-app-body-sm text-warn-foreground">
-                      {o.sisa} kredit · hangus {selisihManusiawi(o.hangus_at, sekarang)}
-                    </p>
-                  </div>
-                  <a
-                    href={tautanWa(
-                      o.telepon,
-                      `Halo ${o.nama}, sisa ${o.sisa} kredit pilates kamu hangus ${hariWib(
-                        o.hangus_at,
-                      )}. Masih sempat dipakai — mau dibookingkan kelas minggu ini?`,
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex min-h-11 shrink-0 items-center rounded-sm bg-primary px-4 text-app-label font-medium uppercase text-primary-foreground"
-                  >
-                    Chat WA
-                  </a>
-                </li>
-              ))}
-            </ul>
-            {hangus.length === 0 && (
-              <p className="mt-3 text-app-body-sm text-warn-foreground">
+          <Kartu
+            judul="Kredit hangus ≤ 7 hari"
+            catatan={`${hangus.length} orang. Sistem yang mencari, bukan kamu.`}
+            warna="bg-warn-surface border-border-warm"
+            padat
+          >
+            {hangus.length === 0 ? (
+              <p className="p-4 text-app-body-sm text-warn-foreground">
                 Tidak ada yang mendesak minggu ini.
               </p>
+            ) : (
+              <ul className="divide-y divide-border-warm">
+                {hangus.map((o) => (
+                  <li
+                    key={o.user_id + o.hangus_at.toISOString()}
+                    className="flex items-center justify-between gap-3 px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <Link
+                        href={`/admin/member/${o.user_id}`}
+                        className="text-app-body underline underline-offset-4"
+                      >
+                        {o.nama}
+                      </Link>
+                      <p className="text-app-body-sm text-warn-foreground">
+                        {o.sisa} kredit · {selisihManusiawi(o.hangus_at, sekarang)}
+                      </p>
+                    </div>
+                    <a
+                      href={tautanWa(
+                        o.telepon,
+                        `Halo ${o.nama}, sisa ${o.sisa} kredit pilates kamu hangus ${hariWib(
+                          o.hangus_at,
+                        )}. Masih sempat dipakai — mau dibookingkan kelas minggu ini?`,
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-h-11 shrink-0 items-center rounded-sm bg-primary px-4 text-app-label font-medium uppercase text-primary-foreground transition hover:brightness-95"
+                    >
+                      Chat WA
+                    </a>
+                  </li>
+                ))}
+              </ul>
             )}
-          </section>
+          </Kartu>
 
-          <section className="rounded-md border border-border p-4">
-            <h2 className="text-app-section">Setelan aturan</h2>
-            <p className="text-app-body-sm text-muted-foreground">
-              Ini aturan studio kamu, bukan aturan sistem. Ubah kapan saja.
-            </p>
-            <form action={ubahSetelan} className="mt-3 space-y-3">
+          <Kartu
+            judul="Setelan aturan"
+            catatan="Ini aturan studio kamu, bukan aturan sistem. Ubah kapan saja."
+          >
+            <form action={ubahSetelan} className="space-y-3">
               {(Object.keys(BATAS_SETELAN) as (keyof typeof BATAS_SETELAN)[]).map(
                 (kunci) => (
-                  <label key={kunci} className="flex items-center justify-between gap-4">
+                  <label
+                    key={kunci}
+                    className="flex items-center justify-between gap-4"
+                  >
                     <span className="text-app-body">{LABEL_SETELAN[kunci]}</span>
                     <input
                       type="number"
@@ -233,42 +217,30 @@ export default async function A1({
                       defaultValue={setelan[kunci]}
                       min={BATAS_SETELAN[kunci][0]}
                       max={BATAS_SETELAN[kunci][1]}
-                      className="h-11 w-24 rounded-sm border border-border px-3 text-app-body tabular-nums"
+                      className="h-11 w-24 rounded-sm border border-border px-3 text-app-body tabular-nums focus:border-foreground"
                     />
                   </label>
                 ),
               )}
-              <button
-                type="submit"
-                className="h-12 w-full rounded-sm border border-foreground text-app-label font-medium uppercase"
-              >
-                Simpan
-              </button>
+              <Tombol gaya="garis" penuh anak="Simpan" />
             </form>
-          </section>
+          </Kartu>
 
           {/* Hanya muncul di database demo. Penjaga sebenarnya ada di seed()
               yang menolak jalan kalau studionya bukan studio demo — ini cuma
               supaya tombolnya tidak menggoda di instance klien. */}
           {setelan.nama === STUDIO_DEMO && (
-            <section className="rounded-md border border-border p-4">
-              <h2 className="text-app-section">Reset demo</h2>
-              <p className="text-app-body-sm text-muted-foreground">
-                Kembalikan semua data ke keadaan awal. Tanggalnya dihitung ulang
-                dari hari ini, dan kamu tetap login.
-              </p>
-              <form action={resetDemo} className="mt-3">
-                <button
-                  type="submit"
-                  className="h-12 w-full rounded-sm border border-foreground text-app-label font-medium uppercase"
-                >
-                  Reset Demo
-                </button>
+            <Kartu
+              judul="Reset demo"
+              catatan="Kembalikan semua data ke keadaan awal. Tanggal dihitung ulang dari hari ini, dan kamu tetap login."
+            >
+              <form action={resetDemo}>
+                <Tombol gaya="halus" penuh anak="Reset Demo" />
               </form>
-            </section>
+            </Kartu>
           )}
         </div>
       </div>
-    </main>
+    </Kerangka>
   );
 }

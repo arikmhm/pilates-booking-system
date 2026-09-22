@@ -22,7 +22,7 @@ try {
   console.log(`  panel A1 ≤ 7 hari ${r.panel_a1} orang`);
   console.log(`  antrean berkredit ${r.antrean_berkredit}`);
   console.log(`  sesi penuh besok  ${r.sesi_penuh_besok?.toISOString() ?? "TIDAK ADA"}`);
-  console.log(`  sesi dalam 8 jam  ${r.sesi_dalam_8_jam.toISOString()}`);
+  console.log(`  dlm jendela batal ${r.sesi_jendela_batal?.toISOString() ?? "TIDAK ADA"}`);
   console.log(`  admin demo        ${r.admin}\n`);
 } catch (e) {
   console.error(`\n  ${(e as Error).message}\n`);

@@ -323,6 +323,18 @@ mengunci tata letak, jadi memasang foto asli nanti tidak menggeser apa pun.
 Enam layar aplikasi di balik login. Definisinya di [02-rules.md](02-rules.md)
 bagian 6.1. Semuanya memakai **skala aplikasi**, bukan skala pemasaran.
 
+`DS-26` — **Semua layar aplikasi duduk di satu kerangka** (`src/components/kerangka.tsx`):
+bilah atas putih berisi wordmark, navigasi sesuai peran, nama pengguna, dan tombol
+Ganti · latar halaman `muted` · isi berupa kartu putih bergaris. Pergeseran nada
+`muted` → putih itu yang memisahkan permukaan, bukan bayangan (DS-9). Halaman publik
+tidak memakai kerangka ini — pola pitanya berbeda (bagian 8).
+
+`DS-27` — Lebar isi: layar member `max-w-lg` (512px), layar admin `max-w-[1200px]`.
+Member dirancang HP dulu; kolom sempit di laptop itu disengaja, bukan lupa.
+
+`DS-28` — **Jam jadi jangkar kiri** di tiap daftar sesi, lebar tetap, `tabular-nums`.
+Mata menyusuri satu kolom lurus, bukan zigzag mengikuti panjang nama kelas.
+
 | Layar | Perangkat | Yang menentukan tampilannya |
 |---|---|---|
 | **M1 Jadwal** | HP | Daftar `card` per sesi. Sisa kursi pakai `app-body` + chip status bagian 7. Tombol `button-primary` lebar penuh; saat penuh berubah jadi `button-secondary` "Ikut Waitlist" |

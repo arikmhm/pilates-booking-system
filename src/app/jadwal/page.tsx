@@ -14,30 +14,26 @@ import {
   setelanStudio,
   type BarisJadwal,
 } from "@/db/booking";
+import { penggunaById } from "@/db/admin";
 import { bolehBooking, type PaketMember, type Setelan } from "@/rules";
 import { userSaatIni } from "@/lib/masuk";
-import { hariWib, jamWib, kunciHariWib } from "@/lib/waktu";
+import { hariWib, jamWib, kunciHariWib, selisihManusiawi } from "@/lib/waktu";
+import { Angka, Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
 import { booking, ikutWaitlist } from "./aksi";
 
 export const dynamic = "force-dynamic";
 
-function Chip({ warna, anak }: { warna: string; anak: string }) {
-  return (
-    <span className={`rounded-full px-3 py-1 text-app-label ${warna}`}>{anak}</span>
-  );
-}
-
 /** DS-14 — warna tidak pernah jadi satu-satunya penanda; tiap chip berteks. */
-function status(b: BarisJadwal) {
+function status(b: BarisJadwal): [string, string] {
   if (b.booking_saya)
-    return ["bg-ok-surface text-ok-foreground", `Terdaftar · alat ${b.booking_saya.nomor_alat}`];
-  if (b.antre_saya) return ["bg-warn-surface text-warn-foreground", "Kamu mengantre"];
+    return ["bg-ok-surface text-ok-foreground", `Alat ${b.booking_saya.nomor_alat}`];
+  if (b.antre_saya) return ["bg-warn-surface text-warn-foreground", "Mengantre"];
   if (b.terisi >= b.kapasitas)
-    return ["bg-neutral-surface text-neutral-foreground", `Penuh · ${b.antre} antre`];
-  return ["bg-ok-surface text-ok-foreground", `${b.kapasitas - b.terisi} kursi tersisa`];
+    return ["bg-neutral-surface text-neutral-foreground", "Penuh"];
+  return ["bg-ok-surface text-ok-foreground", `${b.kapasitas - b.terisi} kursi`];
 }
 
-function Kartu({
+function Sesi({
   b,
   setelan,
   paket,
@@ -52,44 +48,47 @@ function Kartu({
 }) {
   const [warna, teks] = status(b);
   const penuh = b.terisi >= b.kapasitas;
+  const milikku = Boolean(b.booking_saya || b.antre_saya);
   const putusan = bolehBooking({ sesi: b, setelan, paket, booking_aktif: aktif, sekarang });
 
   return (
-    <li className="rounded-md border border-border p-4">
-      <div className="flex items-baseline justify-between gap-4">
-        <span className="text-app-section tabular-nums">{jamWib(b.mulai_at)}</span>
-        <Chip warna={warna} anak={teks} />
+    <li className="flex items-center gap-4 px-4 py-4">
+      {/* Jam jadi jangkar kiri: mata menyusuri satu kolom, bukan zigzag. */}
+      <div className="w-14 shrink-0">
+        <p className="text-app-section tabular-nums">{jamWib(b.mulai_at)}</p>
+        <p className="text-app-label uppercase text-muted-foreground">
+          {b.durasi_menit}m
+        </p>
       </div>
-      <p className="mt-1 text-app-body">
-        {b.kelas}
-        {b.coach && <span className="text-muted-foreground"> · {b.coach}</span>}
-      </p>
 
-      {b.booking_saya || b.antre_saya ? null : penuh ? (
-        <form action={ikutWaitlist} className="mt-3">
-          <input type="hidden" name="session_id" value={b.id} />
-          <button
-            type="submit"
-            className="h-12 w-full rounded-sm border border-foreground text-app-label font-medium uppercase"
-          >
-            Ikut Daftar Tunggu
-          </button>
-        </form>
-      ) : putusan.boleh ? (
-        <form action={booking} className="mt-3">
-          <input type="hidden" name="session_id" value={b.id} />
-          <button
-            type="submit"
-            className="h-12 w-full rounded-sm bg-primary text-app-label font-medium uppercase text-primary-foreground"
-          >
-            Booking
-          </button>
-        </form>
-      ) : (
-        // Alasan penolakan ditampilkan apa adanya, bukan tombol mati tanpa
-        // penjelasan. Teksnya sama persis dengan yang dipakai server action.
-        <p className="mt-3 text-app-body-sm text-muted-foreground">{putusan.pesan}</p>
-      )}
+      <div className="min-w-0 flex-1">
+        <p className="text-app-body">{b.kelas}</p>
+        <p className="truncate text-app-body-sm text-muted-foreground">
+          {b.coach ?? "—"}
+          {penuh && b.antre > 0 && ` · ${b.antre} mengantre`}
+        </p>
+        {!milikku && !putusan.boleh && !penuh && (
+          <p className="mt-1 text-app-body-sm text-muted-foreground">
+            {putusan.pesan}
+          </p>
+        )}
+      </div>
+
+      <div className="flex shrink-0 flex-col items-end gap-2">
+        <Chip warna={warna} anak={teks} />
+        {!milikku &&
+          (penuh ? (
+            <form action={ikutWaitlist}>
+              <input type="hidden" name="session_id" value={b.id} />
+              <Tombol gaya="halus" kecil anak="Antre" />
+            </form>
+          ) : putusan.boleh ? (
+            <form action={booking}>
+              <input type="hidden" name="session_id" value={b.id} />
+              <Tombol kecil anak="Booking" />
+            </form>
+          ) : null)}
+      </div>
     </li>
   );
 }
@@ -110,22 +109,22 @@ export default async function M1({
     sekarang.getTime() + setelan.booking_opens_days * 86_400_000,
   );
 
-  const [baris, paket, aktif, [saya]] = await Promise.all([
+  const [baris, paket, aktif, saya] = await Promise.all([
     jadwal(pg, { user_id, sampai }),
     paketMember(pg, user_id),
     bookingAktif(pg, user_id),
-    pg<{ nama: string }[]>`select nama from users where id = ${user_id}`,
+    penggunaById(pg, user_id),
   ]);
+  if (!saya) redirect("/masuk"); // cookie menunjuk user yang sudah tidak ada
 
   // BR-1.7 — sisa kredit dijumlahkan dari buku besar, tidak ada kolom saldo.
-  const sisa = paket
-    .filter((p) => p.hangus_at > sekarang)
-    .reduce((t, p) => t + p.sisa_kredit, 0);
-  const terdekat = paket
-    .filter((p) => p.hangus_at > sekarang && p.sisa_kredit > 0)
-    .sort((a, b) => a.hangus_at.getTime() - b.hangus_at.getTime())[0];
-
-  if (!saya) redirect("/masuk"); // cookie menunjuk user yang sudah tidak ada
+  const hidup = paket.filter((p) => p.hangus_at > sekarang && p.sisa_kredit > 0);
+  const sisa = hidup.reduce((t, p) => t + p.sisa_kredit, 0);
+  const terdekat = [...hidup].sort(
+    (a, b) => a.hangus_at.getTime() - b.hangus_at.getTime(),
+  )[0];
+  const mepet =
+    terdekat && terdekat.hangus_at.getTime() - sekarang.getTime() < 7 * 86_400_000;
 
   // Dikelompokkan per hari WIB, bukan per hari UTC — kelas 06.00 WIB jatuh di
   // tanggal sebelumnya kalau dihitung UTC (BR-7.5).
@@ -136,35 +135,27 @@ export default async function M1({
   }
 
   return (
-    <main className="mx-auto w-full max-w-md px-gutter py-sm">
-      <header className="flex items-baseline justify-between gap-4">
-        <div>
-          <h1 className="text-app-title">Jadwal</h1>
-          <p className="text-app-body-sm text-muted-foreground">{saya.nama}</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/akun" className="inline-flex min-h-11 items-center text-app-body-sm underline">
-            Akun Saya
+    <Kerangka nama={saya.nama} peran={saya.peran} aktif="/jadwal" kabar={kabar}>
+      <Kartu>
+        <div className="flex items-end justify-between gap-4">
+          <Angka
+            nilai={sisa}
+            label="Sisa kredit"
+            catatan={
+              terdekat
+                ? `Hangus ${hariWib(terdekat.hangus_at)} · ${selisihManusiawi(terdekat.hangus_at, sekarang)}`
+                : "Kredit habis atau sudah lewat masa berlaku."
+            }
+            warnaCatatan={mepet ? "text-warn-foreground" : "text-muted-foreground"}
+          />
+          <Link
+            href="/akun"
+            className="inline-flex min-h-11 items-center text-app-body-sm underline underline-offset-4"
+          >
+            Riwayat
           </Link>
-          <Link href="/masuk" className="inline-flex min-h-11 items-center text-app-body-sm">
-            Ganti
-          </Link>
         </div>
-      </header>
-
-      <div className="mt-sm rounded-md border border-border p-4">
-        <p className="text-app-label uppercase text-muted-foreground">Sisa kredit</p>
-        <p className="text-app-number tabular-nums">{sisa}</p>
-        {terdekat && (
-          <p className="text-app-body-sm text-warn-foreground">
-            Paket terdekat hangus {hariWib(terdekat.hangus_at)}
-          </p>
-        )}
-      </div>
-
-      {kabar && (
-        <p className="mt-sm rounded-md bg-muted p-4 text-app-body-sm">{kabar}</p>
-      )}
+      </Kartu>
 
       {perHari.size === 0 && (
         <p className="mt-md text-app-body text-muted-foreground">
@@ -172,23 +163,24 @@ export default async function M1({
         </p>
       )}
 
-      {[...perHari.entries()].map(([kunci, sesi]) => (
-        <section key={kunci} className="mt-md">
-          <h2 className="text-app-section">{hariWib(sesi[0].mulai_at)}</h2>
-          <ul className="mt-3 space-y-3">
-            {sesi.map((b) => (
-              <Kartu
-                key={b.id}
-                b={b}
-                setelan={setelan}
-                paket={paket}
-                aktif={aktif}
-                sekarang={sekarang}
-              />
-            ))}
-          </ul>
-        </section>
-      ))}
-    </main>
+      <div className="mt-md space-y-sm">
+        {[...perHari.entries()].map(([kunci, sesi]) => (
+          <Kartu key={kunci} judul={hariWib(sesi[0].mulai_at)} padat>
+            <ul className="divide-y divide-border">
+              {sesi.map((b) => (
+                <Sesi
+                  key={b.id}
+                  b={b}
+                  setelan={setelan}
+                  paket={paket}
+                  aktif={aktif}
+                  sekarang={sekarang}
+                />
+              ))}
+            </ul>
+          </Kartu>
+        ))}
+      </div>
+    </Kerangka>
   );
 }
