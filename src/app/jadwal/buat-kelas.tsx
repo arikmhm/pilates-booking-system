@@ -1,15 +1,14 @@
-// Panel "Buat kelas" — kolom kanan layar M1 untuk staf (UC-O01, UC-A14).
+// Panel "Buat kelas" — kolom kanan layar M1 dan A7 (UC-O01, UC-A14).
 //
-// Dulu dua kartu terpisah di layar Aturan Jadwal: satu untuk slot mingguan,
-// satu untuk kelas sekali jalan. Keduanya menjawab pertanyaan yang sama —
-// "ada lubang di kalender ini, isi apa?" — dan pertanyaan itu muncul sambil
-// MELIHAT kalendernya, bukan di layar lain. Jadi formulirnya pindah ke sini,
-// di sebelah kalender, dengan sakelar antara sekali jalan dan berulang.
+// Dua tab, dan tiap tab adalah SATU keputusan yang selesai: isi formulirnya,
+// tekan satu tombol, kelasnya ada. Sebelumnya membuat kelas mingguan butuh
+// dua tombol di dua tempat — "Tambah slot" lalu "Terbitkan sekarang" — dan
+// orang yang cuma menekan yang pertama melihat kalender yang tidak berubah
+// sejauh yang dia lihat (DS-41).
 //
-// Sakelarnya lewat URL, bukan state klien: layar ini server component penuh,
-// dan satu `?buat=berulang` lebih murah daripada membuatnya interaktif.
+// Sakelarnya lewat URL, bukan state klien: layar ini server component penuh.
 //
-// BR-9.1 — slot mingguan tetap kewenangan owner: satu slot berarti beban
+// BR-9.1 — jadwal mingguan tetap kewenangan owner: satu slot berarti beban
 // coach tiap minggu. Kelas sekali jalan milik admin; itu operasional.
 
 import Link from "next/link";
@@ -23,13 +22,61 @@ import {
 } from "@/db/kelola";
 import { kunciHariWib, tanggalRingkasWib } from "@/lib/waktu";
 import { Kartu, Tombol } from "@/components/kerangka";
-import { tambahAturan, tambahSesi, terbitkanJadwal } from "@/app/admin/kelola-aksi";
+import {
+  tambahAturan,
+  tambahSesi,
+  terbitkanJadwal,
+} from "@/app/admin/kelola-aksi";
 
 const INPUT =
   "h-12 w-full rounded-sm border border-border bg-background px-3 text-app-body";
 const LABEL = "text-app-label uppercase text-muted-foreground";
 
 export type ModeBuat = "sekali" | "berulang";
+
+const JAM = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const MENIT = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
+
+/**
+ * Jam dinding 24 jam dari dua select.
+ *
+ * `<input type="time">` menampilkan AM/PM atau 24 jam menurut locale browser,
+ * bukan menurut kita — dua orang bisa melihat jam yang sama dengan dua rupa.
+ * Studio ini menulis jadwal dalam 24 jam di mana pun (DS-41), dan select juga
+ * menutup kemungkinan mengetik jam yang tidak ada.
+ */
+function PilihJam({ jam, menit }: { jam: string; menit: string }) {
+  return (
+    <div>
+      <label className={LABEL} htmlFor="jam">
+        Jam (WIB)
+      </label>
+      <div className="flex items-center gap-2">
+        <select id="jam" name="jam" defaultValue={jam} className={INPUT}>
+          {JAM.map((j) => (
+            <option key={j} value={j}>
+              {j}
+            </option>
+          ))}
+        </select>
+        <span className="text-app-body text-muted-foreground">.</span>
+        <select
+          id="menit"
+          name="menit"
+          defaultValue={menit}
+          className={INPUT}
+          aria-label="Menit"
+        >
+          {MENIT.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
 
 function Sakelar({
   mode,
@@ -78,7 +125,7 @@ export async function BuatKelas({
   /** Ke mana aksinya kembali setelah selesai. */
   kembali: string;
   sekarang: Date;
-  /** Tampilkan panel penerbitan jadwal. Hanya di layar Aturan Jadwal. */
+  /** Tampilkan panel terbit ulang. Hanya di layar Aturan Jadwal. */
   terbit?: boolean;
 }) {
   const [jenis, tim, status] = await Promise.all([
@@ -88,17 +135,89 @@ export async function BuatKelas({
   ]);
   const coach = tim.filter((t) => t.peran === "coach");
   const besok = kunciHariWib(new Date(sekarang.getTime() + 86_400_000));
+  const kursiBaku = jenis[0]?.kapasitas_default ?? 8;
+  const durasiBaku = jenis[0]?.durasi_menit ?? 60;
 
   // Admin tidak punya mode berulang sama sekali — menampilkan tab yang
   // ditolak servernya cuma memancing klik yang gagal.
   const berulang = owner && mode === "berulang";
+
+  /** Alat, pelatih, kursi, durasi — sama persis di kedua tab. */
+  const isiKelas = (
+    <>
+      <div>
+        <label className={LABEL} htmlFor="class_type_id">
+          Alat / jenis kelas
+        </label>
+        <select
+          id="class_type_id"
+          name="class_type_id"
+          required
+          className={INPUT}
+        >
+          {jenis.map((j) => (
+            <option key={j.id} value={j.id}>
+              {j.nama}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className={LABEL} htmlFor="coach_id">
+          Pelatih
+        </label>
+        <select id="coach_id" name="coach_id" className={INPUT}>
+          <option value="">Belum ditentukan</option>
+          {coach.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nama}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className={LABEL} htmlFor="kapasitas">
+            Kursi
+          </label>
+          <input
+            id="kapasitas"
+            name="kapasitas"
+            type="number"
+            required
+            min={1}
+            max={60}
+            defaultValue={kursiBaku}
+            className={INPUT}
+          />
+        </div>
+        <div>
+          <label className={LABEL} htmlFor="durasi_menit">
+            Durasi (menit)
+          </label>
+          <input
+            id="durasi_menit"
+            name="durasi_menit"
+            type="number"
+            required
+            min={15}
+            max={240}
+            defaultValue={durasiBaku}
+            className={INPUT}
+          />
+        </div>
+      </div>
+    </>
+  );
 
   return (
     <Kartu
       judul="Buat kelas"
       catatan={
         berulang
-          ? "Slot mingguan: terbit otomatis tiap minggu sampai dihentikan."
+          ? "Berulang tiap minggu sampai dihentikan."
           : "Workshop, kelas pengganti, jam titipan. Tidak berulang."
       }
     >
@@ -107,8 +226,8 @@ export async function BuatKelas({
           <Sakelar mode={mode} tautan={tautan} />
         ) : (
           <p className="text-app-body-sm text-muted-foreground">
-            Slot mingguan permanen adalah kewenangan pemilik studio — satu slot
-            berarti beban coach tiap minggu.
+            Jadwal mingguan adalah kewenangan pemilik studio — satu slot berarti
+            beban coach tiap minggu.
           </p>
         )}
 
@@ -129,70 +248,39 @@ export async function BuatKelas({
                   ))}
                 </select>
               </div>
-              <div>
-                <label className={LABEL} htmlFor="jam_mulai">
-                  Jam (WIB)
-                </label>
-                <input
-                  id="jam_mulai"
-                  name="jam_mulai"
-                  type="time"
-                  required
-                  defaultValue="09:00"
-                  className={INPUT}
-                />
-              </div>
+              <PilihJam jam="09" menit="00" />
             </div>
 
-            <div>
-              <label className={LABEL} htmlFor="class_type_id">
-                Alat / jenis kelas
+            {isiKelas}
+
+            {/* Satu keputusan, bukan dua: berapa lama kelas ini berjalan
+                adalah bagian dari membuatnya (DS-41). */}
+            <div className="rounded-sm border border-border p-3">
+              <label className={LABEL} htmlFor="minggu">
+                Terbitkan untuk
               </label>
-              <select
-                id="class_type_id"
-                name="class_type_id"
-                required
-                className={INPUT}
-              >
-                {jenis.map((j) => (
-                  <option key={j.id} value={j.id}>
-                    {j.nama} · {j.durasi_menit} menit
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={LABEL} htmlFor="coach_id">
-                  Pelatih
-                </label>
-                <select id="coach_id" name="coach_id" className={INPUT}>
-                  <option value="">Belum ditentukan</option>
-                  {coach.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nama}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className={LABEL} htmlFor="kapasitas">
-                  Kursi
-                </label>
+              <div className="flex items-center gap-2">
                 <input
-                  id="kapasitas"
-                  name="kapasitas"
+                  id="minggu"
+                  name="minggu"
                   type="number"
-                  min={1}
-                  max={60}
-                  placeholder="bawaan"
-                  className={INPUT}
+                  required
+                  min={BATAS_TERBIT[0]}
+                  max={BATAS_TERBIT[1]}
+                  defaultValue={status?.minggu ?? 8}
+                  className="h-12 w-20 rounded-sm border border-border bg-background px-3 text-app-body tabular-nums"
                 />
+                <span className="text-app-body text-muted-foreground">
+                  minggu ke depan
+                </span>
               </div>
+              <p className="mt-2 text-app-body-sm text-muted-foreground">
+                Sesi pertama jatuh di hari itu yang terdekat; yang jamnya sudah
+                lewat hari ini dilewati.
+              </p>
             </div>
 
-            <Tombol penuh anak="Tambah slot mingguan" />
+            <Tombol penuh anak="Buat & terbitkan jadwal mingguan" />
           </form>
         ) : (
           <form action={tambahSesi} className="space-y-4">
@@ -212,115 +300,36 @@ export async function BuatKelas({
                   className={INPUT}
                 />
               </div>
-              <div>
-                <label className={LABEL} htmlFor="jam">
-                  Jam (WIB)
-                </label>
-                <input
-                  id="jam"
-                  name="jam"
-                  type="time"
-                  required
-                  defaultValue="10:00"
-                  className={INPUT}
-                />
-              </div>
+              <PilihJam jam="10" menit="00" />
             </div>
 
-            <div>
-              <label className={LABEL} htmlFor="sesi_class_type_id">
-                Alat / jenis kelas
-              </label>
-              <select
-                id="sesi_class_type_id"
-                name="class_type_id"
-                required
-                className={INPUT}
-              >
-                {jenis.map((j) => (
-                  <option key={j.id} value={j.id}>
-                    {j.nama}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {isiKelas}
 
-            <div>
-              <label className={LABEL} htmlFor="sesi_coach_id">
-                Pelatih
-              </label>
-              <select id="sesi_coach_id" name="coach_id" className={INPUT}>
-                <option value="">Belum ditentukan</option>
-                {coach.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nama}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={LABEL} htmlFor="sesi_kapasitas">
-                  Kursi
-                </label>
-                <input
-                  id="sesi_kapasitas"
-                  name="kapasitas"
-                  type="number"
-                  required
-                  min={1}
-                  max={60}
-                  defaultValue={jenis[0]?.kapasitas_default ?? 8}
-                  className={INPUT}
-                />
-              </div>
-              <div>
-                <label className={LABEL} htmlFor="durasi_menit">
-                  Durasi (menit)
-                </label>
-                <input
-                  id="durasi_menit"
-                  name="durasi_menit"
-                  type="number"
-                  required
-                  min={15}
-                  max={240}
-                  defaultValue={jenis[0]?.durasi_menit ?? 60}
-                  className={INPUT}
-                />
-              </div>
-            </div>
-
-            <Tombol gaya="garis" penuh anak="Buat kelas tambahan" />
+            <Tombol gaya="garis" penuh anak="Buat kelas" />
           </form>
         )}
 
-        {/* ── Terbitkan jadwal — UC-S01, BR-7.1 ──────────────────────────────
-            Dua formulir di atas membuat SATU kelas. Yang ini menerbitkan
-            semua yang sudah dijanjikan aturan mingguan, dan karena itu bukan
-            tab ketiga: ia tidak bersaing dengan keduanya, dan tombol yang
-            disembunyikan di balik tab bukan tombol yang dipakai.
-
-            Sengaja tidak berjalan sendiri tiap malam lagi. Studio ingin tahu
-            KAPAN jadwalnya bertambah, bukan menemukannya sudah bertambah. */}
+        {/* ── Terbitkan ulang — BR-7.1 ───────────────────────────────────────
+            Tab di atas sudah menerbitkan sesinya sendiri, jadi panel ini
+            bukan langkah kedua yang wajib. Ia untuk jadwal yang SUDAH ada:
+            memperpanjang jangkanya, atau mengisi lagi kalender yang kosong
+            setelah Reset Jadwal — tanpa membuat kelas baru. */}
         {status && (
           <div className="border-t border-border pt-4">
-            <p className="text-app-section">Terbitkan jadwal</p>
+            <p className="text-app-section">Terbitkan ulang</p>
             <p className="text-app-body-sm text-muted-foreground">
               {status.sampai
                 ? `${status.mendatang} sesi terbit, sampai ${tanggalRingkasWib(status.sampai)}.`
-                : "Belum ada sesi terbit dari aturan mingguan."}
+                : "Belum ada sesi terbit dari jadwal mingguan."}
             </p>
 
             {/* Tombol yang tidak mungkin berhasil harus mengatakannya SEBELUM
-                ditekan. Tanpa baris ini, "Terbitkan sekarang" di studio tanpa
-                slot berjalan terasa seperti tombol rusak. */}
+                ditekan. */}
             {status.aturan_aktif === 0 && (
               <p className="mt-2 rounded-sm bg-warn-surface px-3 py-2 text-app-body-sm text-warn-foreground">
-                Tidak ada slot mingguan yang berjalan, jadi belum ada yang bisa
-                diterbitkan. Buat slot lewat tab “Tiap minggu”, atau jalankan
-                lagi slot yang dihentikan di daftar sebelah.
+                Belum ada jadwal mingguan yang berjalan, jadi belum ada yang
+                bisa diterbitkan. Buat lewat tab “Tiap minggu”, atau jalankan
+                lagi yang dihentikan di daftar sebelah.
               </p>
             )}
 
@@ -329,7 +338,7 @@ export async function BuatKelas({
 
               {owner ? (
                 <label className="flex items-center justify-between gap-4">
-                  <span className="text-app-body">Jangka terbit</span>
+                  <span className="text-app-body">Terbitkan untuk</span>
                   <span className="flex items-center gap-2">
                     <input
                       name="minggu"
@@ -350,12 +359,11 @@ export async function BuatKelas({
                 /* Tanpa field `minggu`, aksinya cuma menerbitkan — jangkanya
                    tidak ikut terkirim, jadi tidak ada yang bisa diubah. */
                 <p className="text-app-body-sm text-muted-foreground">
-                  Jangka terbit {status.minggu} minggu ke depan, diatur pemilik
-                  studio.
+                  Terbit {status.minggu} minggu ke depan, diatur pemilik studio.
                 </p>
               )}
 
-              <Tombol penuh anak="Terbitkan sekarang" />
+              <Tombol gaya="garis" penuh anak="Terbitkan ulang sekarang" />
             </form>
           </div>
         )}

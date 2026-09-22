@@ -38,6 +38,22 @@ function keJadwal(pesan: string, dari?: FormDataEntryValue | null): never {
   redirect(`${tujuan}?kabar=${encodeURIComponent(pesan)}`);
 }
 
+/**
+ * Jam dinding WIB dari dua `<select>` — "14" + "30" jadi "14:30".
+ *
+ * Bukan `<input type="time">`: tampilannya mengikuti locale browser, jadi
+ * sebagian orang melihat 02:30 PM dan sebagian 14:30 untuk berkas yang sama.
+ * Dua select selalu 24 jam di mana pun, dan tidak ada yang bisa mengetik jam
+ * yang tidak ada (DS-41).
+ */
+function jamDinding(form: FormData, kunciJam: string, kunciMenit: string) {
+  const j = Number(form.get(kunciJam));
+  const m = Number(form.get(kunciMenit));
+  if (!Number.isInteger(j) || j < 0 || j > 23) return null;
+  if (!Number.isInteger(m) || m < 0 || m > 59) return null;
+  return `${String(j).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 /** Bilangan bulat dalam rentang, atau null. */
 function angka(form: FormData, kunci: string, [min, maks]: readonly [number, number]) {
   const n = Number(form.get(kunci));
@@ -111,19 +127,27 @@ export async function tambahAturan(formData: FormData) {
   const hari = angka(formData, "hari", [1, 7]);
   if (hari === null) keJadwal("Hari tidak sah.", dari);
 
-  const jam = String(formData.get("jam_mulai") ?? "");
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(jam))
-    keJadwal("Jam mulai harus format HH:MM.", dari);
+  const jam = jamDinding(formData, "jam", "menit");
+  if (jam === null) keJadwal("Jam mulai tidak sah.", dari);
 
   const class_type_id = String(formData.get("class_type_id") ?? "");
   if (!class_type_id) keJadwal("Pilih jenis kelas.", dari);
 
   const coach_id = String(formData.get("coach_id") ?? "") || null;
-  const kapasitasMentah = String(formData.get("kapasitas") ?? "").trim();
-  const kapasitas = kapasitasMentah ? angka(formData, "kapasitas", [1, 60]) : null;
-  if (kapasitasMentah && kapasitas === null) keJadwal("Kapasitas harus 1–60.", dari);
+  const kapasitas = angka(formData, "kapasitas", [1, 60]);
+  if (kapasitas === null) keJadwal("Kursi harus 1–60.", dari);
+  const durasi = angka(formData, "durasi_menit", [15, 240]);
+  if (durasi === null) keJadwal("Durasi harus 15–240 menit.", dari);
+
+  // Jangka terbit ikut di formulir ini (DS-41): membuat kelas mingguan dan
+  // memutuskan sampai kapan ia terbit adalah satu keputusan, bukan dua.
+  const minggu = angka(formData, "minggu", BATAS_TERBIT);
+  if (minggu === null)
+    keJadwal(`Jangka terbit harus ${BATAS_TERBIT[0]}–${BATAS_TERBIT[1]} minggu.`, dari);
 
   const studio = await setelanLengkap(pg);
+  await simpanJangkaTerbit(pg, studio.id, minggu);
+
   const aturan_id = await buatAturan(pg, {
     studio_id: studio.id,
     class_type_id,
@@ -131,12 +155,11 @@ export async function tambahAturan(formData: FormData) {
     hari,
     jam_mulai: jam,
     kapasitas,
+    durasi_menit: durasi,
   });
 
-  // Aturan baru belum berarti apa-apa sampai jadi sesi. Job harian yang
-  // biasanya mengerjakannya (BR-7.1) dipanggil langsung di sini supaya
-  // hasilnya terlihat di jadwal detik itu juga — fungsi yang sama persis,
-  // bukan salinannya.
+  // Aturan baru belum berarti apa-apa sampai jadi sesi, jadi penerbitannya
+  // dijalankan di sini juga — satu tombol, satu hasil yang kelihatan.
   const { dibuat } = await generateSesi(pg, new Date());
 
   // Job menerbitkan sesi untuk SEMUA aturan sampai batas generate_weeks_ahead,
@@ -157,7 +180,7 @@ export async function tambahAturan(formData: FormData) {
   revalidatePath("/admin/jadwal");
   revalidatePath("/jadwal");
   keJadwal(
-    `Slot ditambahkan — ${milik_slot} sesi terbit` +
+    `Jadwal mingguan dibuat — ${milik_slot} sesi terbit` +
       (perdana ? `, mulai ${hariWib(saat(perdana))}` : "") +
       (dibuat > milik_slot
         ? `, sekalian ${dibuat - milik_slot} sesi slot lain yang belum diterbitkan.`
@@ -215,8 +238,8 @@ export async function tambahSesi(formData: FormData) {
   const dari = formData.get("dari");
 
   const tanggal = String(formData.get("tanggal") ?? "");
-  const jam = String(formData.get("jam") ?? "");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(jam))
+  const jam = jamDinding(formData, "jam", "menit");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggal) || jam === null)
     keJadwal("Tanggal atau jam tidak sah.", dari);
 
   const class_type_id = String(formData.get("class_type_id") ?? "");

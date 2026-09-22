@@ -168,3 +168,30 @@ test("generate sesi: 2 minggu ke depan, jalan kedua tidak menggandakan (BR-7.1)"
       from sessions where schedule_rule_id is not null`;
   expect(jamWib.map((r) => r.j)).toEqual(["07:00"]);
 });
+
+test("generate sesi: durasi aturan menimpa durasi jenis kelas (BR-7.2)", async () => {
+  // Kelas Sabtu 45 menit walau Reformer biasanya 60 — tanpa memaksa membuat
+  // jenis kelas kembar hanya untuk membedakan durasinya. `kapasitas` sudah
+  // bekerja begini sejak awal; `durasi_menit` menyusul supaya keduanya
+  // sejalan, dan yang null tetap jatuh ke bawaan jenis kelas.
+  const [{ id: aturan }] = await sql<{ id: string }[]>`
+    insert into schedule_rules
+      (studio_id, class_type_id, hari, jam_mulai, kapasitas, durasi_menit, berlaku_dari)
+    values (${studio}, ${jenis}, 6, '08:00', 5, 45,
+            (${SEKARANG.toISOString()}::timestamptz at time zone 'Asia/Jakarta')::date)
+    returning id`;
+
+  const hasil = await generateSesi(sql, SEKARANG);
+  expect(hasil.dibuat).toBeGreaterThan(0);
+
+  const baris = await sql<{ durasi_menit: number; kapasitas: number }[]>`
+    select distinct durasi_menit, kapasitas from sessions
+     where schedule_rule_id = ${aturan}`;
+  expect(baris).toEqual([{ durasi_menit: 45, kapasitas: 5 }]);
+
+  // Yang tidak menyetelnya tetap ikut jenis kelas — 60 menit, 8 kursi.
+  const lain = await sql<{ durasi_menit: number }[]>`
+    select distinct durasi_menit from sessions
+     where schedule_rule_id is not null and schedule_rule_id <> ${aturan}`;
+  expect(lain).toEqual([{ durasi_menit: 60 }]);
+});

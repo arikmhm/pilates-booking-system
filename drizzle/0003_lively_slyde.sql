@@ -1,0 +1,1 @@
+ALTER TABLE "schedule_rules" ADD COLUMN "durasi_menit" integer;

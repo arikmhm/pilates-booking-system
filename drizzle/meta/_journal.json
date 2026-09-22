@@ -22,6 +22,13 @@
       "when": 1790080539358,
       "tag": "0002_curved_mach_iv",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790100360955,
+      "tag": "0003_lively_slyde",
+      "breakpoints": true
     }
   ]
 }

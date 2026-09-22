@@ -99,6 +99,10 @@ export const schedule_rules = pgTable(
     hari: integer().notNull(), // 1=Senin … 7=Minggu
     jam_mulai: time().notNull(), // jam dinding WIB, bukan timestamp
     kapasitas: integer(), // null = pakai kapasitas_default
+    // null = pakai durasi_menit jenis kelasnya. Sama polanya dengan kapasitas:
+    // Sabtu boleh 45 menit walau Reformer biasanya 70, tanpa memaksa membuat
+    // jenis kelas kembar hanya untuk membedakan durasinya.
+    durasi_menit: integer(),
     level: text({ enum: LEVEL }),
     berlaku_dari: date().notNull(),
     berlaku_sampai: date(), // null = selamanya

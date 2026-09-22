@@ -86,6 +86,7 @@ erDiagram
         int hari "1=Senin..7=Minggu"
         time jam_mulai "WIB"
         int kapasitas "null = pakai default"
+        int durasi_menit "null = pakai default"
         text level "beginner|intermediate|null"
         date berlaku_dari
         date berlaku_sampai "null = selamanya"

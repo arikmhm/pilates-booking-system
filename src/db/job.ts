@@ -32,8 +32,9 @@ import { hariPendekWib, jamWib } from "@/lib/waktu";
  * timestamptz UTC yang benar (BR-7.5). Menghitungnya di JavaScript berarti
  * menebak offset sendiri.
  *
- * Kapasitas DISALIN dari aturan atau jenis kelas, tidak di-join (BR-7.3):
- * kapasitas jenis kelas boleh berubah tanpa mengusik sesi yang sudah terisi.
+ * Kapasitas dan durasi DISALIN dari aturan atau jenis kelas, tidak di-join
+ * (BR-7.3): setelan jenis kelas boleh berubah tanpa mengusik sesi yang sudah
+ * terisi. Keduanya `null` di aturan berarti "pakai bawaan jenis kelas".
  */
 export async function generateSesi(sql: Sql, sekarang: Date) {
   const baris = await sql<{ id: string }[]>`
@@ -45,7 +46,7 @@ export async function generateSesi(sql: Sql, sekarang: Date) {
            r.class_type_id,
            r.coach_id,
            (tgl::date + r.jam_mulai) at time zone 'Asia/Jakarta',
-           ct.durasi_menit,
+           coalesce(r.durasi_menit, ct.durasi_menit),
            coalesce(r.kapasitas, ct.kapasitas_default),
            'scheduled'
       from studios s

@@ -298,8 +298,11 @@ export type BarisAturan = {
   hari: number;
   jam_mulai: string;
   kapasitas: number | null;
+  /** null = ikut durasi jenis kelas; `durasi_menit` di bawah sudah dipilihkan. */
+  durasi_rule: number | null;
   kelas: string;
   kapasitas_default: number;
+  /** Durasi yang BERLAKU — punya aturan kalau diisi, kalau tidak punya jenis kelas. */
   durasi_menit: number;
   coach: string | null;
   berlaku_sampai: string | null;
@@ -312,7 +315,9 @@ export async function daftarAturan(
 ): Promise<BarisAturan[]> {
   return sql<BarisAturan[]>`
     select r.id, r.hari, r.jam_mulai, r.kapasitas, r.berlaku_sampai,
-           ct.nama as kelas, ct.kapasitas_default, ct.durasi_menit,
+           r.durasi_menit as durasi_rule,
+           ct.nama as kelas, ct.kapasitas_default,
+           coalesce(r.durasi_menit, ct.durasi_menit) as durasi_menit,
            c.nama as coach,
            (select count(*)::int from sessions s
              where s.schedule_rule_id = r.id and s.status = 'scheduled'
@@ -340,14 +345,16 @@ export async function buatAturan(
     hari: number;
     jam_mulai: string;
     kapasitas: number | null;
+    durasi_menit: number | null;
   },
 ) {
   const [r] = await sql<{ id: string }[]>`
     insert into schedule_rules
-      (studio_id, class_type_id, coach_id, hari, jam_mulai, kapasitas, berlaku_dari)
+      (studio_id, class_type_id, coach_id, hari, jam_mulai, kapasitas,
+       durasi_menit, berlaku_dari)
     values (${args.studio_id}, ${args.class_type_id}, ${args.coach_id},
             ${args.hari}, ${args.jam_mulai}, ${args.kapasitas},
-            (now() at time zone 'Asia/Jakarta')::date)
+            ${args.durasi_menit}, (now() at time zone 'Asia/Jakarta')::date)
     returning id`;
   return r.id;
 }

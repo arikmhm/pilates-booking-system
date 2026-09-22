@@ -150,7 +150,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | ID | Aturan | |
 |---|---|:--:|
 | 7.1 | Jadwal disimpan sebagai **aturan berulang mingguan**; sesi nyata terbit `generate_weeks_ahead` ke depan saat **diterbitkan dari layar A7**, bukan tiap malam sendiri | D |
-| 7.2 | Kapasitas berasal dari jenis kelas, bisa ditimpa per sesi | D |
+| 7.2 | Kapasitas **dan durasi** berasal dari jenis kelas, bisa ditimpa per aturan mingguan maupun per sesi | D |
 | 7.3 | Ubah aturan berulang **hanya** memengaruhi sesi yang belum ada booking-nya; sesi yang sudah ada booking ditangani manual lewat BR-5 | R |
 | 7.4 | Hari libur / blackout → sesi tidak dibuat, atau dibatalkan lewat BR-5 | R |
 | 7.5 | Semua waktu disimpan UTC, ditampilkan WIB | D |

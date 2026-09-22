@@ -442,7 +442,7 @@ export default async function M1({
         </div>
 
         {staf && (
-          <div className="col-span-12 xl:col-span-4">
+          <div className="col-span-12 min-w-0 xl:col-span-4">
             <BuatKelas
               owner={saya.peran === "owner"}
               mode={modeBuat}

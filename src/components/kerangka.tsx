@@ -262,17 +262,20 @@ export function Kartu({
   judul,
   catatan,
   padat,
+  min0,
   warna = "bg-background border-border",
   children,
 }: {
   judul?: string;
   catatan?: string;
   padat?: boolean;
+  /** Butir grid: matikan `min-width:auto` supaya isinya tidak melarkan induknya. */
+  min0?: boolean;
   warna?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className={`rounded-md border ${warna}`}>
+    <section className={`rounded-md border ${min0 ? "min-w-0 " : ""}${warna}`}>
       {judul && (
         <div className="border-b border-inherit px-4 py-3">
           <h2 className="text-app-section">{judul}</h2>

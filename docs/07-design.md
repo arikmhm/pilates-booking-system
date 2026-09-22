@@ -572,6 +572,45 @@ dibedakan dari gagal oleh orang yang sedang menatap kalender minggu ini yang kos
 "8 sesi terbit, mulai Selasa, 29 September" bisa. Slot Selasa yang dibuat hari Rabu
 memang tidak punya sesi minggu ini.
 
+`DS-41` — **Satu tab, satu formulir, satu tombol, satu hasil.**
+
+Tiap tab di kartu Buat kelas berdiri sendiri dan isinya sejajar:
+
+| | Sekali jalan | Tiap minggu |
+|---|---|---|
+| Kapan | tanggal | hari |
+| Jam | jam + menit, 24 jam | jam + menit, 24 jam |
+| Kelas | alat · pelatih · kursi · durasi | alat · pelatih · kursi · durasi |
+| Sejauh apa | — | terbitkan N minggu ke depan |
+| Tombol | Buat kelas | Buat & terbitkan jadwal mingguan |
+
+Sebelumnya membuat kelas mingguan butuh dua tombol di dua tempat: "Tambah slot" lalu
+"Terbitkan sekarang" di strip bawah. Yang cuma menekan tombol pertama melihat kalender
+yang tampak tidak berubah — dan itu persis keluhan yang muncul. Berapa lama sebuah kelas
+rutin berjalan adalah bagian dari **membuatnya**, bukan langkah administrasi terpisah.
+
+Strip "Terbitkan ulang" tetap ada, tapi berhenti jadi langkah wajib: ia untuk jadwal yang
+sudah ada — memperpanjang jangkanya, atau mengisi lagi kalender yang kosong sesudah Reset
+Jadwal.
+
+`DS-41a` — **Jam selalu 24 jam, lewat dua `<select>`, bukan `<input type="time">`.**
+Tampilan `type="time"` mengikuti locale browser: dua orang bisa melihat jadwal yang sama
+sebagai 02.30 PM dan 14.30. Studio ini menulis jam dalam 24 jam di mana pun. Select juga
+menutup kemungkinan mengetik jam yang tidak ada, dan menitnya kelipatan lima — jadwal
+studio tidak pernah mulai pukul 09.07.
+
+`DS-41b` — **Durasi bisa ditimpa per aturan mingguan, sama seperti kapasitas.**
+`schedule_rules.durasi_menit` boleh `null` = pakai durasi jenis kelasnya. Tanpa ini, kelas
+Sabtu 45 menit memaksa membuat jenis kelas kembar hanya untuk membedakan durasinya —
+padahal `kapasitas` sudah bekerja begini sejak awal. Nilainya tetap **disalin** ke sesi
+saat diterbitkan (BR-7.3).
+
+`DS-41c` — **Daftar panjang dipecah tab, bukan digulir.** Empat puluh kelas rutin dalam
+satu daftar berarti menggulir untuk menjawab "Selasa isinya apa?", padahal jadwal studio
+selalu dibaca per hari. Tab Senin–Minggu plus "Semua", masing-masing membawa jumlahnya,
+lewat URL (`?hari=2`). Bawaannya tetap "Semua": yang baru membuka layar ingin melihat
+seluruhnya dulu.
+
 | Layar | Perangkat | Yang menentukan tampilannya |
 |---|---|---|
 | **M1 Jadwal** | HP | Daftar `card` per sesi. Sisa kursi pakai `app-body` + chip status bagian 7. Tombol `button-primary` lebar penuh; saat penuh berubah jadi `button-secondary` "Ikut Waitlist" |
