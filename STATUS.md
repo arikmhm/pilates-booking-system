@@ -2,7 +2,7 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** proyek ter-scaffold · konfigurasi selesai · siap menulis skema dan aturan
+**Tahap:** halaman profil publik jadi · siap menulis skema dan aturan
 **Terakhir diperbarui:** 2026-09-22
 
 ---
@@ -31,6 +31,7 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 - [x] Notifikasi: email + tombol kirim-WA, WhatsApp API ditunda
 - [x] Sistem desain — token, tipografi, komponen, status, pemetaan 6 layar
 - [x] Scaffold Next.js 16 + Tailwind v4 + Drizzle + Postgres Docker, token desain terpasang
+- [x] Halaman profil publik `/` — 10 pita, skala pemasaran, harga dari seed demo
 
 ## Keputusan terbuka
 
@@ -59,6 +60,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | Halaman profil publik `/` dibangun meniru gaya rujukan: pola pita berselang-seling, hero bertirai, tiga kartu paket. `07-design.md` bertambah bagian 8 dan DS-18–DS-25; DS-11 dipertegas ke semua tautan teks |
 | 2026-09-22 | Proyek di-scaffold: Next.js 16, Tailwind v4, Drizzle + postgres.js, Vitest, Docker Compose Postgres. Token `07-design.md` terpasang di `globals.css`, font Plus Jakarta Sans + Instrument Serif. `check-docs.sh` diperbaiki agar melewati `node_modules` |
 | 2026-09-22 | Sistem desain masuk `07-design.md` — token siap tempel, skala aplikasi dipisah dari skala pemasaran, warna status domain ditambahkan, font berbayar diganti Plus Jakarta Sans + Instrument Serif |
 | 2026-09-22 | Notifikasi diubah: email + tombol kirim-WA di admin, WhatsApp API ditunda. Login jadi magic link email |

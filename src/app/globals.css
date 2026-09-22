@@ -15,7 +15,20 @@
   --primary-foreground: #222325; /* DS-2 — tidak pernah putih */
   --ring: #222325;
 
-  /* aksen editorial — dekoratif, bukan teks (1.80:1) */
+  /* pita halaman publik — 07-design.md bagian 8 */
+  --surface-sand: #f3efe8;
+  --surface-sand-deep: #ebe5da;
+  --border-warm: #dcd5c8;
+
+  /* aksen teks editorial — digelapkan agar lolos AA (DS-18) */
+  --emphasis-green: #487026;
+  --emphasis-sand: #6e5f47;
+
+  /* foto: blok pengganti + tirai wajib sebelum teks putih (DS-20, DS-25) */
+  --photo-warm: #9c8877;
+  --photo-scrim: rgba(43, 34, 29, 0.55);
+
+  /* aksen dekoratif, bukan teks (1.80:1) */
   --accent-warm: #cbbea3;
   --accent-sand: #c8c0b2;
 
@@ -43,6 +56,12 @@
   --color-ring: var(--ring);
   --color-accent-warm: var(--accent-warm);
   --color-accent-sand: var(--accent-sand);
+  --color-surface-sand: var(--surface-sand);
+  --color-surface-sand-deep: var(--surface-sand-deep);
+  --color-border-warm: var(--border-warm);
+  --color-emphasis-green: var(--emphasis-green);
+  --color-emphasis-sand: var(--emphasis-sand);
+  --color-photo-warm: var(--photo-warm);
   --color-ok-surface: var(--ok-surface);
   --color-ok-foreground: var(--ok-foreground);
   --color-warn-surface: var(--warn-surface);
@@ -84,19 +103,19 @@
   --text-app-number: 32px;
   --text-app-number--line-height: 36px;
 
-  /* DS-4 — skala pemasaran, HANYA beranda publik dan halaman harga */
-  --text-display: 60px;
-  --text-display--line-height: 72px;
-  --text-display--letter-spacing: -0.6px;
-  --text-serif-hero: 53px;
-  --text-serif-hero--line-height: 64px;
-  --text-serif-hero--letter-spacing: 1.28px;
-  --text-marketing-h2: 41px;
-  --text-marketing-h2--line-height: 49px;
-  --text-marketing-h2--letter-spacing: -0.3px;
-  --text-marketing-lead: 36px;
-  --text-marketing-lead--line-height: 59px;
-  --text-marketing-lead--letter-spacing: -0.36px;
+  /* DS-4 + DS-21 — skala pemasaran, HANYA halaman publik. clamp: HP → laptop */
+  --text-display: clamp(34px, 6.5vw, 60px);
+  --text-display--line-height: 1.12;
+  --text-display--letter-spacing: -0.02em;
+  --text-serif-hero: clamp(30px, 6vw, 53px);
+  --text-serif-hero--line-height: 1.15;
+  --text-serif-hero--letter-spacing: 0.02em;
+  --text-marketing-h2: clamp(26px, 4.5vw, 41px);
+  --text-marketing-h2--line-height: 1.2;
+  --text-marketing-h2--letter-spacing: -0.01em;
+  --text-marketing-lead: clamp(19px, 2.6vw, 36px);
+  --text-marketing-lead--line-height: 1.55;
+  --text-marketing-lead--letter-spacing: -0.01em;
 }
 
 @layer base {
