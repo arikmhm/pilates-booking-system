@@ -59,6 +59,7 @@ const RINGKAS: Record<string, string> = {
   X3: "sudah terdaftar",
   X4: "bentrok jam lain",
   X5: "kredit tidak cukup",
+  X7: "paket lain",
 };
 
 /**

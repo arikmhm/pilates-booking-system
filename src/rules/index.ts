@@ -91,7 +91,7 @@ export function pilihPaket(
 /* ── Alur 1 · boleh booking atau tidak ────────────────────────────────────
    BR-2.1 … BR-2.7                                                          */
 
-export const KODE_TOLAK = ["X1", "X2", "X3", "X4", "X5"] as const;
+export const KODE_TOLAK = ["X1", "X2", "X3", "X4", "X5", "X7"] as const;
 export type KodeTolak = (typeof KODE_TOLAK)[number];
 
 // Teks final Bahasa Indonesia — 04-flows.md Alur 1, tabel pesan penolakan.
@@ -101,6 +101,7 @@ export const PESAN_TOLAK: Record<KodeTolak, string> = {
   X3: "Kamu sudah terdaftar di kelas ini.",
   X4: "Kamu sudah punya kelas lain di jam yang sama.",
   X5: "Kredit kamu habis atau sudah lewat masa berlaku.",
+  X7: "Paket kamu tidak berlaku untuk jenis kelas ini.",
 };
 
 export type KeputusanBooking =
@@ -149,7 +150,17 @@ export function bolehBooking(args: {
 
   // BR-2.7 — tidak punya kredit valid
   const terpilih = pilihPaket(paket, sesi.class_type_id, sekarang);
-  if (!terpilih) return tolak("X5");
+  if (!terpilih) {
+    // Dua sebab yang sangat berbeda, dan menyamakannya membuat sistem
+    // berbohong: member berkredit 3 yang membuka kelas Mat dibilang
+    // "kredit kamu habis", lalu menghubungi admin — chat yang persis mau
+    // dihapus sistem ini. BR-1.4 punya jalan keluarnya sendiri (beli paket
+    // yang mencakup kelas itu), jadi ia butuh pesannya sendiri.
+    const punyaKreditHidup = paket.some(
+      (p) => p.hangus_at > sekarang && p.sisa_kredit > 0,
+    );
+    return tolak(punyaKreditHidup ? "X7" : "X5");
+  }
 
   return { boleh: true, paket: terpilih };
 }

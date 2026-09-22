@@ -75,8 +75,16 @@ duluan. Pengecekan kapasitas paling akhir karena itu satu-satunya yang menulis k
 | X2 | Di luar jendela | "Booking dibuka 7 hari sebelum kelas dan ditutup 1 jam sebelum mulai." |
 | X3 | Sudah terdaftar | "Kamu sudah terdaftar di kelas ini." |
 | X4 | Bentrok | "Kamu sudah punya kelas lain di jam yang sama." |
-| X5 | Kredit habis | "Kredit kamu habis atau sudah lewat masa berlaku." |
+| X5 | Tidak punya kredit hidup sama sekali | "Kredit kamu habis atau sudah lewat masa berlaku." |
 | X6 | Waitlist penuh | "Daftar tunggu sudah penuh. Coba kelas lain." |
+| X7 | Punya kredit hidup, tapi tidak untuk jenis kelas ini (BR-1.4) | "Paket kamu tidak berlaku untuk jenis kelas ini." |
+
+X5 dan X7 keluar dari cabang yang sama — `pilihPaket()` mengembalikan `null` — tapi
+jalan keluarnya berlawanan: X5 isi ulang, X7 beli paket yang mencakup kelas itu.
+Menyamakannya membuat member berkredit 3 yang membuka kelas Mat dibilang kreditnya
+habis, lalu menghubungi admin untuk menanyakan kredit yang jelas-jelas ada — chat yang
+persis mau dihapus sistem ini. Yang membedakan keduanya adalah adanya paket yang
+`hangus_at`-nya belum lewat **dan** sisanya di atas nol.
 
 ---
 
@@ -88,7 +96,7 @@ flowchart TD
     B --> C["Buang yang SUM ledger sama dengan nol"]
     C --> D["Buang yang jenis kelasnya tidak diizinkan<br/>package_class_types"]
     D --> E{"Masih ada sisa?"}
-    E -->|tidak| F["Tidak ada kredit valid"]:::tolak
+    E -->|tidak| F["Tidak ada kredit valid<br/>X5 kalau tak punya kredit hidup<br/>X7 kalau punya tapi jenisnya lain"]:::tolak
     E -->|ya| G["Urutkan hangus_at paling dekat duluan"]
     G --> H["Ambil paket teratas"]:::sukses
 

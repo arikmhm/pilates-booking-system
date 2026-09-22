@@ -168,6 +168,24 @@ describe("Alur 1 · bolehBooking (BR-2.1 … BR-2.7)", () => {
     expect(h).toMatchObject({ boleh: false, kode: "X5" });
   });
 
+  test("X7 punya kredit hidup, tapi paketnya tidak mencakup kelas ini (BR-1.4)", () => {
+    // Sebab yang sama sekali berbeda dengan X5, dan jalan keluarnya juga:
+    // yang ini beli paket lain, bukan isi ulang. Menyebutnya "kredit habis"
+    // mengirim member ke admin untuk menanyakan kredit yang jelas-jelas ada.
+    const h = bolehBooking({ ...dasar, paket: [paket({ class_type_ids: [MAT] })] });
+    expect(h).toMatchObject({ boleh: false, kode: "X7" });
+  });
+
+  test("kredit yang semuanya sudah hangus tetap X5, bukan X7", () => {
+    // Batas antara keduanya adalah kredit HIDUP. Paket Mat yang sudah lewat
+    // tanggal hangus tidak membuktikan member punya apa-apa untuk dipakai.
+    const h = bolehBooking({
+      ...dasar,
+      paket: [paket({ class_type_ids: [MAT], hangus_at: jam(-1) })],
+    });
+    expect(h).toMatchObject({ boleh: false, kode: "X5" });
+  });
+
   test("sesi batal dicek lebih dulu daripada kredit habis", () => {
     // Urutan pengecekan itu bagian dari spesifikasi: yang paling murah duluan.
     const h = bolehBooking({

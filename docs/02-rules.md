@@ -98,7 +98,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | 2.4 | Satu member maks 1 booking aktif per sesi | D |
 | 2.5 | Tidak bisa booking dua sesi yang jamnya bentrok | D |
 | 2.6 | Member pilih nomor alat; jika tidak memilih **atau alatnya keburu terisi**, sistem yang menentukan — pilihan menggeser urutan, tidak pernah menggagalkan booking | D |
-| 2.7 | Tidak punya kredit valid → booking ditolak, diarahkan beli paket | D |
+| 2.7 | Tidak punya kredit valid → booking ditolak, diarahkan beli paket. **Dua pesan berbeda**: kredit habis (X5) dan paket tidak mencakup jenis kelasnya (X7, BR-1.4) | D |
 
 ### BR-3 · Pembatalan oleh member
 

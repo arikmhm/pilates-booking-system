@@ -17,8 +17,6 @@ presentasi dan deploy.
 1. Latihan skrip presentasi 5 menit dari ujung ke ujung, rekam video 90 detik
 2. Deploy demo ke Vercel — `DATABASE_URL` sudah menunjuk Neon, `vercel.json` sudah
    memuat jadwal cron. `CRON_SECRET` harus diisi di environment Vercel
-3. Keputusan terbuka #6 — kode tolak X7 sendiri untuk BR-1.4 (paket tidak mencakup
-   jenis kelasnya), supaya tidak lagi dibilang "kredit kamu habis"
 
 ## Selesai
 
@@ -45,6 +43,8 @@ presentasi dan deploy.
 - [x] **Keenam layar demo selesai** — M1 M2 M3 A1 A2 A3
 - [x] M2 panel konfirmasi — pemilih nomor alat (BR-2.6), sisa kredit sesudahnya,
       aturan batal tertulis sebelum tombolnya ditekan
+- [x] Kode tolak X7 — paket yang tidak mencakup jenis kelasnya berhenti dibilang
+      "kredit kamu habis" (keputusan terbuka #6 ditutup)
 - [x] Tombol Reset Demo — satu transaksi, id user tetap, presenter tidak terlempar keluar
 - [x] Navigasi sidebar shadcn + kalender mingguan M1 (DS-31–DS-34)
 - [x] **Lima layar pengelolaan**: direktori member (A4), pelatih & staf (A5),
@@ -67,7 +67,6 @@ presentasi dan deploy.
 | 3 | Batas batal 12 jam belum divalidasi | Tidak ada — default aman | Pertanyaan meeting pertama |
 | 4 | Provider VPS | Baru perlu setelah deal | Bandingkan Biznet / IDCloudHost |
 | 5 | API key Neon ber-scope akun ditulis ke 7 config agent | Tidak ada | Cabut yang tak terpakai: `neon api-keys revoke 3355921` |
-| 6 | Pesan X5 dipakai untuk dua sebab berbeda | Tidak ada — kosmetik | Member berkredit 3 yang membuka kelas Mat dibilang "kredit kamu habis", padahal sebabnya BR-1.4. Perlu kode X7 sendiri? |
 
 Tidak ada yang memblokir pembangunan demo.
 
@@ -87,6 +86,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-23 | Kode tolak **X7** sendiri untuk BR-1.4: member berkredit 3 yang membuka kelas Mat tidak lagi dibilang "kredit kamu habis" — sebabnya paketnya memang tidak mencakup jenis kelas itu, dan jalan keluarnya beli paket lain, bukan isi ulang. Batasnya adalah adanya paket yang belum hangus dan sisanya di atas nol; kredit yang semuanya sudah mati tetap X5. Dua test, dibuktikan lewat mutasi. Keputusan terbuka #6 ditutup |
 | 2026-09-23 | **Layar M2 selesai** — blok yang bisa dipesan berhenti memesan saat diklik: ia membuka panel konfirmasi `?pilih=<session_id>` dengan pemilih nomor alat (BR-2.6), sisa kredit sesudah potongan, dan aturan batal tertulis sebelum tombolnya ditekan. Pilihan alat sengaja cuma menggeser `ORDER BY` query 5.1, bukan menambah syarat — alat yang keburu terisi tetap memberi kursi, dan pesan baliknya menyebut alat yang benar-benar didapat. Panelnya server murni: radio `sr-only` + `peer-checked`, tanpa satu baris kode klien, jadi tombol kembali browser menutupnya. Sekalian redirect sesudah booking membawa minggu dan saringan yang sedang dibuka — sebelumnya memesan kelas minggu depan melemparkan orang kembali ke minggu ini (DS-42) |
 | 2026-09-23 | Kartu Buat kelas disederhanakan (DS-41): tiap tab berdiri sendiri — Sekali jalan (tanggal · jam · alat · pelatih · kursi · durasi → **Buat kelas**) dan Tiap minggu (hari · jam · alat · pelatih · kursi · durasi · jangka terbit → **Buat & terbitkan jadwal mingguan**). Membuat kelas rutin tidak lagi butuh dua tombol di dua tempat. Jam jadi dua `<select>` 24 jam, bukan `<input type="time">` yang rupanya ikut locale browser. Kolom baru `schedule_rules.durasi_menit` (nullable, migrasi 0003) supaya durasi bisa ditimpa per aturan seperti kapasitas. Daftar kelas rutin dipecah tab Senin–Minggu. Sekalian `min-w-0` pada butir grid — lebar min-content sebuah `<select>` sempat melarkan seluruh halaman di 375px |
 | 2026-09-23 | Aturan jadwal yang dihentikan bisa **Jalankan lagi** (owner) — sebelumnya satu klik "Hentikan" hanya bisa dibatalkan lewat Reset Demo, padahal ia ikut menghapus sesi kosongnya. Pesan "Terbitkan sekarang" berhenti menyamakan dua sebab nol sesi: jadwal sudah lengkap vs tidak ada slot yang berjalan; panelnya memberi peringatan sebelum tombolnya ditekan. Subjudul A7 jadi "N dari M slot mingguan berjalan" |
