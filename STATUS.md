@@ -2,7 +2,7 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** 4 dari 6 layar jadi · sisa A2 detail sesi dan A3 detail member
+**Tahap:** 5 dari 6 layar jadi · sisa A3 detail member + tombol Reset Demo
 **Terakhir diperbarui:** 2026-09-22
 
 ---
@@ -13,11 +13,12 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 
 ## Berikutnya — tiga langkah pertama
 
-1. Layar A2 Detail sesi — peserta, waitlist, centang kehadiran, **Batalkan Kelas**
-   (Alur 5; `prosesWaitlist()` di `src/app/akun/aksi.ts` tinggal dipakai ulang)
-2. Layar A3 Detail member — dompet kredit, buku besar penuh, koreksi manual (BR-1.8)
-3. Tombol **Reset Demo** — ditandai "wajib" di 02-rules.md bagian 5. Butuh seed
+1. Layar A3 Detail member — dompet kredit, buku besar penuh, koreksi manual (BR-1.8)
+2. Tombol **Reset Demo** — ditandai "wajib" di 02-rules.md bagian 5. Butuh seed
    diekstrak dari `seed.mts` jadi fungsi yang bisa diimpor server action
+3. Empat job terjadwal sebagai endpoint HTTP berpenjaga `CRON_SECRET`
+   ([05-data-model.md](docs/05-data-model.md) bagian 6) — `hasilPenghangusan()`
+   dan `naikkanWaitlist()` sudah siap dipakai
 
 ## Selesai
 
@@ -39,6 +40,7 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 - [x] Layar M1 Jadwal + server action booking & waitlist, diuji ujung ke ujung di browser
 - [x] Layar M3 Akun Saya + pembatalan → promosi waitlist otomatis (Alur 3 + Alur 4)
 - [x] Layar A1 Dashboard — okupansi hari ini, panel kredit hangus + tombol WA, setelan bisa diubah
+- [x] Layar A2 Detail sesi — kehadiran, koreksi no-show, Batalkan Kelas satuan & massal (Alur 5)
 
 ## Keputusan terbuka
 
@@ -69,6 +71,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | Layar A2 + Alur 5 lengkap (BR-5.1–5.6) sebagai satu pernyataan CTE. Ditemukan seed diam-diam membuang kolom `booking_id`: postgres.js menyimpulkan daftar kolom dari objek pertama, dan baris pertama tidak punya kolom itu. 405 baris ledger kehilangan tautannya tanpa galat apa pun |
 | 2026-09-22 | Layar A1 Dashboard: okupansi hari ini, panel "kredit hangus ≤ 7 hari" dengan tombol kirim-WA, dan 3 setelan yang bisa diubah admin. Kontrol akses peran dipasang — member dan coach ditolak dari `/admin` |
 | 2026-09-22 | Layar M3 + pembatalan dengan promosi waitlist (BR-3.3). Seed diperbaiki dua kali: ledger kini tertaut `booking_id` supaya riwayat menyebut kelasnya, dan kredit orang di antrean dijaga — sebelumnya ketiganya nol dan momen uang demo menit 3:00 tidak menaikkan siapa pun |
 | 2026-09-22 | Layar M1 + server action booking/waitlist jalan. Query 5.1 pindah ke `src/db/booking.ts`, dipakai bersama oleh action dan test. Ditemukan: postgres.js tidak memparse `timestamptz` di runtime Next — normalisasi waktu sekarang milik lapisan `src/db/`, dicatat di AGENTS.md |

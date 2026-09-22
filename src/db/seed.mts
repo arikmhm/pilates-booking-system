@@ -302,6 +302,7 @@ async function seed(sql: postgres.Sql) {
     const awal = Number(mp[i].jumlah_kredit_awal);
     ledger.push({
       member_package_id: mpRows[i].id,
+      booking_id: null,
       delta: awal,
       alasan: "beli",
       created_at: mp[i].dibeli_at,
@@ -462,7 +463,19 @@ async function seed(sql: postgres.Sql) {
 
   if (waitlistBaris.length)
     await sql`insert into waitlist_entries ${sql(waitlistBaris)}`;
-  await sql`insert into credit_ledger ${sql(ledger)}`;
+
+  // Kolom ditulis eksplisit. postgres.js menyimpulkan daftar kolom dari kunci
+  // objek PERTAMA; baris pertama di sini 'beli' yang tidak punya booking_id,
+  // jadi tanpa daftar ini kolom itu hilang dari INSERT tanpa galat apa pun —
+  // dan seluruh riwayat kehilangan tautannya ke kelas.
+  await sql`insert into credit_ledger ${sql(
+    ledger,
+    "member_package_id",
+    "booking_id",
+    "delta",
+    "alasan",
+    "created_at",
+  )}`;
 
   /* 9 — notifikasi. Demo memakai kanal 'layar' (panel "Pesan Terkirim"). */
   await sql`
@@ -501,6 +514,10 @@ async function seed(sql: postgres.Sql) {
              join credit_ledger cl on cl.member_package_id = mp.id
             where mp.user_id = w.user_id and mp.hangus_at > now()) > 0`;
 
+  const [tertaut] = await sql`
+    select count(*)::int as n from credit_ledger
+     where alasan in ('booking', 'batal_tepat_waktu') and booking_id is null`;
+
   const [saldoMinus] = await sql`
     select count(*)::int as n from (
       select member_package_id from credit_ledger
@@ -517,6 +534,14 @@ async function seed(sql: postgres.Sql) {
   console.log(`  sesi nanti malam  ${jamKe(8).toISOString()}`);
   console.log(`  admin demo        ${admin.nama}`);
   console.log(`  antrean berkredit ${antreSiap.n} dari ${waitlistBaris.length}`);
+
+  // Tanpa tautan booking_id, layar M3 cuma bisa bilang "booking" — bukan kelas
+  // apa dan kapan. Gagalnya senyap: INSERT tetap sukses, kolomnya saja hilang.
+  if (tertaut.n > 0) {
+    throw new Error(
+      `Seed rusak: ${tertaut.n} baris ledger booking tidak tertaut ke booking-nya.`,
+    );
+  }
 
   // BR-4.4 — antrean tanpa kredit valid akan dilewati saat ada kursi kosong.
   // Kalau tidak ada satu pun yang berkredit, skenario B mati diam-diam.

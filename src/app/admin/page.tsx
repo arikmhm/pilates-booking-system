@@ -6,17 +6,15 @@
 // ini. Sistemnya yang cari, bukan Kakak."
 
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { pg } from "@/db";
 import {
   BATAS_SETELAN,
   kreditMauHangus,
-  penggunaById,
   sesiHariIni,
   setelanLengkap,
   type SesiHariIni,
 } from "@/db/admin";
-import { userSaatIni } from "@/lib/masuk";
+import { pastikanAdmin } from "@/lib/masuk";
 import { hariWib, jamWib, selisihManusiawi } from "@/lib/waktu";
 import { tautanWa } from "@/lib/wa";
 import { ubahSetelan } from "./aksi";
@@ -45,7 +43,11 @@ function Okupansi({ s }: { s: SesiHariIni }) {
 
   return (
     <tr className="border-b border-border last:border-0">
-      <td className="py-3 pr-4 text-app-body tabular-nums">{jamWib(s.mulai_at)}</td>
+      <td className="py-3 pr-4 text-app-body tabular-nums">
+        <Link href={`/admin/sesi/${s.id}`} className="underline">
+          {jamWib(s.mulai_at)}
+        </Link>
+      </td>
       <td className="py-3 pr-4 text-app-body">{s.kelas}</td>
       <td className="py-3 pr-4 text-app-body text-muted-foreground">
         {s.coach ?? "—"}
@@ -63,21 +65,19 @@ function Okupansi({ s }: { s: SesiHariIni }) {
 export default async function A1({
   searchParams,
 }: {
-  searchParams: Promise<{ kabar?: string }>;
+  searchParams: Promise<{ kabar?: string; hari?: string }>;
 }) {
-  const user_id = await userSaatIni();
-  if (!user_id) redirect("/masuk");
-
-  const pengguna = await penggunaById(pg, user_id);
-  if (!pengguna) redirect("/masuk");
-  // BR-9.1 — member tidak punya akses layar admin.
-  if (pengguna.peran === "member" || pengguna.peran === "coach") redirect("/jadwal");
-
-  const { kabar } = await searchParams;
+  const pengguna = await pastikanAdmin();
+  const { kabar, hari } = await searchParams;
   const sekarang = new Date();
+  // Sesi penuh + daftar tunggu yang dipakai skenario B ada BESOK pagi
+  // (02-rules.md 6.2). Tanpa pengalih ini presenter tidak punya jalan ke A2
+  // sesi itu di tengah demo.
+  const geser = hari === "besok" ? 1 : 0;
+  const tanggal = new Date(sekarang.getTime() + geser * 86_400_000);
 
   const [sesi, hangus, setelan] = await Promise.all([
-    sesiHariIni(pg),
+    sesiHariIni(pg, geser),
     kreditMauHangus(pg),
     setelanLengkap(pg),
   ]);
@@ -91,7 +91,7 @@ export default async function A1({
         <div>
           <h1 className="text-app-title">{setelan.nama}</h1>
           <p className="text-app-body-sm text-muted-foreground">
-            {hariWib(sekarang)} · {pengguna.nama}
+            {hariWib(tanggal)} · {pengguna.nama}
           </p>
         </div>
         <Link href="/masuk" className="inline-flex min-h-11 items-center text-app-body-sm">
@@ -105,7 +105,7 @@ export default async function A1({
 
       <div className="mt-sm grid gap-4 sm:grid-cols-3">
         {[
-          [sesi.length, "kelas hari ini"],
+          [sesi.length, geser ? "kelas besok" : "kelas hari ini"],
           [`${terisi}/${kursi}`, "kursi terisi"],
           [hangus.length, "kredit hangus ≤ 7 hari"],
         ].map(([angka, label]) => (
@@ -118,10 +118,30 @@ export default async function A1({
 
       <div className="mt-md grid gap-md lg:grid-cols-[3fr_2fr]">
         <section>
-          <h2 className="text-app-section">Kelas hari ini</h2>
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="text-app-section">
+              {geser ? "Kelas besok" : "Kelas hari ini"}
+            </h2>
+            <nav className="flex gap-4">
+              {[
+                ["", "Hari ini"],
+                ["?hari=besok", "Besok"],
+              ].map(([href, label]) => (
+                <Link
+                  key={label}
+                  href={`/admin${href}`}
+                  className={`inline-flex min-h-11 items-center text-app-body-sm ${
+                    (href === "?hari=besok") === Boolean(geser) ? "underline" : "text-muted-foreground"
+                  }`}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          </div>
           {sesi.length === 0 ? (
             <p className="mt-2 text-app-body-sm text-muted-foreground">
-              Tidak ada kelas terjadwal hari ini.
+              Tidak ada kelas terjadwal.
             </p>
           ) : (
             <div className="mt-3 overflow-x-auto rounded-md border border-border">

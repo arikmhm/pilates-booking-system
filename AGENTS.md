@@ -103,6 +103,11 @@ jalan — jadi typecheck dan test **tidak** akan menangkapnya. Tiap query yang m
 waktu memakai `saat()` saat membaca dan `ts()` + `::timestamptz` saat menulis
 (`src/db/booking.ts`). Jangan pernah menyerahkan baris mentah ke `src/rules/`.
 
+**Insert massal wajib menyebut kolomnya.** `sql(array)` di postgres.js menyimpulkan
+daftar kolom dari kunci objek **pertama**. Kalau objek pertama tidak punya kolom yang
+dipakai objek lain, kolom itu hilang dari INSERT tanpa galat apa pun. Selalu tulis
+`sql(baris, "kolom_a", "kolom_b", …)`.
+
 **Aturan bisnis = fungsi murni.** `src/rules/` tidak mengimpor db, tidak async — hanya
 input → keputusan. Server action yang membaca dan menulis database. Seam ini yang
 membuat 8 titik rawan benar-benar bisa di-test.

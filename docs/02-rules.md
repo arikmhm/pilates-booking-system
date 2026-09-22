@@ -234,7 +234,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | ID | Layar | Isi |
 |---|---|---|
 | A1 | Dashboard hari ini | Sesi hari ini + okupansi · **panel "kredit hangus ≤ 7 hari"** + tombol kirim-WA · kartu setelan — `src/app/admin/` |
-| A2 | Detail sesi | Peserta · waitlist · centang kehadiran · tombol **Batalkan Kelas** |
+| A2 | Detail sesi | Peserta · waitlist · centang kehadiran · tombol **Batalkan Kelas** — `src/app/admin/sesi/[id]/` |
 | A3 | Detail member | Dompet kredit · buku besar lengkap · koreksi manual |
 
 M3 adalah jantung skenario A. Panel kredit hangus di A1 = daftar orang yang harus di-chat hari ini.
