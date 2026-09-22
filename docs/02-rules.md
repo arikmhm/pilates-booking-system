@@ -235,7 +235,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 |---|---|---|
 | A1 | Dashboard hari ini | Sesi hari ini + okupansi · **panel "kredit hangus ≤ 7 hari"** + tombol kirim-WA · kartu setelan — `src/app/admin/` |
 | A2 | Detail sesi | Peserta · **daftarkan member** · **batalkan booking satu orang** · waitlist · centang kehadiran · tombol **Batalkan Kelas** — `src/app/admin/sesi/[id]/` |
-| A3 | Detail member | Dompet kredit · buku besar lengkap · koreksi manual · **berikan paket** — `src/app/admin/member/[id]/` |
+| A3 | Detail member | Satu kartu profil (kontak, kredit aktif, paket yang masih hidup) · berikan paket · koreksi manual · buku besar lengkap — `src/app/admin/member/[id]/` |
 | A4 | Direktori member | Tabel 7 kolom + cari, halaman, dan jumlah baris lewat URL · bulatan status kredit bertooltip (DS-36, DS-37) · panel tindak lanjut: kredit hangus ≤ 7 hari dan member yang lama tak datang — `src/app/admin/member/` |
 | A5 | Pelatih & staf | Beban mengajar 7 hari · tombol chat-WA coach · siapa punya peran apa — `src/app/admin/tim/` |
 | A6 | Layanan & paket | Jenis kelas · katalog paket + harga · **buat paket baru** · sembunyikan paket lama — `src/app/admin/layanan/` |

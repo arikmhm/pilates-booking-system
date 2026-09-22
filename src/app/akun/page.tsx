@@ -89,7 +89,13 @@ export default async function M3({
   const mepet = terdekat && terdekat.hangus_at.getTime() - sekarang.getTime() < MENDESAK;
 
   return (
-    <Kerangka nama={saya.nama} peran={saya.peran} aktif="/akun" kabar={kabar}>
+    <Kerangka
+      nama={saya.nama}
+      peran={saya.peran}
+      aktif="/akun"
+      judul="Akun Saya"
+      kabar={kabar}
+    >
       {/* Kartu ini yang ditunjuk saat presentasi menit 0:45 */}
       <Kartu>
         <Angka

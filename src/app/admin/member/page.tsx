@@ -107,18 +107,11 @@ export default async function A4({
       aktif="/admin/member"
       kabar={kabar}
     >
-      <div>
-        <h1 className="text-app-title">Member</h1>
-        <p className="text-app-body-sm text-muted-foreground">
-          {semua.length} orang terdaftar · {mepet.length} kreditnya segera hangus
-        </p>
-      </div>
-
       {/* Delapan kolom untuk daftar, empat untuk yang butuh ditindaklanjuti.
           Pisahnya di 1280px, bukan 1024px: di 1024 panel kanan tinggal 227px
           dan tabelnya mulai menggulir — dua-duanya jadi sempit, lebih buruk
           daripada menumpuk. */}
-      <div className="mt-dekat grid grid-cols-12 gap-dekat">
+      <div className="grid grid-cols-12 gap-dekat">
         <div className="col-span-12 xl:col-span-8">
           <Kartu padat>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">

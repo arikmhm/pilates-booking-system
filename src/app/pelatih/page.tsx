@@ -49,6 +49,7 @@ export default async function C1({
       nama={pengguna.nama}
       peran={pengguna.peran}
       aktif="/pelatih"
+      judul="Kelas Saya"
       kabar={kabar}
     >
       <div>

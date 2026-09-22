@@ -13,6 +13,7 @@ import { pastikanAdmin } from "@/lib/masuk";
 import { hariWib, jamWib } from "@/lib/waktu";
 import { tautanWa } from "@/lib/wa";
 import { Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
+import { Kembali } from "@/components/kembali";
 import {
   batalkanBookingMember,
   bookingAtasNama,
@@ -67,14 +68,10 @@ export default async function A2({
       nama={pengguna.nama}
       peran={pengguna.peran}
       aktif="/admin"
+      jejak={[{ label: `${sesi.kelas} · ${jamWib(sesi.mulai_at)}` }]}
       kabar={kabar}
     >
-      <Link
-        href="/admin"
-        className="inline-flex min-h-11 items-center text-app-body-sm text-muted-foreground hover:text-foreground"
-      >
-        ← Dashboard
-      </Link>
+      <Kembali cadangan="/admin" />
 
       <div className="mt-2 flex flex-wrap items-baseline justify-between gap-4">
         <div>

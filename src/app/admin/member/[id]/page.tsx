@@ -1,55 +1,45 @@
 // Layar A3 Detail member — 02-rules.md bagian 6.1. Tampilan laptop (DS-16).
-// "Dompet kredit · buku besar lengkap · koreksi manual"
+// "Profil + dompet kredit · berikan paket · koreksi manual · buku besar"
 //
 // Ini layar yang dibuka saat member protes: "kredit saya kok berkurang?"
-// Jawabannya harus ada di sini, baris per baris (BR-1.7).
+// Jawabannya harus ada di sini, baris per baris (BR-1.7). Karena itu
+// urutannya dari ringkas ke rinci: siapa orangnya, apa yang bisa dilakukan
+// padanya, lalu bukti lengkapnya paling bawah.
 
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { pg } from "@/db";
 import { riwayatKredit, type BarisLedger } from "@/db/booking";
-import {
-  BATAS_KOREKSI,
-  detailMember,
-  dompetMember,
-  type BarisDompet,
-} from "@/db/admin";
-import { pastikanAdmin } from "@/lib/masuk";
-import { hariWib, jamWib, selisihManusiawi } from "@/lib/waktu";
-import { tautanWa } from "@/lib/wa";
-import { Angka, Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
+import { BATAS_KOREKSI, detailMember, dompetMember } from "@/db/admin";
 import { paketDijual } from "@/db/kelola";
+import { pastikanAdmin } from "@/lib/masuk";
+import { hariWib, jamWib, selisihManusiawi, tanggalRingkasWib } from "@/lib/waktu";
+import { tautanWa } from "@/lib/wa";
+import { Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
+import { Kembali } from "@/components/kembali";
 import { beriPaket, koreksiKreditManual } from "../../aksi";
 
 export const dynamic = "force-dynamic";
 
-function Paket({ p, sekarang }: { p: BarisDompet; sekarang: Date }) {
-  const hangus = p.hangus_at <= sekarang;
-  const mepet = !hangus && p.hangus_at.getTime() - sekarang.getTime() < 7 * 86_400_000;
-  const [warna, teks] = hangus
-    ? ["bg-neutral-surface text-neutral-foreground", "Hangus"]
-    : mepet
-      ? ["bg-warn-surface text-warn-foreground", selisihManusiawi(p.hangus_at, sekarang)]
-      : ["bg-ok-surface text-ok-foreground", "Aktif"];
+const MEPET = 7 * 86_400_000;
+const INPUT =
+  "h-12 w-full rounded-sm border border-border bg-background px-3 text-app-body";
+const LABEL = "text-app-label uppercase text-muted-foreground";
 
+/** Satu fakta: label kecil di atas, nilai di bawah. Dipakai di kartu profil. */
+function Fakta({
+  label,
+  nilai,
+  warna = "text-foreground",
+}: {
+  label: string;
+  nilai: React.ReactNode;
+  warna?: string;
+}) {
   return (
-    <li className="flex items-center gap-3 px-4 py-3">
-      <div className="min-w-0 flex-1">
-        <p className="text-app-body">{p.paket}</p>
-        <p className="truncate text-app-body-sm text-muted-foreground">
-          Dibeli {hariWib(p.dibeli_at)} · hangus {hariWib(p.hangus_at)}
-          {/* BR-5.2 — jejak perpanjangan disimpan supaya bisa dijelaskan */}
-          {p.diperpanjang_at && " · diperpanjang setelah kelas dibatalkan"}
-        </p>
-      </div>
-      <Chip warna={warna} anak={teks} />
-      <span className="w-16 shrink-0 text-right text-app-section tabular-nums">
-        {p.sisa}
-        <span className="text-app-body-sm text-muted-foreground">
-          /{p.jumlah_kredit_awal}
-        </span>
-      </span>
-    </li>
+    <div>
+      <p className={LABEL}>{label}</p>
+      <p className={`text-app-body ${warna}`}>{nilai}</p>
+    </div>
   );
 }
 
@@ -58,18 +48,24 @@ function Baris({ b }: { b: BarisLedger }) {
   return (
     <li className="flex items-baseline gap-4 px-4 py-3">
       <span className="w-40 shrink-0 text-app-body-sm text-muted-foreground">
-        {hariWib(b.created_at)}
+        {hariWib(b.created_at)} {jamWib(b.created_at)}
       </span>
-      <span className="w-32 shrink-0 text-app-body first-letter:uppercase">
-        {b.alasan.replace(/_/g, " ")}
-      </span>
-      <span className="min-w-0 flex-1 truncate text-app-body-sm text-muted-foreground">
-        {b.kelas && b.mulai_at
-          ? `${b.kelas} · ${hariWib(b.mulai_at)} ${jamWib(b.mulai_at)}`
-          : (b.catatan ?? "—")}
+      <span className="min-w-0 flex-1">
+        <span className="text-app-body">{b.alasan}</span>
+        {b.kelas && (
+          <span className="text-app-body-sm text-muted-foreground">
+            {" "}
+            · {b.kelas} {b.mulai_at && hariWib(b.mulai_at)}
+          </span>
+        )}
+        {b.catatan && (
+          <span className="block text-app-body-sm text-muted-foreground">
+            {b.catatan}
+          </span>
+        )}
       </span>
       <span
-        className={`w-10 shrink-0 text-right text-app-body tabular-nums ${
+        className={`w-12 shrink-0 text-right text-app-body tabular-nums ${
           naik ? "text-ok-foreground" : "text-muted-foreground"
         }`}
       >
@@ -102,162 +98,225 @@ export default async function A3({
     paketDijual(pg),
   ]);
 
-  const aktif = dompet.filter((p) => p.hangus_at > sekarang && p.sisa > 0);
-  const sisa = aktif.reduce((t, p) => t + p.sisa, 0);
+  const hidup = dompet.filter((p) => p.hangus_at > sekarang && p.sisa > 0);
+  const sisa = hidup.reduce((t, p) => t + p.sisa, 0);
+  const terdekat = [...hidup].sort(
+    (a, b) => a.hangus_at.getTime() - b.hangus_at.getTime(),
+  )[0];
+  const mepet =
+    terdekat && terdekat.hangus_at.getTime() - sekarang.getTime() < MEPET;
 
   return (
     <Kerangka
       nama={pengguna.nama}
       peran={pengguna.peran}
       aktif="/admin/member"
+      jejak={[{ label: member.nama }]}
       kabar={kabar}
     >
-      <Link
-        href="/admin"
-        className="inline-flex min-h-11 items-center text-app-body-sm text-muted-foreground hover:text-foreground"
-      >
-        ← Dashboard
-      </Link>
+      <Kembali cadangan="/admin/member" />
 
-      <div className="mt-2 flex flex-wrap items-baseline justify-between gap-4">
-        <div>
-          <h1 className="text-app-title">{member.nama}</h1>
-          <p className="text-app-body-sm text-muted-foreground">
-            {member.telepon} · {member.email ?? "tanpa email"} · member sejak{" "}
-            {hariWib(member.created_at)}
-          </p>
-        </div>
-        <a
-          href={tautanWa(
-            member.telepon,
-            `Halo ${member.nama}, ini dari Studio Pilates Kenari.`,
-          )}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center rounded-sm bg-primary px-4 text-app-label font-medium uppercase text-primary-foreground transition hover:brightness-95"
-        >
-          Chat WA
-        </a>
+      {/* ── Satu kartu profil: siapa orangnya dan berapa kreditnya ───────── */}
+      <div className="mt-2">
+        <Kartu>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-app-title">{member.nama}</h1>
+              <p className="text-app-body-sm text-muted-foreground">
+                Member sejak {tanggalRingkasWib(member.created_at)}
+              </p>
+            </div>
+            <a
+              href={tautanWa(
+                member.telepon,
+                `Halo ${member.nama}, ini dari Studio Pilates Kenari.`,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center rounded-sm bg-primary px-4 text-app-label font-medium uppercase text-primary-foreground transition hover:brightness-95"
+            >
+              Chat WA
+            </a>
+          </div>
+
+          <div className="mt-dekat grid gap-4 border-t border-border pt-dekat sm:grid-cols-2 lg:grid-cols-4">
+            <Fakta
+              label="Nomor HP"
+              nilai={<span className="tabular-nums">{member.telepon}</span>}
+            />
+            <Fakta
+              label="Email"
+              nilai={member.email ?? "—"}
+              warna={member.email ? "text-foreground" : "text-muted-foreground"}
+            />
+            <Fakta
+              label="Kredit aktif"
+              nilai={<span className="text-app-number tabular-nums">{sisa}</span>}
+            />
+            <Fakta
+              label="Hangus terdekat"
+              nilai={
+                terdekat
+                  ? `${tanggalRingkasWib(terdekat.hangus_at)} · ${selisihManusiawi(terdekat.hangus_at, sekarang)}`
+                  : "Tidak ada paket hidup"
+              }
+              warna={mepet ? "text-warn-foreground" : "text-muted-foreground"}
+            />
+          </div>
+
+          {/* BR-1.1 — kredit tidak pernah pindah antar paket, jadi paket yang
+              masih hidup disebut satu per satu. Yang sudah hangus tidak
+              diulang di sini; jejaknya lengkap di buku besar. */}
+          <div className="mt-dekat border-t border-border pt-dekat">
+            <p className={LABEL}>Paket aktif</p>
+            {hidup.length === 0 ? (
+              <p className="mt-1 text-app-body-sm text-muted-foreground">
+                Tidak ada paket yang masih berlaku.
+                {dompet.length > 0 &&
+                  ` ${dompet.length} paket tercatat di buku besar.`}
+              </p>
+            ) : (
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {hidup.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex items-center gap-2 rounded-sm border border-border px-3 py-1.5"
+                  >
+                    <span className="text-app-body-sm">{p.paket}</span>
+                    <span className="text-app-body-sm tabular-nums text-muted-foreground">
+                      {p.sisa}/{p.jumlah_kredit_awal}
+                    </span>
+                    <Chip
+                      warna={
+                        p.hangus_at.getTime() - sekarang.getTime() < MEPET
+                          ? "bg-warn-surface text-warn-foreground"
+                          : "bg-ok-surface text-ok-foreground"
+                      }
+                      anak={tanggalRingkasWib(p.hangus_at)}
+                    />
+                    {/* BR-5.2 — jejak perpanjangan disimpan supaya bisa
+                        dijelaskan kalau member bertanya. */}
+                    {p.diperpanjang_at && (
+                      <span className="text-app-label text-muted-foreground">
+                        diperpanjang
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </Kartu>
       </div>
 
-      <div className="mt-sedang grid items-start gap-sedang lg:grid-cols-[3fr_2fr]">
-        <div className="space-y-sedang">
-          <Kartu judul="Dompet kredit" padat>
-            <ul className="divide-y divide-border">
-              {dompet.map((p) => (
-                <Paket key={p.id} p={p} sekarang={sekarang} />
+      {/* ── Dua aksi, berdampingan ───────────────────────────────────────── */}
+      <div className="mt-dekat grid gap-dekat lg:grid-cols-2">
+        {/* UC-A13 — di demo ini pengganti pembayaran; di versi nyata yang
+            memanggilnya webhook QRIS, bukan tombol. Masa berlaku dihitung
+            dari hari ini + masa_berlaku_hari paketnya (BR-1.2). */}
+        <Kartu
+          judul="Berikan paket"
+          catatan="Dipakai saat member bayar di tempat. Tercatat sebagai pembelian di buku besar."
+        >
+          <form action={beriPaket} className="space-y-3">
+            <input type="hidden" name="user_id" value={member.id} />
+            <label className="sr-only" htmlFor="package_id">
+              Paket
+            </label>
+            <select id="package_id" name="package_id" required className={INPUT}>
+              <option value="">Pilih paket…</option>
+              {katalog.map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.nama} · {k.jumlah_kredit} kredit · {k.masa_berlaku_hari} hari
+                </option>
               ))}
-              {dompet.length === 0 && (
-                <li className="px-4 py-3 text-app-body-sm text-muted-foreground">
-                  Belum pernah beli paket.
-                </li>
-              )}
-            </ul>
-          </Kartu>
+            </select>
+            <Tombol penuh anak="Tambahkan paket" />
+          </form>
+        </Kartu>
 
-          <Kartu
-            judul={`Buku besar · ${riwayat.length} baris`}
-            catatan="Sisa kredit = jumlah kolom kanan. Tidak ada angka saldo yang disimpan terpisah, jadi tidak ada yang bisa melenceng."
-            padat
-          >
-            <ul className="divide-y divide-border">
-              {riwayat.map((b) => (
-                <Baris key={b.id} b={b} />
-              ))}
-            </ul>
-          </Kartu>
-        </div>
+        {/* BR-1.8 — alasan wajib; itu yang membuat buku besar bisa
+            dipertanggungjawabkan saat member protes bulan depan. */}
+        <Kartu
+          judul="Koreksi manual"
+          catatan="Alasan wajib — baris ini ikut tampil di layar member."
+        >
+          <form action={koreksiKreditManual} className="space-y-3">
+            <input type="hidden" name="user_id" value={member.id} />
 
-        <div className="space-y-sedang">
-          <Kartu>
-            <Angka nilai={sisa} label="Kredit aktif" catatan={`${dompet.length} paket tercatat`} />
-          </Kartu>
-
-          {/* UC-A13 — di demo ini pengganti pembayaran; di versi nyata yang
-              memanggilnya webhook QRIS, bukan tombol. Masa berlaku dihitung
-              dari hari ini + masa_berlaku_hari paketnya (BR-1.2). */}
-          <Kartu
-            judul="Berikan paket"
-            catatan="Dipakai saat member bayar di tempat. Tercatat sebagai pembelian di buku besar."
-          >
-            <form action={beriPaket} className="space-y-3">
-              <input type="hidden" name="user_id" value={member.id} />
-              <label className="sr-only" htmlFor="package_id">
-                Paket
+            <div>
+              <label className={LABEL} htmlFor="member_package_id">
+                Paket yang dikoreksi
               </label>
               <select
-                id="package_id"
-                name="package_id"
+                id="member_package_id"
+                name="member_package_id"
                 required
-                className="h-12 w-full rounded-sm border border-border bg-background px-3 text-app-body"
+                className={INPUT}
               >
-                <option value="">Pilih paket…</option>
-                {katalog.map((k) => (
-                  <option key={k.id} value={k.id}>
-                    {k.nama} · {k.jumlah_kredit} kredit · {k.masa_berlaku_hari} hari
+                {dompet.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.paket} · sisa {p.sisa} · hangus{" "}
+                    {tanggalRingkasWib(p.hangus_at)}
                   </option>
                 ))}
               </select>
-              <Tombol penuh anak="Tambahkan paket" />
-            </form>
-          </Kartu>
+            </div>
 
-          <Kartu
-            judul="Koreksi manual"
-            catatan="Alasan wajib — baris ini ikut tampil di layar member."
-          >
-            {dompet.length === 0 ? (
-              <p className="text-app-body-sm text-muted-foreground">
-                Belum ada paket untuk dikoreksi.
-              </p>
-            ) : (
-              <form action={koreksiKreditManual} className="space-y-3">
-                <input type="hidden" name="user_id" value={member.id} />
-                <label className="block">
-                  <span className="text-app-label uppercase text-muted-foreground">
-                    Paket
-                  </span>
-                  <select
-                    name="member_package_id"
-                    className="mt-1 h-11 w-full rounded-sm border border-border bg-background px-3 text-app-body focus:border-foreground"
-                  >
-                    {dompet.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.paket} · sisa {p.sisa} · hangus {hariWib(p.hangus_at)}
-                      </option>
-                    ))}
-                  </select>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className={LABEL} htmlFor="delta">
+                  Jumlah
                 </label>
-                <label className="block">
-                  <span className="text-app-label uppercase text-muted-foreground">
-                    Jumlah (boleh minus)
-                  </span>
-                  <input
-                    type="number"
-                    name="delta"
-                    defaultValue={1}
-                    min={-BATAS_KOREKSI}
-                    max={BATAS_KOREKSI}
-                    className="mt-1 h-11 w-full rounded-sm border border-border px-3 text-app-body tabular-nums focus:border-foreground"
-                  />
+                <input
+                  id="delta"
+                  name="delta"
+                  type="number"
+                  required
+                  min={-BATAS_KOREKSI}
+                  max={BATAS_KOREKSI}
+                  placeholder="+1"
+                  className={INPUT}
+                />
+              </div>
+              <div className="col-span-2">
+                <label className={LABEL} htmlFor="catatan">
+                  Alasan
                 </label>
-                <label className="block">
-                  <span className="text-app-label uppercase text-muted-foreground">
-                    Alasan
-                  </span>
-                  <input
-                    name="catatan"
-                    required
-                    minLength={3}
-                    placeholder="mis. kompensasi kelas pindah jadwal"
-                    className="mt-1 h-11 w-full rounded-sm border border-border px-3 text-app-body focus:border-foreground"
-                  />
-                </label>
-                <Tombol gaya="garis" penuh anak="Simpan koreksi" />
-              </form>
+                <input
+                  id="catatan"
+                  name="catatan"
+                  required
+                  minLength={3}
+                  placeholder="Kelas batal karena listrik padam"
+                  className={INPUT}
+                />
+              </div>
+            </div>
+
+            <Tombol gaya="garis" penuh anak="Simpan koreksi" />
+          </form>
+        </Kartu>
+      </div>
+
+      {/* ── Bukti lengkap, paling bawah ──────────────────────────────────── */}
+      <div className="mt-dekat">
+        <Kartu
+          judul={`Buku besar · ${riwayat.length} baris`}
+          catatan="Sisa kredit = jumlah kolom kanan. Tidak ada angka saldo yang disimpan terpisah, jadi tidak ada yang bisa melenceng."
+          padat
+        >
+          <ul className="divide-y divide-border">
+            {riwayat.map((b) => (
+              <Baris key={b.id} b={b} />
+            ))}
+            {riwayat.length === 0 && (
+              <li className="px-4 py-3 text-app-body-sm text-muted-foreground">
+                Belum ada riwayat kredit.
+              </li>
             )}
-          </Kartu>
-        </div>
+          </ul>
+        </Kartu>
       </div>
     </Kerangka>
   );

@@ -8,6 +8,7 @@
 // Isi memakai lebar penuh area kerja (DS-27): sidebar sudah memakan 256px di
 // kiri, dan tabel admin serta kalender mingguan memang butuh sisanya.
 
+import * as React from "react";
 import Link from "next/link";
 import {
   CalendarDays,
@@ -22,6 +23,14 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
@@ -113,6 +122,7 @@ export function Kerangka({
   peran,
   aktif,
   judul,
+  jejak,
   kabar,
   children,
 }: {
@@ -120,12 +130,26 @@ export function Kerangka({
   peran: string;
   aktif?: string;
   judul?: string;
+  /**
+   * Ruas TAMBAHAN sesudah butir menunya — layar detail memakai ini.
+   * Ruas pertama dihitung sendiri dari `aktif`, jadi pemanggil tidak pernah
+   * mengulang nama menu dan tidak bisa salah menuliskannya.
+   */
+  jejak?: { label: string; href?: string }[];
   kabar?: string;
   children: React.ReactNode;
 }) {
   const grup = NAV[peran] ?? NAV.member;
   const semua = grup.flatMap((g) => g.butir);
-  const tajuk = judul ?? semua.find((b) => b.href === aktif)?.label ?? "Kenari";
+  const butirAktif = semua.find((b) => b.href === aktif);
+  const tajuk = judul ?? butirAktif?.label ?? "Kenari";
+
+  // Ruas terakhir adalah halaman sekarang: tidak bertaut, dan itu yang
+  // membedakan "di mana saya" dari "ke mana saya bisa pergi".
+  const rantai: { label: string; href?: string }[] = [
+    { label: tajuk, href: jejak?.length ? butirAktif?.href : undefined },
+    ...(jejak ?? []),
+  ];
 
   return (
     <SidebarProvider className="flex-1">
@@ -197,7 +221,26 @@ export function Kerangka({
           <div className="flex h-16 items-center gap-2 px-gutter">
             <SidebarTrigger className="size-11" />
             <Separator orientation="vertical" className="mr-1 h-6" />
-            <span className="text-app-section">{tajuk}</span>
+            <Breadcrumb>
+              <BreadcrumbList className="text-app-body sm:gap-2">
+                {rantai.map((r, i) => (
+                  <React.Fragment key={`${r.label}-${i}`}>
+                    {i > 0 && <BreadcrumbSeparator />}
+                    <BreadcrumbItem>
+                      {r.href ? (
+                        <BreadcrumbLink asChild>
+                          <Link href={r.href}>{r.label}</Link>
+                        </BreadcrumbLink>
+                      ) : (
+                        <BreadcrumbPage className="text-app-body">
+                          {r.label}
+                        </BreadcrumbPage>
+                      )}
+                    </BreadcrumbItem>
+                  </React.Fragment>
+                ))}
+              </BreadcrumbList>
+            </Breadcrumb>
           </div>
         </header>
 

@@ -434,6 +434,28 @@ Begitu satu peran punya lebih dari empat butir, menunya dikelompokkan. "Harian" 
 yang dibuka tiap hari, "Studio" untuk yang dibuka saat menata, "Bisnis" untuk angka.
 Urutannya mengikuti seberapa sering dipakai, bukan abjad.
 
+`DS-38` — **Remah roti di bilah atas, dan judul halaman tidak mengulanginya.**
+Ruas pertama dihitung sendiri oleh `Kerangka` dari butir menu yang sedang aktif;
+layar detail cuma menambahkan ruas berikutnya lewat `jejak`. Pemanggil tidak pernah
+menuliskan ulang nama menunya, jadi menu dan remah tidak bisa berbeda.
+
+Layar yang bisa dibuka peran yang menunya **tidak** memuat butir itu — owner membuka
+Akun Saya — wajib memberi `judul` eksplisit, kalau tidak remahnya jatuh ke "Kenari".
+
+Karena remahnya sudah menyebut nama halaman, `h1` yang isinya cuma nama halaman
+dihapus (A4). Yang tetap punya `h1` adalah layar yang judulnya membawa informasi
+tambahan: nama studio dan tanggal di dashboard, rentang minggu di jadwal, nama orang
+di detail member.
+
+`DS-39` — **Tombol kembali pulang ke halaman SEBELUMNYA, bukan ke satu tujuan tetap.**
+Ikonnya `<` saja dan teksnya "Kembali" — bukan "← Dashboard". Layar detail sesi dan
+detail member paling sering dibuka dari direktori atau dari daftar peserta, dan
+melempar orang ke dashboard berarti membuang tempatnya, lengkap dengan kata pencarian
+dan halaman yang tadi dibuka.
+
+`history.back()` mengembalikan itu semua. Prop `cadangan` baru dipakai kalau riwayatnya
+kosong — tautan dibuka langsung dari WhatsApp, atau di tab baru.
+
 `DS-36` — **Tabel data: satu kolom satu atribut, dan tiap sel seringkas mungkin.**
 Menumpuk nama di atas nomor HP di satu sel menghemat lebar tapi menghabiskan yang
 lebih mahal — kemampuan mata menyusuri satu kolom lurus. Aturannya:
