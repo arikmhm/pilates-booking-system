@@ -323,6 +323,14 @@ export async function daftarAturan(
      order by r.hari, r.jam_mulai`;
 }
 
+/**
+ * `berlaku_dari` dan `berlaku_sampai` adalah tanggal DINDING WIB, bukan UTC —
+ * `current_date` di Postgres UTC salah sehari antara 00.00 dan 07.00 WIB, dan
+ * generateSesi() membandingkannya dengan tanggal yang sudah dikonversi ke
+ * Asia/Jakarta. Selisihnya memang cuma melonggarkan, tidak pernah menghilangkan
+ * sesi, tapi barisnya jadi berbunyi "berlaku sejak kemarin" untuk aturan yang
+ * baru diketik — dan itu yang dibaca orang saat menelusuri sengketa (BR-7.5).
+ */
 export async function buatAturan(
   sql: Sql,
   args: {
@@ -338,7 +346,8 @@ export async function buatAturan(
     insert into schedule_rules
       (studio_id, class_type_id, coach_id, hari, jam_mulai, kapasitas, berlaku_dari)
     values (${args.studio_id}, ${args.class_type_id}, ${args.coach_id},
-            ${args.hari}, ${args.jam_mulai}, ${args.kapasitas}, current_date)
+            ${args.hari}, ${args.jam_mulai}, ${args.kapasitas},
+            (now() at time zone 'Asia/Jakarta')::date)
     returning id`;
   return r.id;
 }
@@ -351,7 +360,9 @@ export async function buatAturan(
  */
 export async function hentikanAturan(sql: Sql, id: string) {
   await sql`
-    update schedule_rules set berlaku_sampai = current_date - 1 where id = ${id}`;
+    update schedule_rules
+       set berlaku_sampai = (now() at time zone 'Asia/Jakarta')::date - 1
+     where id = ${id}`;
 }
 
 /* ── Penerbitan sesi dari aturan — BR-7.1 ────────────────────────────────── */

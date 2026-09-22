@@ -23,6 +23,7 @@ import {
 } from "@/db/kelola";
 import { generateSesi } from "@/db/job";
 import { pastikanAdmin, pastikanOwner } from "@/lib/masuk";
+import { saat } from "@/db/booking";
 import { hariWib, jamWib } from "@/lib/waktu";
 
 function keLayanan(pesan: string): never {
@@ -138,16 +139,25 @@ export async function tambahAturan(formData: FormData) {
   const { dibuat } = await generateSesi(pg, new Date());
 
   // Job menerbitkan sesi untuk SEMUA aturan sampai batas generate_weeks_ahead,
-  // jadi angkanya bisa ratusan kalau job hariannya sedang tertinggal. Yang
+  // jadi angkanya bisa ratusan kalau penerbitannya sedang tertinggal. Yang
   // ingin dilihat admin adalah slot yang baru saja dia buat.
-  const [{ milik_slot }] = await pg<{ milik_slot: number }[]>`
-    select count(*)::int as milik_slot from sessions
+  //
+  // `perdana` ada karena satu pertanyaan yang selalu muncul: "kok jadwalnya
+  // tidak tampil?". Slot Selasa yang dibuat Rabu tidak punya sesi minggu ini —
+  // Selasanya sudah lewat, dan kalender membuka di minggu ini. Angka "8 sesi
+  // terbit" tidak menjawab itu; tanggal sesi pertamanya menjawab.
+  const [{ milik_slot, perdana }] = await pg<
+    { milik_slot: number; perdana: string | null }[]
+  >`
+    select count(*)::int as milik_slot, min(mulai_at) as perdana
+      from sessions
      where schedule_rule_id = ${aturan_id} and mulai_at > now()`;
 
   revalidatePath("/admin/jadwal");
   revalidatePath("/jadwal");
   keJadwal(
-    `Slot ditambahkan — ${milik_slot} sesi terbit untuk slot ini` +
+    `Slot ditambahkan — ${milik_slot} sesi terbit` +
+      (perdana ? `, mulai ${hariWib(saat(perdana))}` : "") +
       (dibuat > milik_slot
         ? `, sekalian ${dibuat - milik_slot} sesi slot lain yang belum diterbitkan.`
         : "."),
