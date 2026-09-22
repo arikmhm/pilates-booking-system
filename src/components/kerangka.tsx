@@ -15,6 +15,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   LineChart,
+  LogOut,
   MessageSquare,
   Package,
   Repeat,
@@ -48,6 +49,7 @@ import {
   SidebarSeparator,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { keluarAkun } from "@/app/masuk/aksi";
 
 type Butir = { href: string; label: string; ikon: typeof CalendarDays };
 type Grup = { judul: string; butir: Butir[] };
@@ -209,6 +211,19 @@ export function Kerangka({
                   <span>Ganti Pengguna</span>
                 </Link>
               </SidebarMenuButton>
+            </SidebarMenuItem>
+            {/* "Ganti Pengguna" memasang cookie baru, jadi ia tidak pernah
+                mengembalikan orang ke tampilan tamu. Keluar yang melakukannya,
+                dan mendarat di jadwal publik (DS-45). */}
+            <SidebarMenuItem>
+              <form action={keluarAkun}>
+                <SidebarMenuButton asChild className={BUTIR}>
+                  <button type="submit" className="w-full">
+                    <LogOut />
+                    <span>Keluar</span>
+                  </button>
+                </SidebarMenuButton>
+              </form>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>

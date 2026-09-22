@@ -14,7 +14,6 @@
 // bukan di sini. Berkas ini membaca database dan menggambar hasilnya.
 
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { pg } from "@/db";
 import {
@@ -313,9 +312,11 @@ export default async function M1({
     user_id ? bookingAktif(pg, user_id) : [],
     user_id ? penggunaById(pg, user_id) : null,
   ]);
-  // Cookie menunjuk user yang sudah tidak ada — beda dengan tamu yang memang
-  // belum pernah masuk, dan yang ini memang harus diluruskan di /masuk.
-  if (user_id && !saya) redirect("/masuk");
+  // Cookie yang menunjuk user sudah tidak ada — biasanya sesudah `db:seed`
+  // menerbitkan id baru — diperlakukan sebagai tamu, bukan dilempar ke
+  // /masuk. Halaman publik yang menutup diri karena cookie basi adalah
+  // kebalikan dari yang dijanjikan DS-45, dan pengunjung yang tidak pernah
+  // punya akun tidak boleh dikirim ke daftar peran demo.
 
   const mode: Mode = !saya
     ? "tamu"

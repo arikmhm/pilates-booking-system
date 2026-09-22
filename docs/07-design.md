@@ -367,6 +367,21 @@ gantinya ada **keterangan warna** di atas kalender — tamu baru pertama kali
 melihat kalender ini, dan DS-14 cuma menjamin tiap blok berteks, bukan bahwa tiga
 rupa itu langsung terbaca maknanya.
 
+Dua hal yang membuat janji itu benar-benar bisa ditagih:
+
+- **Cookie basi diperlakukan sebagai tamu.** Sesudah `db:seed` id user berganti,
+  dan cookie demo lama menunjuk orang yang sudah tidak ada. Melempar browser itu
+  ke `/masuk` berarti jadwal publik tertutup justru bagi orang yang tidak punya
+  urusan dengan akun mana pun.
+- **Ada tombol Keluar** di kaki sidebar. "Ganti Pengguna" memasang cookie baru,
+  jadi ia tidak pernah bisa mengembalikan siapa pun ke tampilan tamu — dan
+  tampilan yang tidak bisa dibuka lagi sesudah sekali masuk sama saja dengan
+  tampilan yang tidak pernah diuji. Keluar mendarat di `/jadwal`, bukan `/masuk`.
+
+Yang tetap butuh akun: memesan kursi, ikut daftar tunggu, membeli paket, dan
+seluruh layar M3/A/O. Pintu login muncul saat orang menekan salah satunya, bukan
+saat ia membuka jadwal.
+
 `DS-43` — **Tidak ada tautan mati, di halaman publik maupun di dalam aplikasi.**
 
 Tiap butir menu menuju salah satu dari tiga tempat saja:
