@@ -8,7 +8,7 @@
 //
 // Sakelarnya lewat URL, bukan state klien: layar ini server component penuh.
 //
-// BR-9.1 — jadwal mingguan tetap kewenangan owner: satu slot berarti beban
+// BR-9.3 — jadwal mingguan tetap kewenangan owner: satu slot berarti beban
 // coach tiap minggu. Kelas sekali jalan milik admin; itu operasional.
 
 import Link from "next/link";

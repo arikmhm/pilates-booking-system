@@ -157,7 +157,7 @@ flowchart LR
 
 | ID | Use case | Aturan | Demo |
 |---|---|---|:--:|
-| UC-A01 | Dashboard hari ini: sesi, okupansi, ringkasan | — | ✅ |
+| UC-A01 | Dashboard hari ini: sesi, okupansi, ringkasan · **antrean menunggu kursi** · **kelas yang belum diabsen** | BR-4.2, 6.2 | ✅ |
 | UC-A02 | **Panel kredit segera hangus** — daftar member yang harus di-chat | BR-1.2, 1.6 | ✅ |
 | UC-A03 | Panel pesan terkirim + **tombol kirim-WA** untuk notifikasi mendesak | BR-4.3, 5.3 | ✅ |
 | UC-A04 | Lihat peserta + waitlist satu sesi | BR-4.2 | ✅ |
@@ -245,13 +245,13 @@ flowchart LR
 | UC-O03 | Kelola paket & harga | — | BR-1.4 | ✅ |
 | UC-O04 | Kelola coach & staf | — | BR-9.3 | ◐ |
 | UC-O05 | Atur hari libur / blackout | — | BR-7.4 | ⬜ |
-| UC-O06 | Laporan pendapatan & okupansi | — | — | ✅ |
+| UC-O06 | Laporan pendapatan & okupansi · **omzet bulan ini dan nilai kredit menggantung di dashboard** | — | BR-9.3 | ✅ |
 | UC-O07 | Ekspor data | — | — | ⬜ |
 | UC-O08 | Lihat audit log | — | BR-9.5 | ⬜ |
-| UC-O09 | Angka uang di buku transaksi: omzet periode, rata-rata per transaksi, nilai kredit yang hangus | — | BR-9.1 | ✅ |
+| UC-O09 | Angka uang di buku transaksi: omzet periode, rata-rata per transaksi, nilai kredit yang hangus | — | BR-9.3 | ✅ |
 | UC-C01 | Lihat jadwal mengajar sendiri | — | BR-9.4 | ✅ |
 | UC-C02 | Lihat daftar peserta kelasnya | — | BR-9.4 | ✅ |
-| UC-C03 | Lihat kredit yang terpakai di kelas yang diajarnya — kursi dan kredit, tanpa satu pun angka rupiah | — | BR-9.1, 9.4 | ✅ |
+| UC-C03 | Lihat kredit yang terpakai di kelas yang diajarnya — kursi dan kredit, tanpa satu pun angka rupiah | — | BR-9.3, 9.4 | ✅ |
 
 **UC-S05 adalah use case paling bernilai di seluruh sistem.** Itu yang mengubah
 kursi kosong jadi uang, dan itu inti skenario B di presentasi.

@@ -13,7 +13,11 @@
 
 import { afterAll, beforeAll, expect, test } from "vitest";
 import postgres from "postgres";
-import { kelasTerpakaiCoach, pembelianMember } from "./transaksi";
+import {
+  kelasTerpakaiCoach,
+  kreditMenggantung,
+  pembelianMember,
+} from "./transaksi";
 import { bersihkan as kosongkan, dbUji } from "./uji-db";
 
 const sql = postgres(dbUji(), { max: 4 });
@@ -87,6 +91,20 @@ beforeAll(async () => {
            (${paketMember}, ${hadir.id}, -1, 'booking'),
            (${paketMember}, ${batal.id}, -1, 'booking'),
            (${paketMember}, ${batal.id},  1, 'batal_tepat_waktu')`;
+
+  // Paket kedua: masa berlakunya SUDAH lewat dan masih bersisa 4 kredit.
+  // Sisanya bukan kewajiban studio lagi, jadi ia tidak boleh ikut terhitung
+  // sebagai kredit menggantung.
+  const [mati] = await sql<{ id: string }[]>`
+    insert into member_packages
+      (user_id, package_id, dibeli_at, hangus_at, jumlah_kredit_awal)
+    values (${member}, ${paket.id},
+            ${jam(-24 * 70).toISOString()}::timestamptz,
+            ${jam(-24).toISOString()}::timestamptz, 10)
+    returning id`;
+  await sql`
+    insert into credit_ledger (member_package_id, delta, alasan)
+    values (${mati.id}, 10, 'beli'), (${mati.id}, -6, 'booking')`;
 });
 
 afterAll(async () => {
@@ -120,4 +138,13 @@ test("pembelian member: awal − dipakai + kembali = sisa (BR-1.7)", async () =>
     sisa: 9,
   });
   expect(beli.kredit_awal - beli.dipakai + beli.kembali).toBe(beli.sisa);
+});
+
+test("kredit menggantung dinilai per paketnya, bukan per kredit rata-rata", async () => {
+  // Paket 1.350.000 berisi 10 kredit → 135.000 per kredit. Sisa 9 kredit dan
+  // masa berlakunya belum lewat, jadi 9 × 135.000 yang masih jadi kewajiban
+  // studio. Rumus pembaginya sama dengan `ringkasUang()`; dua layar tidak
+  // boleh menyebut dua angka untuk hal yang sama.
+  const m = await kreditMenggantung(sql, { sekarang: SEKARANG });
+  expect(m).toEqual({ rupiah: 1_215_000, kredit: 9, paket: 1 });
 });

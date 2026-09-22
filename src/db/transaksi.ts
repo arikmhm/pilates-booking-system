@@ -9,7 +9,7 @@
 // BR-1.7 — semua angka kredit dijumlahkan dari buku besar. Tidak ada kolom
 // saldo yang dibaca di mana pun.
 //
-// BR-9.1 — angka rupiah hanya dipanggil layar pemilik. Fungsi yang
+// BR-9.3 — angka rupiah hanya dipanggil layar pemilik. Fungsi yang
 // mengembalikan uang dipisah (`ringkasUang`) supaya layar admin dan coach
 // tidak bisa membocorkannya karena kelupaan menghapus satu kolom.
 
@@ -257,7 +257,7 @@ export async function koreksiTerakhir(
   return baris.map((b) => ({ ...b, created_at: saat(b.created_at) }));
 }
 
-/* ── Angka uang — UC-O09, hanya dipanggil layar pemilik (BR-9.1) ─────────── */
+/* ── Angka uang — UC-O09, hanya dipanggil layar pemilik (BR-9.3) ─────────── */
 
 export type RingkasUang = {
   omzet: number;
@@ -305,6 +305,43 @@ export async function ringkasUang(
   };
 }
 
+/**
+ * Nilai kredit yang masih menggantung — *unearned revenue* dalam istilah
+ * pembukuan studio, dan istilah itu yang dipakai dokumentasi Mindbody
+ * (`Outstanding Series report`) serta Glofox (`Scheduled Revenue`).
+ * Rujukannya `docs/riset-dashboard-peran.md`.
+ *
+ * Uang yang sudah masuk kas tapi kelasnya belum diberikan. Laporan pemilik
+ * selama ini hanya menghitung kredit yang SUDAH hangus — yang menggantung
+ * tidak pernah punya angka, padahal itu kewajiban studio yang masih hidup.
+ *
+ * Paket yang masa berlakunya sudah lewat TIDAK ikut: sisanya bukan kewajiban
+ * lagi, ia sudah jadi pendapatan (dan sudah dihitung sebagai kredit hangus di
+ * `ringkasUang()`). Penilaiannya sama — harga paket dibagi jumlah kreditnya.
+ * Dua layar tidak boleh menyebut dua angka untuk hal yang sama.
+ */
+export async function kreditMenggantung(
+  sql: Sql,
+  args: { sekarang: Date },
+): Promise<{ rupiah: number; kredit: number; paket: number }> {
+  const [r] = await sql<{ rupiah: string; kredit: number; paket: number }[]>`
+    select coalesce(sum(x.sisa * x.harga_rupiah
+                        / nullif(x.jumlah_kredit, 0)), 0)::bigint as rupiah,
+           coalesce(sum(x.sisa), 0)::int as kredit,
+           count(*)::int as paket
+      from (
+        select coalesce(sum(cl.delta), 0)::int as sisa,
+               p.harga_rupiah, p.jumlah_kredit
+          from member_packages mp
+          join packages p on p.id = mp.package_id
+          left join credit_ledger cl on cl.member_package_id = mp.id
+         where mp.hangus_at > ${ts(args.sekarang)}::timestamptz
+         group by mp.id, p.harga_rupiah, p.jumlah_kredit
+        having coalesce(sum(cl.delta), 0) > 0
+      ) x`;
+  return { rupiah: Number(r.rupiah), kredit: r.kredit, paket: r.paket };
+}
+
 /* ── Kredit yang terpakai di kelas seorang coach — UC-C03 ────────────────── */
 
 export type KelasTerpakai = {
@@ -319,7 +356,7 @@ export type KelasTerpakai = {
 /**
  * Coach tidak punya transaksi sendiri — tapi tiap kelas yang ia ajar memakan
  * kredit yang sudah dibayar member, dan itu ukuran yang bisa ia pengaruhi.
- * Tanpa satu pun angka rupiah (BR-9.4 + BR-9.1): yang ditampilkan kredit dan
+ * Tanpa satu pun angka rupiah (BR-9.4 + BR-9.3): yang ditampilkan kredit dan
  * kursi, bukan omzet.
  */
 export async function kelasTerpakaiCoach(

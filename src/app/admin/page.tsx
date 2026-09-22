@@ -1,22 +1,43 @@
 // Layar A1 Dashboard hari ini — 02-rules.md bagian 6.1. Tampilan laptop (DS-16).
-// "Sesi hari ini + okupansi · panel kredit hangus ≤ 7 hari · kartu setelan"
 //
-// Panel kredit hangus BUKAN laporan. Itu daftar orang yang harus di-chat hari
-// ini, lengkap dengan tombolnya. Kalimat menit 2:15: "5 orang habis minggu
-// ini. Sistemnya yang cari, bukan Kakak."
+// Satu layar, dua fokus (DS-47). Admin membuka ini untuk tahu **apa yang harus
+// dikerjakan sekarang**: kelas hari ini, siapa yang menunggu kursi, kelas mana
+// yang absennya belum dicentang. Owner membuka ini untuk tahu **bagaimana
+// studionya berjalan**: omzet bulan ini dan nilai kredit yang masih
+// menggantung — angka yang cuma boleh dilihat pemilik (BR-9.3).
+//
+// Bukan dua rute. Riset padanan produk (`docs/riset-dashboard-peran.md`)
+// menemukan pola yang sama di Vagaro, WellnessLiving, dan TeamUp: satu
+// dashboard, blok yang disaring per-permission. Mindbody memang memisahkan
+// layarnya, tapi layar stafnya sebuah kalender — bukan versi ringkas dashboard
+// pemiliknya.
+//
+// Panel kredit hangus tetap milik KEDUANYA. Itu bukan laporan; itu daftar
+// orang yang harus di-chat hari ini, lengkap dengan tombolnya — dan di produk
+// pembanding pun ia pekerjaan meja depan. Kalimat menit 2:15: "5 orang habis
+// minggu ini. Sistemnya yang cari, bukan Kakak."
 
 import Link from "next/link";
 import { pg } from "@/db";
 import {
+  antreMenunggu,
   BATAS_SETELAN,
+  belumDiabsen,
   kreditMauHangus,
   sesiHariIni,
   setelanLengkap,
   type SesiHariIni,
 } from "@/db/admin";
+import { kreditMenggantung, ringkasUang } from "@/db/transaksi";
 import { STUDIO_DEMO } from "@/db/seed";
 import { pastikanAdmin } from "@/lib/masuk";
-import { hariWib, jamWib, selisihManusiawi } from "@/lib/waktu";
+import {
+  hariPendekWib,
+  hariWib,
+  jamWib,
+  rupiah,
+  selisihManusiawi,
+} from "@/lib/waktu";
 import { tautanWa } from "@/lib/wa";
 import { Angka, Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
 import { resetDemo, resetJadwalDemo, ubahSetelan } from "./aksi";
@@ -55,14 +76,35 @@ export default async function A1({
   const geser = hari === "besok" ? 1 : 0;
   const tanggal = new Date(sekarang.getTime() + geser * 86_400_000);
 
-  const [sesi, hangus, setelan] = await Promise.all([
+  // Tiga query pertama milik siapa saja; dua terakhir dipilih menurut peran,
+  // dan angka uang tidak pernah diminta kalau yang membuka admin (BR-9.3).
+  const awalBulan = new Date(
+    Date.UTC(sekarang.getUTCFullYear(), sekarang.getUTCMonth(), 1),
+  );
+  const [sesi, hangus, setelan, kerja, bisnis] = await Promise.all([
     sesiHariIni(pg, geser),
     kreditMauHangus(pg),
     setelanLengkap(pg),
+    owner
+      ? null
+      : Promise.all([
+          antreMenunggu(pg, { sekarang }),
+          belumDiabsen(pg, { sekarang }),
+        ]),
+    owner
+      ? Promise.all([
+          ringkasUang(pg, { sejak: awalBulan }),
+          kreditMenggantung(pg, { sekarang }),
+        ])
+      : null,
   ]);
+  const [antre, absen] = kerja ?? [[], []];
+  const [uang, menggantung] = bisnis ?? [null, null];
 
   const terisi = sesi.reduce((t, s) => t + s.terisi, 0);
   const kursi = sesi.reduce((t, s) => t + s.kapasitas, 0);
+  const menunggu = antre.length;
+  const belum = absen.reduce((t, a) => t + a.belum, 0);
 
   return (
     <Kerangka
@@ -98,16 +140,58 @@ export default async function A1({
         </nav>
       </div>
 
-      <div className="mt-dekat grid gap-4 sm:grid-cols-3">
+      {/* Baris angka paling atas menjawab pertanyaan yang berbeda untuk dua
+          peran, jadi isinya pun berbeda — bukan angka yang sama dengan satu
+          kolom disembunyikan. */}
+      <div className="mt-dekat grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kartu>
           <Angka nilai={sesi.length} label={geser ? "Kelas besok" : "Kelas hari ini"} />
         </Kartu>
         <Kartu>
-          <Angka nilai={`${terisi}/${kursi}`} label="Kursi terisi" />
+          <Angka
+            nilai={`${terisi}/${kursi}`}
+            label="Kursi terisi"
+            catatan={kursi ? `${Math.round((terisi / kursi) * 100)}% okupansi` : undefined}
+          />
         </Kartu>
-        <Kartu>
-          <Angka nilai={hangus.length} label="Kredit hangus ≤ 7 hari" />
-        </Kartu>
+
+        {owner && uang && menggantung ? (
+          <>
+            <Kartu>
+              <Angka
+                nilai={rupiah(uang.omzet)}
+                label="Omzet bulan ini"
+                catatan={`${uang.jumlah} paket terjual`}
+              />
+            </Kartu>
+            <Kartu>
+              <Angka
+                nilai={rupiah(menggantung.rupiah)}
+                label="Kredit menggantung"
+                catatan={`${menggantung.kredit} kredit di ${menggantung.paket} paket — sudah dibayar, belum jadi kelas.`}
+              />
+            </Kartu>
+          </>
+        ) : (
+          <>
+            <Kartu warna={menunggu ? "bg-warn-surface border-border-warm" : undefined}>
+              <Angka
+                nilai={menunggu}
+                label="Menunggu kursi"
+                catatan={menunggu ? "Ada yang bisa dinaikkan begitu kursi kosong." : undefined}
+                warnaCatatan="text-warn-foreground"
+              />
+            </Kartu>
+            <Kartu warna={belum ? "bg-warn-surface border-border-warm" : undefined}>
+              <Angka
+                nilai={belum}
+                label="Belum diabsen"
+                catatan={belum ? `di ${absen.length} kelas yang sudah selesai` : undefined}
+                warnaCatatan="text-warn-foreground"
+              />
+            </Kartu>
+          </>
+        )}
       </div>
 
       <div className="mt-sedang grid items-start gap-sedang lg:grid-cols-[3fr_2fr]">
@@ -150,6 +234,72 @@ export default async function A1({
         </Kartu>
 
         <div className="space-y-sedang">
+          {/* Dua antrean kerja meja depan. Keduanya hilang dari layar pemilik:
+              ia tidak mengurus absensi, dan daftar tugas orang lain di
+              dashboard sendiri cuma kebisingan (DS-47). */}
+          {!owner && antre.length > 0 && (
+            <Kartu
+              judul="Menunggu kursi"
+              catatan={`${antre.length} orang di daftar tunggu kelas terdekat.`}
+              padat
+            >
+              <ul className="divide-y divide-border">
+                {antre.map((a) => (
+                  <li
+                    key={a.id}
+                    className="flex items-center justify-between gap-3 px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-app-body">{a.nama}</p>
+                      <p className="truncate text-app-body-sm text-muted-foreground">
+                        {a.kelas} · {hariPendekWib(a.mulai_at)} {jamWib(a.mulai_at)} ·{" "}
+                        {a.terisi}/{a.kapasitas} kursi
+                      </p>
+                    </div>
+                    <Link
+                      href={`/admin/sesi/${a.session_id}`}
+                      className="inline-flex min-h-11 shrink-0 items-center rounded-sm border border-border px-3 text-app-label uppercase transition-colors hover:border-foreground"
+                    >
+                      Buka kelas
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Kartu>
+          )}
+
+          {!owner && absen.length > 0 && (
+            <Kartu
+              judul="Belum diabsen"
+              catatan="Job no-show akan menandainya sendiri beberapa jam lagi — sesudah itu koreksinya per orang (BR-6.2, BR-6.4)."
+              padat
+            >
+              <ul className="divide-y divide-border">
+                {absen.map((a) => (
+                  <li
+                    key={a.id}
+                    className="flex items-center justify-between gap-3 px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-app-body">
+                        {a.kelas} · {jamWib(a.mulai_at)}
+                      </p>
+                      <p className="truncate text-app-body-sm text-muted-foreground">
+                        {hariPendekWib(a.mulai_at)} · {a.coach ?? "—"} · {a.belum} orang
+                      </p>
+                    </div>
+                    <Link
+                      href={`/admin/sesi/${a.id}`}
+                      className="inline-flex min-h-11 shrink-0 items-center rounded-sm bg-primary px-3 text-app-label font-medium uppercase text-primary-foreground transition hover:brightness-95"
+                    >
+                      Absen
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </Kartu>
+          )}
+
           {/* Satu-satunya blok berwarna di halaman — DS, supaya mata langsung
               ke sini. Ini yang ditunjuk saat presentasi. */}
           <Kartu
@@ -236,6 +386,21 @@ export default async function A1({
                 Batas pembatalan, jendela booking, dan maksimal daftar tunggu
                 hanya bisa diubah pemilik studio.
               </p>
+            </Kartu>
+          )}
+
+          {owner && (
+            <Kartu judul="Angka lengkapnya">
+              <p className="text-app-body-sm text-muted-foreground">
+                Pendapatan per bulan, okupansi, tingkat kehadiran, dan nilai
+                kredit yang sudah hangus ada di laporan.
+              </p>
+              <Link
+                href="/admin/laporan"
+                className="mt-3 inline-flex min-h-11 items-center rounded-sm border border-foreground px-4 text-app-label font-medium uppercase"
+              >
+                Buka Laporan
+              </Link>
             </Kartu>
           )}
 

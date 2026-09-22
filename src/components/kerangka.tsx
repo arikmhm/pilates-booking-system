@@ -65,7 +65,7 @@ const JADWAL_KELAS: Butir = {
 // Satu rute, empat tampilan (UC-M14, UC-A17, UC-O09, UC-C03) — jadi satu nama
 // juga. Member melihat pembeliannya sendiri, coach melihat kredit yang terpakai
 // di kelasnya, staf melihat buku transaksi studio, dan pemilik melihat angka
-// uangnya (BR-9.1).
+// uangnya (BR-9.3).
 const TRANSAKSI: Butir = {
   href: "/transaksi",
   label: "Transaksi",
@@ -78,7 +78,7 @@ const TRANSAKSI: Butir = {
 // Sembilan butir datar membuat staf memindai seluruh daftar tiap kali, jadi
 // menunya dikelompokkan menurut "saya mau mengurus apa": jadwalnya, membernya,
 // atau studionya. Dashboard berdiri sendiri di atas karena ia titik mendarat,
-// Laporan sendiri di bawah karena hanya pemilik yang punya (BR-9.1) — dan
+// Laporan sendiri di bawah karena hanya pemilik yang punya (BR-9.3) — dan
 // pemisahan itu sendiri yang dijual.
 //
 // Kelompoknya **tidak** dibungkus akordeon. Dicoba dengan pola sidebar-07
@@ -117,7 +117,7 @@ const STAF: Grup[] = [
   },
 ];
 
-// Buku transaksi dibuka staf mana pun; Laporan tidak (BR-9.1). Keduanya duduk
+// Buku transaksi dibuka staf mana pun; Laporan tidak (BR-9.3). Keduanya duduk
 // di kelompok yang sama supaya batas itu terbaca sekali lihat: admin melihat
 // kelompok Bisnis berisi satu butir, pemilik dua.
 const BISNIS: Grup = { judul: "Bisnis", butir: [TRANSAKSI] };

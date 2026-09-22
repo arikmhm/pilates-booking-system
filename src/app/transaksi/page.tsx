@@ -11,9 +11,9 @@
 // | Member | "Uang saya jadi apa?" — tiap paket, tiap kreditnya        |
 // | Coach  | "Kelas saya memakan berapa kredit?" — tanpa rupiah        |
 // | Admin  | "Kapan Bu Sari beli, dan siapa mengoreksi kreditnya?"     |
-// | Owner  | semua milik admin, **+ angka uangnya** (BR-9.1)          |
+// | Owner  | semua milik admin, **+ angka uangnya** (BR-9.3)          |
 //
-// BR-9.1 dijaga di sini dengan cara yang paling sulit dilanggar: `ringkasUang()`
+// BR-9.3 dijaga di sini dengan cara yang paling sulit dilanggar: `ringkasUang()`
 // hanya dipanggil di dalam cabang pemilik. Kolom rupiah per baris tetap terlihat
 // admin — meja depan harus bisa menjawab "paketnya berapa" — yang dikunci adalah
 // penjumlahannya: omzet, rata-rata, dan nilai kredit yang hangus.
@@ -356,7 +356,7 @@ export default async function Transaksi({
   const [{ baris, total }, koreksi, uang] = await Promise.all([
     bukuTransaksi(pg, { sejak, per: PER_HALAMAN, lewati }),
     koreksiTerakhir(pg),
-    // BR-9.1 — penjumlahan uang tidak pernah diminta kalau yang membuka admin.
+    // BR-9.3 — penjumlahan uang tidak pernah diminta kalau yang membuka admin.
     owner ? ringkasUang(pg, { sejak }) : null,
   ]);
 
@@ -560,7 +560,7 @@ export default async function Transaksi({
       {!owner && (
         <p className="mt-dekat text-app-body-sm text-muted-foreground">
           Omzet, rata-rata transaksi, dan nilai kredit yang hangus hanya terlihat
-          pemilik (BR-9.1).
+          pemilik (BR-9.3).
         </p>
       )}
     </Kerangka>

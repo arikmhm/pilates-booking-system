@@ -32,7 +32,7 @@ export async function keluar() {
 }
 
 /**
- * Penjaga layar dan aksi admin — BR-9.1/9.2.
+ * Penjaga layar dan aksi admin — BR-9.2.
  *
  * Dipanggil di halaman DAN di tiap server action. Mengalihkan halaman saja
  * tidak menghentikan POST langsung ke server action; keduanya pintu masuk.
@@ -50,7 +50,7 @@ export async function pastikanAdmin() {
 }
 
 /**
- * Penjaga layar khusus pemilik — BR-9.1.
+ * Penjaga layar khusus pemilik — BR-9.3.
  *
  * Sampai sekarang demo menyamakan admin dan owner. Begitu ada layar yang
  * memuat omzet, penyamaan itu berhenti masuk akal: resepsionis perlu melihat

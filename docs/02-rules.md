@@ -210,7 +210,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | Laporan pendapatan & okupansi | ✅ | ✅ | Pendapatan per bulan, okupansi, kehadiran, nilai kredit hangus (O1). Belum ada ekspor dan biaya operasional |
 | Audit log | ⬜ | ✅ | BR-9.5 |
 | Ekspor data & backup | ⬜ | ✅ | |
-| Peran owner & coach terpisah | ✅ | ✅ | Owner memegang **syarat studio** — harga, batas pembatalan, jendela booking, slot mingguan — dan satu-satunya yang melihat Laporan (BR-9.1). Admin menjalankan sisanya. Coach punya layar sendiri, hanya baca (BR-9.4) |
+| Peran owner & coach terpisah | ✅ | ✅ | Owner memegang **syarat studio** — harga, batas pembatalan, jendela booking, slot mingguan — dan satu-satunya yang melihat Laporan (BR-9.3). Admin menjalankan sisanya. Coach punya layar sendiri, hanya baca (BR-9.4) |
 | **Hanya di demo** | | | |
 | Tombol Reset Demo | ✅ | ⬜ | Wajib — skenario diulang puluhan kali. Ada di A1, hanya muncul di database demo |
 | Tombol Reset Jadwal | ✅ | ⬜ | Panggung kosong tanpa menulis ulang apa pun: jadwal dan seluruh pemesanannya hilang, **aturan mingguan dan kredit member tetap**. Untuk memperagakan BR-7.1 dari nol — kalender kosong, terbitkan, lalu booking di depan klien |
@@ -235,17 +235,17 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 
 | ID | Layar | Isi |
 |---|---|---|
-| A1 | Dashboard hari ini | Sesi hari ini + okupansi · **panel "kredit hangus ≤ 7 hari"** + tombol kirim-WA · kartu setelan — `src/app/admin/` |
+| A1 | Dashboard hari ini | Sesi hari ini + okupansi · **panel "kredit hangus ≤ 7 hari"** + tombol kirim-WA · kartu setelan. **Dua fokus di satu layar** (DS-47): admin dapat ubin dan panel kerja — menunggu kursi, belum diabsen; owner dapat omzet bulan ini dan nilai kredit menggantung (BR-9.3) — `src/app/admin/` |
 | A2 | Detail sesi | Peserta · **daftarkan member** · **batalkan booking satu orang** · waitlist · centang kehadiran · tombol **Batalkan Kelas** — `src/app/admin/sesi/[id]/` |
 | A3 | Detail member | Satu kartu profil (kontak, kredit aktif, paket yang masih hidup) · berikan paket · koreksi manual · buku besar lengkap — `src/app/admin/member/[id]/` |
 | A4 | Direktori member | Tabel 7 kolom + cari, halaman, dan jumlah baris lewat URL · bulatan status kredit bertooltip (DS-36, DS-37) · panel tindak lanjut: kredit hangus ≤ 7 hari dan member yang lama tak datang — `src/app/admin/member/` |
 | A5 | Pelatih & staf | Beban mengajar 7 hari · tombol chat-WA coach · siapa punya peran apa — `src/app/admin/tim/` |
 | A6 | Layanan & paket | Jenis kelas · katalog paket + harga · **buat paket baru** · sembunyikan paket lama — `src/app/admin/layanan/` |
 | A7 | Aturan jadwal | Slot mingguan *(owner)* · **kelas tambahan sekali jalan** *(admin)* — `src/app/admin/jadwal/` |
-| A9 | Buku transaksi | Tiap paket yang berpindah ke member (25 per halaman) + kredit yang dipindah tangan. Baris tanggalnya membuka detail transaksi, bukan profil member — profilnya satu klik lagi dari sana. **Angka uang hanya untuk pemilik**: omzet, rata-rata, dan nilai kredit hangus muncul di layar yang sama saat yang membuka owner (BR-9.1) — `src/app/transaksi/` |
+| A9 | Buku transaksi | Tiap paket yang berpindah ke member (25 per halaman) + kredit yang dipindah tangan. Baris tanggalnya membuka detail transaksi, bukan profil member — profilnya satu klik lagi dari sana. **Angka uang hanya untuk pemilik**: omzet, rata-rata, dan nilai kredit hangus muncul di layar yang sama saat yang membuka owner (BR-9.3) — `src/app/transaksi/` |
 | A8 | Pesan terkirim | Jejak semua notifikasi · tombol kirim-WA untuk yang mendesak (BR-4.3, BR-5.3) — `src/app/admin/pesan/` |
 
-**Owner (tampilan laptop)** — admin tidak melihat layar ini (BR-9.1)
+**Owner (tampilan laptop)** — admin tidak melihat layar ini (BR-9.3)
 
 | ID | Layar | Isi |
 |---|---|---|
@@ -256,7 +256,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | ID | Layar | Isi |
 |---|---|---|
 | C1 | Kelas saya | Jadwal mengajar sendiri · daftar peserta tiap kelas + status kehadiran — `src/app/pelatih/` |
-| C2 | Transaksi | Kredit member yang terpakai di kelas yang ia ajar — kursi dan kredit, **tanpa angka rupiah** (BR-9.1, BR-9.4) — `src/app/transaksi/` |
+| C2 | Transaksi | Kredit member yang terpakai di kelas yang ia ajar — kursi dan kredit, **tanpa angka rupiah** (BR-9.3, BR-9.4) — `src/app/transaksi/` |
 
 M3 adalah jantung skenario A. Panel kredit hangus di A1 = daftar orang yang harus di-chat hari ini.
 

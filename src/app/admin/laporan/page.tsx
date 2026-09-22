@@ -2,7 +2,7 @@
 //
 // Pemisahan itu sendiri bagian dari yang dijual: resepsionis butuh melihat
 // seluruh jadwal dan seluruh member, tapi tidak perlu melihat omzet. Admin
-// yang membuka halaman ini dilempar ke dashboard (BR-9.1).
+// yang membuka halaman ini dilempar ke dashboard (BR-9.3).
 //
 // Tidak ada tabel ringkasan. Semua angka dihitung ulang dari baris transaksi
 // tiap halaman dibuka — satu studio menulis ~25 baris sehari, dan ringkasan

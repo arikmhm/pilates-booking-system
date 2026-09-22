@@ -1,7 +1,7 @@
 // Query layar admin A1–A3. Dipisah dari booking.ts karena audiens dan
 // layarnya berbeda: ini tampilan laptop di meja resepsionis (DS-16).
 
-import { saat, type Sql } from "./booking";
+import { saat, ts, type Sql } from "./booking";
 
 export type SesiHariIni = {
   id: string;
@@ -73,6 +73,88 @@ export async function kreditMauHangus(
     having sum(cl.delta) > 0
      order by mp.hangus_at`;
   return baris.map((b) => ({ ...b, hangus_at: saat(b.hangus_at) }));
+}
+
+/* ── Dua antrean kerja meja depan — dashboard A1 sisi admin ──────────────── */
+
+export type AntreMenunggu = {
+  id: string;
+  nama: string;
+  telepon: string;
+  session_id: string;
+  mulai_at: Date;
+  kelas: string;
+  terisi: number;
+  kapasitas: number;
+};
+
+/**
+ * Siapa yang sedang menunggu kursi, bukan berapa orang.
+ *
+ * Chip "3 antre" di kalender dan di daftar kelas hari ini cuma menghitung —
+ * tidak ada jalan dari angka itu ke orangnya. Padahal begitu satu kursi
+ * terbuka, yang dibutuhkan meja depan adalah nama dan nomornya.
+ */
+export async function antreMenunggu(
+  sql: Sql,
+  args: { sekarang: Date; batas?: number },
+): Promise<AntreMenunggu[]> {
+  const baris = await sql<AntreMenunggu[]>`
+    select w.id, u.nama, u.telepon,
+           s.id as session_id, s.mulai_at, s.kapasitas,
+           ct.nama as kelas,
+           (select count(*) from bookings b
+             where b.session_id = s.id and b.status = 'confirmed')::int as terisi
+      from waitlist_entries w
+      join users u on u.id = w.user_id
+      join sessions s on s.id = w.session_id
+      join class_types ct on ct.id = s.class_type_id
+     where w.status = 'waiting'
+       and s.status = 'scheduled'
+       and s.mulai_at >= ${ts(args.sekarang)}::timestamptz
+     order by s.mulai_at, w.created_at
+     limit ${args.batas ?? 6}`;
+  return baris.map((b) => ({ ...b, mulai_at: saat(b.mulai_at) }));
+}
+
+export type BelumDiabsen = {
+  id: string;
+  mulai_at: Date;
+  kelas: string;
+  coach: string | null;
+  belum: number;
+};
+
+/**
+ * Kelas yang sudah selesai tapi kehadirannya belum dicentang.
+ *
+ * Job `no-show` akan menandainya sendiri sesudah `noshow_after_hours`
+ * (BR-6.2) — dan itulah kenapa panel ini ada: sesudah tenggat itu lewat,
+ * koreksinya jadi pekerjaan manual per orang (BR-6.4). Jendelanya sengaja dua
+ * hari ke belakang, bukan sejak awal waktu: daftar yang memuat kelas bulan
+ * lalu bukan daftar tugas lagi.
+ */
+export async function belumDiabsen(
+  sql: Sql,
+  args: { sekarang: Date; batas?: number },
+): Promise<BelumDiabsen[]> {
+  const kini = ts(args.sekarang);
+  const baris = await sql<BelumDiabsen[]>`
+    select s.id, s.mulai_at, ct.nama as kelas, c.nama as coach,
+           count(*)::int as belum
+      from bookings b
+      join sessions s on s.id = b.session_id
+      join class_types ct on ct.id = s.class_type_id
+      left join users c on c.id = s.coach_id
+     where b.status = 'confirmed'
+       and s.status = 'scheduled'
+       and s.mulai_at + make_interval(mins => s.durasi_menit)
+             <= ${kini}::timestamptz
+       and s.mulai_at >= ${kini}::timestamptz - make_interval(days => 2)
+     group by s.id, ct.nama, c.nama
+     order by s.mulai_at desc
+     limit ${args.batas ?? 6}`;
+  return baris.map((b) => ({ ...b, mulai_at: saat(b.mulai_at) }));
 }
 
 export type Setelan3 = {

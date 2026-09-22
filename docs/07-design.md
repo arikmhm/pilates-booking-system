@@ -420,6 +420,33 @@ Pada 10% ia jadi tekstur; dinaikkan lagi ia berubah jadi teks kedua yang ikut
 dibaca dan bersaing dengan `<h1>`-nya. Judulnya sendiri tetap putih pekat di
 atas tirai — yang diberi opasitas hiasannya, tidak pernah tulisannya.
 
+`DS-47` — **Satu dashboard, dua fokus — bukan dua layar.** A1 menjawab
+pertanyaan yang berbeda untuk dua peran, jadi baris angka teratasnya pun
+berbeda isinya, bukan berisi angka yang sama dengan satu kolom disembunyikan.
+
+| | Admin — "apa yang harus dikerjakan sekarang" | Owner — "bagaimana studio berjalan" |
+|---|---|---|
+| Ubin | Kelas hari ini · Kursi terisi · **Menunggu kursi** · **Belum diabsen** | Kelas hari ini · Kursi terisi + % okupansi · **Omzet bulan ini** · **Kredit menggantung** |
+| Panel | Menunggu kursi · Belum diabsen · Kredit hangus ≤ 7 hari | Kredit hangus ≤ 7 hari · Setelan aturan · tautan Laporan |
+
+Riset padanan produk (`riset-dashboard-peran.md`) menemukan pola yang sama di
+Vagaro, WellnessLiving, dan TeamUp: **satu** dashboard dengan blok yang disaring
+per-permission. Mindbody memang memisahkan layarnya, tapi layar stafnya sebuah
+kalender — bukan versi ringkas dashboard pemiliknya. Memecah A1 jadi dua rute
+berarti dua layar yang harus dirawat untuk satu pertanyaan yang sama ("apa yang
+terjadi hari ini").
+
+Dua hal yang menahan pembagian ini agar tidak berubah jadi pembagian sembarang:
+
+- **Kredit hangus ≤ 7 hari tetap milik keduanya.** Itu bukan laporan melainkan
+  daftar orang yang harus di-chat hari ini — dan di produk pembanding pun ia
+  pekerjaan meja depan, bukan angka pemilik.
+- **Uang bukan satu sakelar, melainkan tiga lapis.** Matriks bawaan Glofox
+  memberi resepsionis akses ke tagihan macet per orang tapi menutup laporan
+  omzet. Aturan yang berlaku di sini: angka uang **per baris** boleh dilihat
+  admin (harga paket di A6 dan A9 — meja depan harus bisa menjawab "paketnya
+  berapa"), **penjumlahannya** tidak (BR-9.3).
+
 `DS-43` — **Tidak ada tautan mati, di halaman publik maupun di dalam aplikasi.**
 
 Tiap butir menu menuju salah satu dari tiga tempat saja:
@@ -530,7 +557,7 @@ Tiga hal yang diputuskan tabel itu:
    calon member, menyalin tautannya, memastikan apa yang terbaca orang luar. Untuk
    member ia jalan mundur — mereka sudah di dalam, dan halaman jualan tidak punya
    satu pun hal yang bisa mereka lakukan.
-3. **Laporan hanya untuk owner** (BR-9.1). Resepsionis perlu seluruh jadwal dan
+3. **Laporan hanya untuk owner** (BR-9.3). Resepsionis perlu seluruh jadwal dan
    seluruh member, tapi tidak perlu omzet. Pemisahan itu sendiri bagian dari yang
    dijual, jadi ia harus terlihat: admin yang membuka `/admin/laporan` dipantulkan
    ke dashboard, bukan ke halaman masuk — dia sudah masuk, cuma salah pintu.
@@ -688,7 +715,7 @@ slot mingguan berulang; sakelarnya lewat URL (`?buat=berulang`), bukan state kli
 Tab bawaannya berbeda per layar: di sebelah kalender "sekali jalan" (yang dicari di
 sana lubang satu minggu), di Aturan Jadwal "tiap minggu". Komponen yang sama dipakai
 keduanya — dulu dua salinan yang harus diubah bersamaan tiap kali jenis kelas berubah.
-Admin tidak melihat sakelarnya sama sekali: slot mingguan kewenangan owner (BR-9.1),
+Admin tidak melihat sakelarnya sama sekali: slot mingguan kewenangan owner (BR-9.3),
 dan tab yang ditolak servernya cuma memancing klik yang gagal.
 
 **Gulung mendatar berhenti di tepi kalender, bukan di tepi halaman.** Kalender punya

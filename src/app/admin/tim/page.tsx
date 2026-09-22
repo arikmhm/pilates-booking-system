@@ -114,7 +114,7 @@ export default async function A5({
       </div>
 
       <div className="mt-dekat">
-        <Kartu judul="Menambah orang" catatan="BR-9.1 · BR-9.4">
+        <Kartu judul="Menambah orang" catatan="BR-9.3 · BR-9.4">
           <p className="max-w-[60ch] text-app-body text-muted-foreground">
             Pelatih dan staf adalah baris <code>users</code> dengan{" "}
             <code>peran</code> berbeda — tidak ada tabel terpisah
