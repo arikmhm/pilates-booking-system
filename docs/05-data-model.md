@@ -166,7 +166,7 @@ erDiagram
         uuid id PK
         uuid user_id FK
         text kanal "layar|email|wa_link"
-        text template "booking_ok|waitlist_naik|kelas_batal|kredit_mau_hangus"
+        text template "booking_ok|waitlist_naik|kelas_batal|kredit_mau_hangus|waitlist_tutup"
         text isi "teks final Bahasa Indonesia"
         uuid session_id FK
         timestamptz terkirim_at
@@ -259,6 +259,13 @@ CREATE UNIQUE INDEX ON bookings (session_id, user_id) WHERE status = 'confirmed'
 
 -- BR-4.1 tidak bisa antre dua kali di sesi yang sama
 CREATE UNIQUE INDEX ON waitlist_entries (session_id, user_id) WHERE status = 'waiting';
+
+-- BR-1.6 satu paket hanya bisa dihanguskan sekali, walau cron jalan dua kali
+CREATE UNIQUE INDEX ON credit_ledger (member_package_id) WHERE alasan = 'hangus';
+
+-- BR-7.1 job generate sesi boleh diulang; NULL (sesi manual) tidak terjaring
+CREATE UNIQUE INDEX ON sessions (schedule_rule_id, mulai_at)
+  WHERE schedule_rule_id IS NOT NULL;
 
 CHECK (bookings.nomor_alat >= 1);
 CHECK (credit_ledger.delta <> 0);
@@ -353,8 +360,20 @@ ORDER BY mp.hangus_at;
 | Tutup waitlist | Tiap jam | BR-4.6 | Antrean di sesi yang booking-nya sudah ditutup → `expired` + notifikasi |
 | Pengingat kredit | Harian | — | Notifikasi ke member dengan kredit hangus ≤ 3 hari |
 
-Semua job **idempoten** — aman dijalankan ulang. Job "hanguskan kredit" memeriksa
-apakah baris ledger `hangus` sudah ada sebelum menulis.
+Keempat job pertama jadi **endpoint HTTP biasa** di `src/app/api/cron/`, dijaga
+header `Authorization: Bearer $CRON_SECRET`. Vercel Cron memanggilnya di demo
+(`vercel.json`), `crontab` + `curl` di VPS — kode sama, beda satu berkas config
+(06-architecture.md keputusan 8). Logikanya sendiri ada di `src/db/job.ts` sebagai
+fungsi yang menerima klien database, jadi bisa diuji tanpa server.
+
+Semua job **idempoten** — aman dijalankan ulang, dan itu bukan kemewahan: cron
+di-retry setelah timeout, telat, atau tumpang tindih dengan jalannya sendiri.
+
+Tiga job pertama idempoten karena filter statusnya: baris yang sudah diproses
+berhenti cocok. "Hanguskan kredit" tidak bisa begitu — ia menulis baris baru — jadi
+penjaganya `credit_ledger_hangus_key` di bagian 4. Pola "cek dulu baru tulis" bocor
+di sini persis seperti pada kapasitas: dua jalan yang tumpang tindih membaca "belum"
+bersamaan, lalu dua-duanya menulis.
 
 ---
 

@@ -265,7 +265,11 @@ flowchart LR
     D -->|tidak| E["Tulis ledger minus sisa<br/>alasan hangus"]
 ```
 
-Pengecekan D yang membuat job ini **idempoten** — aman dijalankan ulang berkali-kali.
+Pengecekan D yang membuat job ini **idempoten** saat dijalankan berurutan. Kalau
+dua jalan bertumpang tindih, keduanya bisa membaca "belum" bersamaan — karena itu
+jaring pengaman sesungguhnya ada di database: partial unique index
+`credit_ledger_hangus_key` (05-data-model.md bagian 4). Sama persis dengan alasan
+BR-2.3 tidak boleh memakai cek-lalu-insert.
 
 ### 7.3 Generate sesi — harian · `UC-S01`
 

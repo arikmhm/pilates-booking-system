@@ -2,22 +2,22 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** 6 layar + Reset Demo + sidebar selesai · sisa 4 job terjadwal
+**Tahap:** 6 layar + 4 job terjadwal selesai · sisa latihan presentasi dan deploy
 **Terakhir diperbarui:** 2026-09-22
 
 ---
 
 ## Sedang dikerjakan
 
-Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
+Belum ada. Demo lengkap — enam layar dan empat job jalan. Berikutnya latihan
+presentasi dan deploy.
 
 ## Berikutnya — tiga langkah pertama
 
-1. Empat job terjadwal sebagai endpoint HTTP berpenjaga `CRON_SECRET`
-   ([05-data-model.md](docs/05-data-model.md) bagian 6) — `hasilPenghangusan()`
-   dan `naikkanWaitlist()` sudah siap dipakai
-2. Latihan skrip presentasi 5 menit dari ujung ke ujung, rekam video 90 detik
-3. Deploy demo ke Vercel — `DATABASE_URL` sudah menunjuk Neon
+1. Latihan skrip presentasi 5 menit dari ujung ke ujung, rekam video 90 detik
+2. Deploy demo ke Vercel — `DATABASE_URL` sudah menunjuk Neon, `vercel.json` sudah
+   memuat jadwal cron. `CRON_SECRET` harus diisi di environment Vercel
+3. M2 panel konfirmasi (pemilih nomor alat) — sekarang alat masih ditentukan sistem
 
 ## Selesai
 
@@ -43,6 +43,10 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 - [x] Layar A3 Detail member — dompet kredit, buku besar lengkap, koreksi manual (BR-1.8)
 - [x] **Keenam layar demo selesai** — M1 M2* M3 A1 A2 A3 (*M2 masih ditentukan sistem)
 - [x] Tombol Reset Demo — satu transaksi, id user tetap, presenter tidak terlempar keluar
+- [x] Navigasi sidebar shadcn + kalender mingguan M1 (DS-31–DS-33)
+- [x] **Empat job terjadwal** sebagai endpoint HTTP berpenjaga `CRON_SECRET` —
+      idempotensinya diuji dengan menjalankan tiap job dua kali, dua penjaga baru
+      pindah ke database
 
 ## Keputusan terbuka
 
@@ -73,6 +77,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | Empat job terjadwal jadi endpoint HTTP di `src/app/api/cron/`, logikanya di `src/db/job.ts`. Idempotensi diuji dengan menjalankan tiap job dua kali, dan dua penjaga baru dipindah ke database: `credit_ledger_hangus_key` (BR-1.6) dan `sessions_rule_mulai_key` (BR-7.1) — cek-lalu-tulis bocor di cron yang tumpang tindih, persis seperti pada kapasitas. Mutasi membuktikan testnya tidak kosong. Test integrasi dijalankan berurutan: dua berkas berbagi satu database dan saling menghapus fixture |
 | 2026-09-22 | M1 jadi kalender mingguan ala Google Calendar (DS-32) — hari jadi kolom, jam jadi sumbu tegak, bisa geser ke minggu mana pun; daftar per hari tetap dipakai di HP. Layar tiga peran: member dapat tombol booking, staf dapat tautan ke detail sesi, coach hanya melihat. Isi dilebarkan penuh dan bilah atas dimepetkan kiri (DS-27), menu sidebar dipangkas per peran (DS-33). UC-A15 baru; aritmetika hari WIB pindah ke `waktu.ts` + test |
 | 2026-09-22 | Navigasi pindah ke sidebar shadcn (`ui/sidebar.tsx`, sheet di HP). Token `--sidebar-*` dialiaskan ke palet sendiri, butir aktif pakai `primary` supaya tidak tertukar dengan hover, tinggi butir 48px (DS-11), teks pembaca layar diterjemahkan. `use-mobile` ditulis ulang pakai `useSyncExternalStore` dan `SidebarMenuSkeleton` dibuang — keduanya ditolak `react-hooks` lint. DS-31 |
 | 2026-09-22 | **Bug tata letak besar diperbaiki**: nama token `--spacing-lg` dll. bertabrakan dengan skala container Tailwind, sehingga `max-w-lg` = 60px dan `max-w-md` = 40px. Semua layar member dan halaman masuk selama ini selebar 40–60px. Token diganti nama Indonesia, lebar isi jadi nilai eksplisit, ditambah test penjaga (DS-29, DS-30) |

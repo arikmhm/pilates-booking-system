@@ -131,7 +131,16 @@ export const sessions = pgTable(
     alasan_batal: text(),
     dibatalkan_at: saat(),
   },
-  (t) => [index("sessions_studio_mulai_idx").on(t.studio_id, t.mulai_at)],
+  (t) => [
+    index("sessions_studio_mulai_idx").on(t.studio_id, t.mulai_at),
+    // BR-7.1 — job generate sesi boleh dijalankan berkali-kali sehari.
+    // NULL dianggap berbeda oleh Postgres, jadi sesi manual (tanpa aturan)
+    // tidak pernah ikut terjaring; WHERE-nya ditulis eksplisit supaya niat
+    // itu terbaca, bukan disimpulkan dari perilaku NULL.
+    uniqueIndex("sessions_rule_mulai_key")
+      .on(t.schedule_rule_id, t.mulai_at)
+      .where(sql`schedule_rule_id is not null`),
+  ],
 );
 
 /* ── 6. packages ─ katalog produk ────────────────────────────────────────── */
@@ -265,6 +274,14 @@ export const credit_ledger = pgTable(
   (t) => [
     check("credit_ledger_delta_check", sql`${t.delta} <> 0`),
     index("credit_ledger_member_package_idx").on(t.member_package_id),
+    // BR-1.6 — satu paket hanya boleh dihanguskan sekali. 04-flows.md 7.2
+    // membuat job ini idempoten lewat "cek dulu baru tulis", dan pola itu
+    // bocor persis seperti pada kapasitas: dua cron yang tumpang tindih
+    // membaca "belum" bersamaan lalu menulis dua-duanya. Di sini yang
+    // ditegakkan database, bukan urutan pembacaan.
+    uniqueIndex("credit_ledger_hangus_key")
+      .on(t.member_package_id)
+      .where(sql`alasan = 'hangus'`),
   ],
 );
 
@@ -308,6 +325,7 @@ export const TEMPLATE = [
   "waitlist_naik",
   "kelas_batal",
   "kredit_mau_hangus",
+  "waitlist_tutup",
 ] as const;
 
 export const notifications = pgTable("notifications", {

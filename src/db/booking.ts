@@ -8,7 +8,7 @@ import type { PaketMember, Sesi, Setelan } from "@/rules";
 // Sql dan TransactionSql tidak saling assignable — yang satu punya END/CLOSE,
 // yang lain punya savepoint/prepare. Union-nya cukup: tanda tangan tagged
 // template keduanya identik, dan itu satu-satunya yang dipakai di sini.
-type Sql = postgres.Sql | postgres.TransactionSql;
+export type Sql = postgres.Sql | postgres.TransactionSql;
 
 /**
  * Date → ISO string untuk parameter timestamptz.
@@ -22,7 +22,7 @@ type Sql = postgres.Sql | postgres.TransactionSql;
  * Semua parameter waktu lewat sini. Cast `::timestamptz` wajib menyertainya
  * supaya Postgres tidak menebak tipe dari string.
  */
-const ts = (d: Date | null | undefined) => (d ? d.toISOString() : null);
+export const ts = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 
 /**
  * Kebalikannya: kolom timestamptz yang DITERIMA.

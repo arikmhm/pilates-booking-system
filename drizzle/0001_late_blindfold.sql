@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX "credit_ledger_hangus_key" ON "credit_ledger" USING btree ("member_package_id") WHERE alasan = 'hangus';--> statement-breakpoint
+CREATE UNIQUE INDEX "sessions_rule_mulai_key" ON "sessions" USING btree ("schedule_rule_id","mulai_at") WHERE schedule_rule_id is not null;

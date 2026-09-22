@@ -1,10 +1,7 @@
 // Query layar admin A1–A3. Dipisah dari booking.ts karena audiens dan
 // layarnya berbeda: ini tampilan laptop di meja resepsionis (DS-16).
 
-import type postgres from "postgres";
-import { saat } from "./booking";
-
-type Sql = postgres.Sql | postgres.TransactionSql;
+import { saat, type Sql } from "./booking";
 
 export type SesiHariIni = {
   id: string;

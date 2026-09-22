@@ -170,6 +170,39 @@ menerbitkan link login untuk ditempel ke chat bagi member yang tidak pegang emai
 
 ---
 
+## 5b. Job terjadwal sebagai endpoint HTTP
+
+Empat job (05-data-model.md bagian 6) jadi route biasa, bukan fitur platform:
+
+| Endpoint | Jadwal (UTC) | WIB | Aturan |
+|---|---|---|---|
+| `/api/cron/hanguskan-kredit` | `10 17 * * *` | 00.10 | BR-1.6 |
+| `/api/cron/generate-sesi` | `30 17 * * *` | 00.30 | BR-7.1 |
+| `/api/cron/no-show` | `5 * * * *` | tiap jam | BR-6.2 |
+| `/api/cron/tutup-waitlist` | `15 * * * *` | tiap jam | BR-4.6 |
+
+Penjaganya header `Authorization: Bearer $CRON_SECRET`, dibandingkan dengan
+`timingSafeEqual` (`src/lib/cron.ts`). `CRON_SECRET` kosong ditolak **500**, bukan
+dibiarkan lewat — endpoint ini menulis ke database, dan "belum dikonfigurasi" tidak
+boleh berarti "terbuka".
+
+Header itu dipilih karena dua-duanya bisa mengirimnya. Di demo Vercel Cron memasangnya
+sendiri dari `vercel.json`. Di VPS klien, satu baris crontab:
+
+```
+5 * * * * curl -sS -H "Authorization: Bearer $CRON_SECRET" https://studio.example/api/cron/no-show
+```
+
+Kode aplikasinya sama persis. Yang berbeda cuma berkas jadwalnya — itu isi janji
+portabilitas di AGENTS.md, diuji di titik yang paling mudah tergoda memakai API host.
+
+**Batas paket Vercel.** Paket Hobby membatasi cron pada pemanggilan harian. Dua job
+per jam di atas tidak akan jalan sesuai jadwal di Hobby; untuk demo itu tidak masalah
+(endpoint-nya bisa dipanggil manual), tapi serah terima ke klien berarti paket Pro
+atau `crontab` di VPS. Dicatat di sini supaya tidak ditemukan saat klien sudah pakai.
+
+---
+
 ## 6. Yang sengaja tidak dipakai
 
 | Tidak pakai | Tambahkan kalau |

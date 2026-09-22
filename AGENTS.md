@@ -95,6 +95,14 @@ pilihan itu harus tetap terbuka.
 
 **Job lewat HTTP.** Empat job terjadwal jadi endpoint biasa berpenjaga secret,
 dipanggil Vercel Cron di demo dan `crontab` di VPS. Kode sama, beda satu baris config.
+Logikanya di `src/db/job.ts` (fungsi yang menerima klien db), route-nya cuma
+pembungkus. Panggil manual:
+
+```bash
+curl -sS -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/no-show
+```
+
+Tiap job **wajib idempoten** dan wajib punya test yang menjalankannya dua kali.
 
 **Waktu dinormalisasi di lapisan database, bukan di layar.** Parser tipe postgres.js tidak
 terpasang di runtime server Next: kolom `timestamptz` kembali sebagai string mentah,

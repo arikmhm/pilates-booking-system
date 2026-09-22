@@ -13,5 +13,10 @@ export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   test: {
     include: ["src/**/*.test.ts"],
+    // Dua berkas test integrasi memakai SATU database lokal dan dua-duanya
+    // TRUNCATE di beforeAll/afterAll. Dijalankan paralel, yang satu
+    // menghapus fixture yang lain — gagalnya acak dan menyesatkan.
+    // Seluruh suite ~1 detik, jadi harganya nol.
+    fileParallelism: false,
   },
 });

@@ -8,49 +8,16 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import postgres from "postgres";
 import { pesanKursi, saat } from "./booking";
+import { bersihkan as kosongkan, dbUji } from "./uji-db";
 
 const KAPASITAS = 8;
 const PENYERBU = 20;
 
-// Test ini menjalankan TRUNCATE CASCADE. Sejak `neon link` menimpa
-// DATABASE_URL dengan branch Neon, `npm test` bisa mengosongkan database
-// sungguhan. Karena itu test memakai TEST_DATABASE_URL dan MENOLAK jalan
-// kalau host-nya bukan lokal — ini pengaman, bukan kenyamanan.
-function dbUji(): string {
-  const url = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
-  if (!url) throw new Error("TEST_DATABASE_URL belum diisi — lihat .env.example");
-  const host = new URL(url).hostname;
-  if (host !== "localhost" && host !== "127.0.0.1") {
-    throw new Error(
-      `Test menolak jalan: TEST_DATABASE_URL menunjuk ${host}, bukan localhost. ` +
-        "Test ini TRUNCATE semua tabel. Jalankan `npm run db:up` lalu arahkan " +
-        "TEST_DATABASE_URL ke Postgres lokal.",
-    );
-  }
-  return url;
-}
 
 // max > PENYERBU supaya 20 percobaan benar-benar berebut, bukan antre di pool
 const sql = postgres(dbUji(), { max: PENYERBU + 2 });
 
-const TABEL = [
-  "credit_ledger",
-  "waitlist_entries",
-  "notifications",
-  "bookings",
-  "member_packages",
-  "package_class_types",
-  "packages",
-  "sessions",
-  "schedule_rules",
-  "class_types",
-  "users",
-  "studios",
-];
-
-async function bersihkan() {
-  await sql.unsafe(`truncate ${TABEL.join(", ")} cascade`);
-}
+const bersihkan = () => kosongkan(sql);
 
 let sesi: string;
 let sesiKedua: string;
