@@ -204,6 +204,83 @@ export async function ubahAktifPaket(sql: Sql, id: string, aktif: boolean) {
   await sql`update packages set aktif = ${aktif} where id = ${id}`;
 }
 
+/* ── Berikan paket ke member — UC-A13 ────────────────────────────────────── */
+
+/** Paket yang masih dijual, untuk daftar pilihan di layar detail member. */
+export async function paketDijual(sql: Sql) {
+  return sql<
+    { id: string; nama: string; jumlah_kredit: number; masa_berlaku_hari: number;
+      harga_rupiah: number }[]
+  >`select id, nama, jumlah_kredit, masa_berlaku_hari, harga_rupiah
+      from packages where aktif order by harga_rupiah`;
+}
+
+/**
+ * Satu transaksi, dua baris: `member_packages` yang menyimpan masa berlaku,
+ * dan baris ledger `beli` sebesar kreditnya. BR-1.7 menghitung sisa dari buku
+ * besar, jadi paket tanpa baris ledger adalah paket berisi nol kredit.
+ *
+ * `hangus_at` dihitung di Postgres (`+ masa_berlaku_hari * interval '1 day'`),
+ * bukan di JavaScript — aritmetika tanggal milik lapisan database (BR-7.5).
+ */
+export async function berikanPaket(
+  sql: postgres.Sql,
+  args: { user_id: string; package_id: string; pelaku_id: string },
+) {
+  return sql.begin(async (tx) => {
+    const [paket] = await tx<
+      { nama: string; jumlah_kredit: number; masa_berlaku_hari: number }[]
+    >`select nama, jumlah_kredit, masa_berlaku_hari
+        from packages where id = ${args.package_id} and aktif`;
+    if (!paket) return null;
+
+    const [mp] = await tx<{ id: string; hangus_at: string | Date }[]>`
+      insert into member_packages
+        (user_id, package_id, hangus_at, jumlah_kredit_awal)
+      values (${args.user_id}, ${args.package_id},
+              now() + ${paket.masa_berlaku_hari} * interval '1 day',
+              ${paket.jumlah_kredit})
+      returning id, hangus_at`;
+
+    await tx`
+      insert into credit_ledger (member_package_id, delta, alasan, pelaku_id)
+      values (${mp.id}, ${paket.jumlah_kredit}, 'beli', ${args.pelaku_id})`;
+
+    return { ...paket, hangus_at: saat(mp.hangus_at) };
+  });
+}
+
+/**
+ * Calon peserta untuk booking atas nama (UC-A05): member yang masih punya
+ * kredit hidup dan belum terdaftar di sesi ini.
+ *
+ * Yang disaring di sini cuma daftar pilihannya. Kelayakan sesungguhnya tetap
+ * diputuskan `bolehBooking()` saat tombolnya ditekan — BR-1.4 (jenis kelas)
+ * dan BR-2.5 (bentrok jam) tidak bisa dijawab tanpa tahu sesi mana.
+ */
+export async function calonPeserta(
+  sql: Sql,
+  args: { session_id: string; sekarang: Date },
+) {
+  const kini = ts(args.sekarang);
+  return sql<{ id: string; nama: string; sisa_kredit: number }[]>`
+    select u.id, u.nama,
+           coalesce(sum(cl.delta), 0)::int as sisa_kredit
+      from users u
+      join member_packages mp on mp.user_id = u.id
+                             and mp.hangus_at > ${kini}::timestamptz
+      join credit_ledger cl on cl.member_package_id = mp.id
+     where u.peran = 'member'
+       and not exists (
+         select 1 from bookings b
+          where b.session_id = ${args.session_id}
+            and b.user_id = u.id
+            and b.status = 'confirmed')
+     group by u.id, u.nama
+    having coalesce(sum(cl.delta), 0) > 0
+     order by u.nama`;
+}
+
 /* ── Aturan jadwal berulang — UC-O01 ─────────────────────────────────────── */
 
 export const HARI = [
@@ -318,6 +395,47 @@ export async function buatSesiManual(
             ${args.durasi_menit}, ${args.kapasitas})
     returning mulai_at`;
   return saat(s.mulai_at);
+}
+
+/* ── Pesan terkirim — UC-A03, UC-S06 ────────────────────────────────────── */
+
+export type Pesan = {
+  id: string;
+  nama: string;
+  telepon: string;
+  template: string;
+  isi: string;
+  created_at: Date;
+  mulai_at: Date | null;
+};
+
+/**
+ * Jejak notifikasi, terbaru di atas.
+ *
+ * Tabel `notifications` sudah ditulis dari empat tempat sejak awal — booking,
+ * pembatalan, promosi antrean, penutupan antrean — dan sampai sekarang tidak
+ * pernah dibaca satu layar pun. Di demo kanalnya `layar`, jadi panel inilah
+ * satu-satunya tempat pesan itu benar-benar sampai ke manusia.
+ *
+ * BR-4.3 dan BR-5.3 — dua template mendesak (`waitlist_naik`, `kelas_batal`)
+ * dapat tombol kirim-WA, karena kursi terbuang kalau tidak terbaca dalam
+ * hitungan jam.
+ */
+export async function pesanTerkirim(sql: Sql, batas = 60): Promise<Pesan[]> {
+  const baris = await sql<Pesan[]>`
+    select n.id, n.template, n.isi, n.terkirim_at as created_at,
+           u.nama, u.telepon,
+           s.mulai_at
+      from notifications n
+      join users u on u.id = n.user_id
+      left join sessions s on s.id = n.session_id
+     order by n.terkirim_at desc nulls last, n.id desc
+     limit ${batas}`;
+  return baris.map((b) => ({
+    ...b,
+    created_at: saat(b.created_at),
+    mulai_at: b.mulai_at ? saat(b.mulai_at) : null,
+  }));
 }
 
 /* ── Laporan pemilik — UC-O04, UC-O05 ────────────────────────────────────── */

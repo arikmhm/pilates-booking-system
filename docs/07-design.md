@@ -403,7 +403,7 @@ menolak pemiliknya sendiri saat diklik lebih buruk daripada menu yang pendek.
 |---|---|---|
 | Member | Menu | Jadwal Kelas · Akun Saya |
 | Coach | Menu | Kelas Saya · Jadwal Kelas |
-| Admin | Harian | Dashboard · Jadwal Kelas · Member |
+| Admin | Harian | Dashboard · Jadwal Kelas · Member · Pesan Terkirim |
 | | Studio | Pelatih & Staf · Layanan & Paket · Aturan Jadwal · Halaman Publik |
 | Owner | | semua milik admin, **+ Bisnis: Laporan** |
 
@@ -418,6 +418,17 @@ Tiga hal yang diputuskan tabel itu:
    seluruh member, tapi tidak perlu omzet. Pemisahan itu sendiri bagian dari yang
    dijual, jadi ia harus terlihat: admin yang membuka `/admin/laporan` dipantulkan
    ke dashboard, bukan ke halaman masuk — dia sudah masuk, cuma salah pintu.
+
+`DS-35` — **Kewenangan yang lebih sempit dari peran tidak memunculkan menu baru.**
+Admin dan owner membuka layar yang sama; yang berbeda tombolnya. Di A6 admin melihat
+katalog tanpa formulir harga, di A7 melihat slot mingguan tanpa tombol Hentikan, di A1
+melihat kartu setelan berisi penjelasan. Menyembunyikan seluruh layar akan membuat admin
+tidak tahu harga yang sedang berlaku — padahal itu yang ditanyakan calon member di meja
+depan.
+
+Tiap tempat yang menyembunyikan tombol **wajib menjelaskan siapa yang bisa**, bukan
+sekadar kosong. Dan penjaga sesungguhnya tetap `pastikanOwner()` di server action:
+tombol tersembunyi bukan tombol yang tidak bisa ditekan.
 
 Begitu satu peran punya lebih dari empat butir, menunya dikelompokkan. "Harian" untuk
 yang dibuka tiap hari, "Studio" untuk yang dibuka saat menata, "Bisnis" untuk angka.

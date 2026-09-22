@@ -15,6 +15,13 @@
       "when": 1790077014036,
       "tag": "0001_late_blindfold",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790080539358,
+      "tag": "0002_curved_mach_iv",
+      "breakpoints": true
     }
   ]
 }

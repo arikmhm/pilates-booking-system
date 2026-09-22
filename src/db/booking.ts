@@ -255,7 +255,14 @@ export async function riwayatKredit(
   }));
 }
 
-export async function bookingById(sql: Sql, id: string, user_id: string) {
+/**
+ * `user_id` opsional: diisi kalau yang membatalkan si pemilik kursi, sehingga
+ * kepemilikan ikut diperiksa di query — bukan di kode pemanggil yang bisa
+ * lupa. Dikosongkan hanya oleh jalur admin (UC-A06), yang penjaganya
+ * `pastikanAdmin()`.
+ */
+export async function bookingById(sql: Sql, id: string, user_id?: string) {
+  const pemilik = user_id ?? null;
   const [b] = await sql<
     {
       id: string;
@@ -265,7 +272,8 @@ export async function bookingById(sql: Sql, id: string, user_id: string) {
     }[]
   >`select id, session_id, member_package_id, dipromosikan_at
       from bookings
-     where id = ${id} and user_id = ${user_id} and status = 'confirmed'`;
+     where id = ${id} and status = 'confirmed'
+       and (${pemilik}::uuid is null or user_id = ${pemilik})`;
   return b
     ? { ...b, dipromosikan_at: b.dipromosikan_at ? saat(b.dipromosikan_at) : null }
     : null;
@@ -278,4 +286,36 @@ export async function antreanSesi(sql: Sql, session_id: string) {
     select id, user_id from waitlist_entries
      where session_id = ${session_id} and status = 'waiting'
      order by created_at`;
+}
+
+/** Antrean milik satu member — BR-4.7, dipakai layar Akun Saya. */
+export type AntreSaya = {
+  entry_id: string;
+  session_id: string;
+  mulai_at: Date;
+  kelas: string;
+  coach: string | null;
+  posisi: number;
+};
+
+export async function antreanSaya(sql: Sql, user_id: string): Promise<AntreSaya[]> {
+  const baris = await sql<AntreSaya[]>`
+    select w.id as entry_id,
+           s.id as session_id,
+           s.mulai_at,
+           ct.nama as kelas,
+           c.nama as coach,
+           (select count(*)::int + 1 from waitlist_entries w2
+             where w2.session_id = w.session_id
+               and w2.status = 'waiting'
+               and w2.created_at < w.created_at) as posisi
+      from waitlist_entries w
+      join sessions s on s.id = w.session_id
+      join class_types ct on ct.id = s.class_type_id
+      left join users c on c.id = s.coach_id
+     where w.user_id = ${user_id}
+       and w.status = 'waiting'
+       and s.mulai_at > now()
+     order by s.mulai_at`;
+  return baris.map((b) => ({ ...b, mulai_at: saat(b.mulai_at) }));
 }

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { pg } from "@/db";
 import {
+  antreanSaya,
   bookingSaya,
   paketMember,
   riwayatKredit,
@@ -15,9 +16,14 @@ import {
 } from "@/db/booking";
 import { penggunaById } from "@/db/admin";
 import { userSaatIni } from "@/lib/masuk";
-import { hariWib, jamWib, selisihManusiawi } from "@/lib/waktu";
+import {
+  hariPendekWib,
+  hariWib,
+  jamWib,
+  selisihManusiawi,
+} from "@/lib/waktu";
 import { Angka, Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
-import { batalBooking } from "./aksi";
+import { batalBooking, keluarWaitlist } from "./aksi";
 
 export const dynamic = "force-dynamic";
 
@@ -63,9 +69,10 @@ export default async function M3({
   const { kabar } = await searchParams;
   const sekarang = new Date();
 
-  const [paket, booking, riwayat, saya] = await Promise.all([
+  const [paket, booking, antre, riwayat, saya] = await Promise.all([
     paketMember(pg, user_id),
     bookingSaya(pg, user_id),
+    antreanSaya(pg, user_id),
     riwayatKredit(pg, user_id),
     penggunaById(pg, user_id),
   ]);
@@ -112,6 +119,52 @@ export default async function M3({
           </ul>
         )}
       </Kartu>
+
+      {/* BR-4.7 — antrean sendiri, lengkap dengan jalan keluarnya. Sebelum
+          ini member yang mengantre hanya bisa melihatnya di kalender, dan
+          tidak punya cara membatalkan sama sekali. */}
+      {antre.length > 0 && (
+        <div className="mt-dekat">
+          <Kartu
+            judul="Daftar tunggu"
+            catatan="Kredit belum dipotong. Kalau ada yang batal, kamu naik otomatis."
+            padat
+          >
+            <ul className="divide-y divide-border">
+              {antre.map((a) => (
+                <li
+                  key={a.entry_id}
+                  className="flex items-center gap-4 px-4 py-4"
+                >
+                  {/* DS-28 — jam jadi jangkar kiri, lebar tetap. */}
+                  <div className="w-14 shrink-0">
+                    <p className="text-app-section tabular-nums">
+                      {jamWib(a.mulai_at)}
+                    </p>
+                    <p className="text-app-label uppercase text-muted-foreground">
+                      {hariPendekWib(a.mulai_at)}
+                    </p>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-app-body">{a.kelas}</p>
+                    <p className="truncate text-app-body-sm text-muted-foreground">
+                      {a.coach ?? "—"}
+                    </p>
+                  </div>
+                  <Chip
+                    warna="bg-warn-surface text-warn-foreground"
+                    anak={`Antrean ke-${a.posisi}`}
+                  />
+                  <form action={keluarWaitlist} className="shrink-0">
+                    <input type="hidden" name="entry_id" value={a.entry_id} />
+                    <Tombol gaya="halus" kecil anak="Keluar" />
+                  </form>
+                </li>
+              ))}
+            </ul>
+          </Kartu>
+        </div>
+      )}
 
       <div className="mt-dekat">
         <Kartu judul="Kelas mendatang" padat>

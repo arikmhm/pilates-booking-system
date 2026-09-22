@@ -2,7 +2,7 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** 11 layar + 4 job terjadwal selesai · sisa latihan presentasi dan deploy
+**Tahap:** 12 layar + 4 job terjadwal selesai · sisa latihan presentasi dan deploy
 **Terakhir diperbarui:** 2026-09-22
 
 ---
@@ -47,6 +47,10 @@ presentasi dan deploy.
 - [x] **Lima layar pengelolaan**: direktori member (A4), pelatih & staf (A5),
       layanan & paket (A6), aturan jadwal (A7), laporan pemilik (O1), kelas coach (C1)
 - [x] Peran owner dan coach dipisah dari admin — owner lihat omzet, admin tidak
+- [x] Audit peran: 6 use case bertanda ✅ ternyata tanpa kode, semuanya ditutup
+- [x] Booking & batal atas nama member (A2), berikan paket (A3), daftar tunggu di
+      Akun Saya + tombol keluar, panel pesan terkirim (A8)
+- [x] Syarat studio pindah ke owner: harga, setelan aturan, slot mingguan
 - [x] **Empat job terjadwal** sebagai endpoint HTTP berpenjaga `CRON_SECRET` —
       idempotensinya diuji dengan menjalankan tiap job dua kali, dua penjaga baru
       pindah ke database
@@ -80,6 +84,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | Enam use case yang selama ini bertanda ✅ tanpa kode akhirnya dibangun: UC-A05/A06 (booking & batal atas nama member), UC-A13 (berikan paket), UC-A03/S06 (panel pesan terkirim — tabel `notifications` ditulis 4 tempat dan belum pernah dibaca layar mana pun), UC-M08 (keluar daftar tunggu; status `left` tidak pernah ditulis). Siklus hidup kursi dipindah ke `src/db/pesanan.ts` supaya jalur member dan admin benar-benar berbagi kode. Syarat studio — harga, setelan aturan, slot mingguan — pindah ke `pastikanOwner()` (DS-35) |
 | 2026-09-22 | Menu dilengkapi jadi sistem utuh: direktori member (A4), pelatih & staf (A5), layanan & paket dengan pembuatan paket (A6), aturan jadwal + kelas sekali jalan (A7), laporan pemilik (O1), dan kelas coach (C1). Peran owner dipisah dari admin — omzet hanya untuk owner (BR-9.1), coach hanya baca (BR-9.4). Halaman Publik dikeluarkan dari menu member dan coach. Lima baris di peta Demo vs Real pindah dari ⬜ ke ✅/◐. Tidak ada tabel baru — semua layar ini membaca 12 tabel yang sudah ada, yang hilang cuma pintunya |
 | 2026-09-22 | Empat job terjadwal jadi endpoint HTTP di `src/app/api/cron/`, logikanya di `src/db/job.ts`. Idempotensi diuji dengan menjalankan tiap job dua kali, dan dua penjaga baru dipindah ke database: `credit_ledger_hangus_key` (BR-1.6) dan `sessions_rule_mulai_key` (BR-7.1) — cek-lalu-tulis bocor di cron yang tumpang tindih, persis seperti pada kapasitas. Mutasi membuktikan testnya tidak kosong. Test integrasi dijalankan berurutan: dua berkas berbagi satu database dan saling menghapus fixture |
 | 2026-09-22 | M1 jadi kalender mingguan ala Google Calendar (DS-32) — hari jadi kolom, jam jadi sumbu tegak, bisa geser ke minggu mana pun; daftar per hari tetap dipakai di HP. Layar tiga peran: member dapat tombol booking, staf dapat tautan ke detail sesi, coach hanya melihat. Isi dilebarkan penuh dan bilah atas dimepetkan kiri (DS-27), menu sidebar dipangkas per peran (DS-33). UC-A15 baru; aritmetika hari WIB pindah ke `waktu.ts` + test |

@@ -28,6 +28,8 @@ export default async function A6({
   searchParams: Promise<{ kabar?: string }>;
 }) {
   const pengguna = await pastikanAdmin();
+  // Harga = keputusan bisnis. Admin melihat katalog, owner yang mengubahnya.
+  const owner = pengguna.peran === "owner";
   const { kabar } = await searchParams;
 
   const [jenis, paket] = await Promise.all([
@@ -110,21 +112,24 @@ export default async function A6({
                     anak={p.aktif ? "Dijual" : "Disembunyikan"}
                   />
 
-                  <form action={setAktifPaket} className="shrink-0">
-                    <input type="hidden" name="id" value={p.id} />
-                    <input type="hidden" name="aktif" value={p.aktif ? "0" : "1"} />
-                    <Tombol
-                      gaya="halus"
-                      kecil
-                      anak={p.aktif ? "Sembunyikan" : "Jual lagi"}
-                    />
-                  </form>
+                  {owner && (
+                    <form action={setAktifPaket} className="shrink-0">
+                      <input type="hidden" name="id" value={p.id} />
+                      <input type="hidden" name="aktif" value={p.aktif ? "0" : "1"} />
+                      <Tombol
+                        gaya="halus"
+                        kecil
+                        anak={p.aktif ? "Sembunyikan" : "Jual lagi"}
+                      />
+                    </form>
+                  )}
                 </li>
               ))}
             </ul>
           </Kartu>
         </div>
 
+{owner ? (
         <Kartu
           judul="Paket baru"
           catatan="Paket lama tidak pernah dihapus — member yang sudah beli tetap memegang kreditnya."
@@ -220,6 +225,15 @@ export default async function A6({
             <Tombol penuh anak="Buat paket" />
           </form>
         </Kartu>
+        ) : (
+          <Kartu judul="Paket baru">
+            <p className="text-app-body-sm text-muted-foreground">
+              Membuat paket dan menentukan harganya adalah kewenangan pemilik
+              studio. Kamu tetap bisa melihat katalognya, dan memberikan paket
+              ke member lewat layar detail member.
+            </p>
+          </Kartu>
+        )}
       </div>
     </Kerangka>
   );

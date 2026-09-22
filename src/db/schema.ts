@@ -337,5 +337,9 @@ export const notifications = pgTable("notifications", {
   template: text({ enum: TEMPLATE }).notNull(),
   isi: text().notNull(), // teks final Bahasa Indonesia
   session_id: uuid().references(() => sessions.id),
-  terkirim_at: saat(),
+  // Kanal 'layar' sampai ke penerimanya begitu barisnya ditulis, jadi
+  // waktunya diisi di sini — bukan diingat di empat tempat yang menulisnya.
+  // Saat email sungguhan dibangun, jalur itu harus mengirim NULL eksplisit:
+  // 'terkirim' untuk email berarti SMTP sudah menerimanya, bukan barisnya ada.
+  terkirim_at: saat().defaultNow(),
 });

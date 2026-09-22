@@ -199,18 +199,18 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | **Dipalsukan di demo** | | | |
 | Login | ◐ | ✅ | Demo: tombol "Masuk sebagai…" · Real: magic link email. Admin bisa terbitkan link login untuk ditempel ke chat |
 | Pembayaran | ◐ | ✅ | Demo: QR statis + "Simulasi Bayar" · Real: Midtrans/Xendit QRIS |
-| Notifikasi | ◐ | ✅ | Demo: panel "Pesan Terkirim" · Real: email untuk semua, **tombol kirim-WA** di admin untuk yang mendesak |
+| Notifikasi | ◐ | ✅ | Demo: panel "Pesan Terkirim" (A8) dengan tombol kirim-WA untuk yang mendesak · Real: email untuk semua |
 | Pendaftaran member baru | ◐ | ✅ | Demo: sudah ada di seed |
 | Beli paket sendiri | ◐ | ✅ | Demo: kredit dari seed / ditambah admin |
 | **Hanya di real** | | | |
-| Kelola jadwal berulang | ✅ | ✅ | Tambah & hentikan slot mingguan + kelas sekali jalan (A7). Mengubah slot yang sudah jalan: hentikan lalu buat baru |
-| Kelola paket & harga | ✅ | ✅ | Buat paket baru, sembunyikan yang lama (A6). Harga paket lama tidak diubah — yang sudah beli memegang kreditnya |
+| Kelola jadwal berulang | ✅ | ✅ | **Slot mingguan = owner**, kelas sekali jalan = admin (A7). Mengubah slot yang sudah jalan: hentikan lalu buat baru |
+| Kelola paket & harga | ✅ | ✅ | **Kewenangan owner.** Buat paket baru, sembunyikan yang lama (A6); admin hanya melihat katalog. Harga paket lama tidak diubah — yang sudah beli memegang kreditnya |
 | Kelola coach, ruang, alat | ◐ | ✅ | Demo: daftar pelatih & staf terlihat beserta bebannya (A5). Menambah orang butuh undangan email, satu paket dengan magic link |
 | Hari libur / blackout | ⬜ | ✅ | BR-7.4 |
 | Laporan pendapatan & okupansi | ✅ | ✅ | Pendapatan per bulan, okupansi, kehadiran, nilai kredit hangus (O1). Belum ada ekspor dan biaya operasional |
 | Audit log | ⬜ | ✅ | BR-9.5 |
 | Ekspor data & backup | ⬜ | ✅ | |
-| Peran owner & coach terpisah | ✅ | ✅ | Owner melihat Laporan, admin tidak (BR-9.1). Coach punya layar sendiri, hanya baca (BR-9.4) |
+| Peran owner & coach terpisah | ✅ | ✅ | Owner memegang **syarat studio** — harga, batas pembatalan, jendela booking, slot mingguan — dan satu-satunya yang melihat Laporan (BR-9.1). Admin menjalankan sisanya. Coach punya layar sendiri, hanya baca (BR-9.4) |
 | **Hanya di demo** | | | |
 | Tombol Reset Demo | ✅ | ⬜ | Wajib — skenario diulang puluhan kali. Ada di A1, hanya muncul di database demo |
 | Ganti identitas studio cepat | ✅ | ⬜ | Nama, logo, warna — personalisasi per prospek |
@@ -227,19 +227,20 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 |---|---|---|
 | M1 | Jadwal | Kalender mingguan di laptop, daftar per hari di HP · sisa kursi · blok jadi tombol "Booking" / "Penuh — Antre" · bisa geser minggu — `src/app/jadwal/` |
 | M2 | Konfirmasi *(panel geser)* | Pilih nomor alat · info "1 kredit dipotong" · aturan batal tertulis |
-| M3 | Akun Saya | **Sisa kredit + tanggal hangus + hitung mundur** · booking aktif · riwayat kredit — `src/app/akun/` |
+| M3 | Akun Saya | **Sisa kredit + tanggal hangus + hitung mundur** · booking aktif · **daftar tunggu + tombol keluar** (BR-4.7) · riwayat kredit — `src/app/akun/` |
 
 **Admin (tampilan laptop)**
 
 | ID | Layar | Isi |
 |---|---|---|
 | A1 | Dashboard hari ini | Sesi hari ini + okupansi · **panel "kredit hangus ≤ 7 hari"** + tombol kirim-WA · kartu setelan — `src/app/admin/` |
-| A2 | Detail sesi | Peserta · waitlist · centang kehadiran · tombol **Batalkan Kelas** — `src/app/admin/sesi/[id]/` |
-| A3 | Detail member | Dompet kredit · buku besar lengkap · koreksi manual — `src/app/admin/member/[id]/` |
+| A2 | Detail sesi | Peserta · **daftarkan member** · **batalkan booking satu orang** · waitlist · centang kehadiran · tombol **Batalkan Kelas** — `src/app/admin/sesi/[id]/` |
+| A3 | Detail member | Dompet kredit · buku besar lengkap · koreksi manual · **berikan paket** — `src/app/admin/member/[id]/` |
 | A4 | Direktori member | Cari nama/nomor HP · sisa kredit · kapan hangus · kelas dipesan · terakhir hadir — `src/app/admin/member/` |
 | A5 | Pelatih & staf | Beban mengajar 7 hari · tombol chat-WA coach · siapa punya peran apa — `src/app/admin/tim/` |
 | A6 | Layanan & paket | Jenis kelas · katalog paket + harga · **buat paket baru** · sembunyikan paket lama — `src/app/admin/layanan/` |
-| A7 | Aturan jadwal | Slot mingguan · tambah & hentikan slot · **kelas tambahan sekali jalan** — `src/app/admin/jadwal/` |
+| A7 | Aturan jadwal | Slot mingguan *(owner)* · **kelas tambahan sekali jalan** *(admin)* — `src/app/admin/jadwal/` |
+| A8 | Pesan terkirim | Jejak semua notifikasi · tombol kirim-WA untuk yang mendesak (BR-4.3, BR-5.3) — `src/app/admin/pesan/` |
 
 **Owner (tampilan laptop)** — admin tidak melihat layar ini (BR-9.1)
 

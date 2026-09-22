@@ -20,7 +20,7 @@ import {
   ubahAktifPaket,
 } from "@/db/kelola";
 import { generateSesi } from "@/db/job";
-import { pastikanAdmin } from "@/lib/masuk";
+import { pastikanAdmin, pastikanOwner } from "@/lib/masuk";
 import { hariWib, jamWib } from "@/lib/waktu";
 
 function keLayanan(pesan: string): never {
@@ -36,10 +36,13 @@ function angka(form: FormData, kunci: string, [min, maks]: readonly [number, num
   return Number.isInteger(n) && n >= min && n <= maks ? n : null;
 }
 
-/* ── Layanan & paket — UC-O03 ────────────────────────────────────────────── */
+/* ── Layanan & paket — UC-O03 ──────────────────────────────────────────────
+   Kewenangan OWNER. Harga adalah keputusan bisnis: staf meja depan yang bisa
+   mencetak paket Rp 0 adalah risiko yang tidak perlu ada. Admin tetap boleh
+   MELIHAT katalognya — yang dijaga kemampuannya, bukan layarnya.          */
 
 export async function tambahPaket(formData: FormData) {
-  await pastikanAdmin();
+  await pastikanOwner();
 
   const nama = String(formData.get("nama") ?? "").trim();
   if (nama.length < 3 || nama.length > 60)
@@ -73,7 +76,7 @@ export async function tambahPaket(formData: FormData) {
 }
 
 export async function setAktifPaket(formData: FormData) {
-  await pastikanAdmin();
+  await pastikanOwner();
 
   const id = String(formData.get("id"));
   const aktif = formData.get("aktif") === "1";
@@ -88,10 +91,13 @@ export async function setAktifPaket(formData: FormData) {
   );
 }
 
-/* ── Aturan jadwal berulang — UC-O01 ─────────────────────────────────────── */
+/* ── Aturan jadwal berulang — UC-O01 ───────────────────────────────────────
+   Kewenangan OWNER: slot mingguan permanen berarti beban coach dan biaya
+   operasional tiap minggu. Kelas tambahan sekali jalan di bawah TETAP milik
+   admin — itu operasional, sekali pakai, dan sering mendesak.             */
 
 export async function tambahAturan(formData: FormData) {
-  await pastikanAdmin();
+  await pastikanOwner();
 
   const hari = angka(formData, "hari", [1, 7]);
   if (hari === null) keJadwal("Hari tidak sah.");
@@ -142,7 +148,7 @@ export async function tambahAturan(formData: FormData) {
 }
 
 export async function berhentikanAturan(formData: FormData) {
-  await pastikanAdmin();
+  await pastikanOwner();
 
   const id = String(formData.get("id"));
   await hentikanAturan(pg, id);
@@ -157,7 +163,7 @@ export async function berhentikanAturan(formData: FormData) {
   );
 }
 
-/* ── Sesi sekali jalan ───────────────────────────────────────────────────── */
+/* ── Sesi sekali jalan — kewenangan admin ────────────────────────────────── */
 
 export async function tambahSesi(formData: FormData) {
   await pastikanAdmin();

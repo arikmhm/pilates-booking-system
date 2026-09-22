@@ -51,6 +51,7 @@ export default async function A1({
   // Sesi penuh + daftar tunggu yang dipakai skenario B ada BESOK pagi
   // (02-rules.md 6.2). Tanpa pengalih ini presenter tidak punya jalan ke A2
   // sesi itu di tengah demo.
+  const owner = pengguna.peran === "owner";
   const geser = hari === "besok" ? 1 : 0;
   const tanggal = new Date(sekarang.getTime() + geser * 86_400_000);
 
@@ -198,32 +199,45 @@ export default async function A1({
             )}
           </Kartu>
 
-          <Kartu
-            judul="Setelan aturan"
-            catatan="Ini aturan studio kamu, bukan aturan sistem. Ubah kapan saja."
-          >
-            <form action={ubahSetelan} className="space-y-3">
-              {(Object.keys(BATAS_SETELAN) as (keyof typeof BATAS_SETELAN)[]).map(
-                (kunci) => (
-                  <label
-                    key={kunci}
-                    className="flex items-center justify-between gap-4"
-                  >
-                    <span className="text-app-body">{LABEL_SETELAN[kunci]}</span>
-                    <input
-                      type="number"
-                      name={kunci}
-                      defaultValue={setelan[kunci]}
-                      min={BATAS_SETELAN[kunci][0]}
-                      max={BATAS_SETELAN[kunci][1]}
-                      className="h-11 w-24 rounded-sm border border-border px-3 text-app-body tabular-nums focus:border-foreground"
-                    />
-                  </label>
-                ),
-              )}
-              <Tombol gaya="garis" penuh anak="Simpan" />
-            </form>
-          </Kartu>
+          {/* Kewenangan owner (02-rules.md bagian 5): ini syarat studio
+              untuk semua member sekaligus, bukan tugas harian meja depan.
+              Penjaga sebenarnya ada di server action — yang ini cuma
+              menghindari tombol yang pasti ditolak. */}
+          {owner ? (
+            <Kartu
+              judul="Setelan aturan"
+              catatan="Ini aturan studio kamu, bukan aturan sistem. Ubah kapan saja."
+            >
+              <form action={ubahSetelan} className="space-y-3">
+                {(Object.keys(BATAS_SETELAN) as (keyof typeof BATAS_SETELAN)[]).map(
+                  (kunci) => (
+                    <label
+                      key={kunci}
+                      className="flex items-center justify-between gap-4"
+                    >
+                      <span className="text-app-body">{LABEL_SETELAN[kunci]}</span>
+                      <input
+                        type="number"
+                        name={kunci}
+                        defaultValue={setelan[kunci]}
+                        min={BATAS_SETELAN[kunci][0]}
+                        max={BATAS_SETELAN[kunci][1]}
+                        className="h-11 w-24 rounded-sm border border-border px-3 text-app-body tabular-nums focus:border-foreground"
+                      />
+                    </label>
+                  ),
+                )}
+                <Tombol gaya="garis" penuh anak="Simpan" />
+              </form>
+            </Kartu>
+          ) : (
+            <Kartu judul="Setelan aturan">
+              <p className="text-app-body-sm text-muted-foreground">
+                Batas pembatalan, jendela booking, dan maksimal daftar tunggu
+                hanya bisa diubah pemilik studio.
+              </p>
+            </Kartu>
+          )}
 
           {/* Hanya muncul di database demo. Penjaga sebenarnya ada di seed()
               yang menolak jalan kalau studionya bukan studio demo — ini cuma

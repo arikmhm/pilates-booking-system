@@ -29,6 +29,9 @@ export default async function A7({
   searchParams: Promise<{ kabar?: string }>;
 }) {
   const pengguna = await pastikanAdmin();
+  // Slot mingguan permanen = beban tiap minggu, kewenangan owner. Kelas
+  // sekali jalan tetap milik admin — operasional dan sering mendesak.
+  const owner = pengguna.peran === "owner";
   const { kabar } = await searchParams;
   const sekarang = new Date();
 
@@ -98,11 +101,16 @@ export default async function A7({
                         warna="bg-neutral-surface text-neutral-foreground"
                         anak="Dihentikan"
                       />
-                    ) : (
+                    ) : owner ? (
                       <form action={berhentikanAturan} className="shrink-0">
                         <input type="hidden" name="id" value={a.id} />
                         <Tombol gaya="halus" kecil anak="Hentikan" />
                       </form>
+                    ) : (
+                      <Chip
+                        warna="bg-ok-surface text-ok-foreground"
+                        anak="Berjalan"
+                      />
                     )}
                   </li>
                 );
@@ -112,6 +120,7 @@ export default async function A7({
         </Kartu>
 
         <div className="space-y-dekat">
+{owner ? (
           <Kartu
             judul="Slot mingguan baru"
             catatan="Berulang tiap minggu sampai dihentikan."
@@ -196,6 +205,15 @@ export default async function A7({
               <Tombol penuh anak="Tambah slot" />
             </form>
           </Kartu>
+          ) : (
+            <Kartu judul="Slot mingguan baru">
+              <p className="text-app-body-sm text-muted-foreground">
+                Menambah atau menghentikan slot mingguan adalah kewenangan
+                pemilik studio — satu slot berarti beban coach tiap minggu.
+                Kelas tambahan sekali jalan di bawah tetap bisa kamu buat.
+              </p>
+            </Kartu>
+          )}
 
           <Kartu
             judul="Kelas tambahan sekali jalan"

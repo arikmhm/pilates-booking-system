@@ -14,6 +14,7 @@ import {
   ClipboardList,
   LayoutDashboard,
   LineChart,
+  MessageSquare,
   Package,
   Repeat,
   Store,
@@ -54,6 +55,7 @@ const HARIAN: Butir[] = [
   { href: "/admin", label: "Dashboard", ikon: LayoutDashboard },
   JADWAL,
   { href: "/admin/member", label: "Member", ikon: Users },
+  { href: "/admin/pesan", label: "Pesan Terkirim", ikon: MessageSquare },
 ];
 const STUDIO: Butir[] = [
   { href: "/admin/tim", label: "Pelatih & Staf", ikon: UserCog },

@@ -8,11 +8,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { pg } from "@/db";
 import { antreanLengkap, detailSesi, pesertaSesi, type Peserta } from "@/db/admin";
+import { calonPeserta } from "@/db/kelola";
 import { pastikanAdmin } from "@/lib/masuk";
 import { hariWib, jamWib } from "@/lib/waktu";
 import { tautanWa } from "@/lib/wa";
 import { Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
-import { batalkanKelas, hadir, koreksiHadir } from "../../aksi";
+import {
+  batalkanBookingMember,
+  bookingAtasNama,
+  batalkanKelas,
+  hadir,
+  koreksiHadir,
+} from "../../aksi";
 
 export const dynamic = "force-dynamic";
 
@@ -44,13 +51,15 @@ export default async function A2({
   const sesi = await detailSesi(pg, id);
   if (!sesi) notFound();
 
-  const [peserta, antrean] = await Promise.all([
+  const sekarang = new Date();
+  const [peserta, antrean, calon] = await Promise.all([
     pesertaSesi(pg, id),
     antreanLengkap(pg, id),
+    calonPeserta(pg, { session_id: id, sekarang }),
   ]);
 
   const aktif = peserta.filter((p) => p.status !== "cancelled");
-  const lewat = sesi.mulai_at < new Date();
+  const lewat = sesi.mulai_at < sekarang;
   const batal = sesi.status === "cancelled";
 
   return (
@@ -142,12 +151,59 @@ export default async function A2({
                       <Tombol kecil anak="Hadir" />
                     </form>
                   )}
+
+                  {/* UC-A06 — member telepon minta dibatalkan. Aturan
+                      kreditnya sama persis dengan kalau dia membatalkan
+                      sendiri: lewat batas waktu tetap hangus (BR-3.2). */}
+                  {p.status === "confirmed" && !batal && !lewat && (
+                    <form action={batalkanBookingMember} className="shrink-0">
+                      <input type="hidden" name="booking_id" value={p.booking_id} />
+                      <input type="hidden" name="session_id" value={sesi.id} />
+                      <Tombol gaya="halus" kecil anak="Batalkan" />
+                    </form>
+                  )}
                 </li>
               );
             })}
             {peserta.length === 0 && (
               <li className="px-4 py-3 text-app-body-sm text-muted-foreground">
                 Belum ada yang mendaftar.
+              </li>
+            )}
+
+            {/* UC-A05 — member telepon, meja depan yang mendaftarkan.
+                Daftar pilihan sudah disaring ke yang punya kredit hidup, tapi
+                kelayakan sesungguhnya tetap diputuskan bolehBooking(): jenis
+                kelas yang tidak tercakup paketnya (BR-1.4) dan bentrok jam
+                (BR-2.5) baru ketahuan saat tombolnya ditekan. */}
+            {!batal && !lewat && aktif.length < sesi.kapasitas && (
+              <li className="bg-muted px-4 py-3">
+                <form
+                  action={bookingAtasNama}
+                  className="flex flex-wrap items-center gap-3"
+                >
+                  <input type="hidden" name="session_id" value={sesi.id} />
+                  <label
+                    className="text-app-label uppercase text-muted-foreground"
+                    htmlFor="user_id"
+                  >
+                    Daftarkan member
+                  </label>
+                  <select
+                    id="user_id"
+                    name="user_id"
+                    required
+                    className="h-11 min-w-56 flex-1 rounded-sm border border-border bg-background px-3 text-app-body-sm"
+                  >
+                    <option value="">Pilih nama…</option>
+                    {calon.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nama} · {c.sisa_kredit} kredit
+                      </option>
+                    ))}
+                  </select>
+                  <Tombol kecil anak="Daftarkan" />
+                </form>
               </li>
             )}
           </ul>

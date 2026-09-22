@@ -366,6 +366,11 @@ header `Authorization: Bearer $CRON_SECRET`. Vercel Cron memanggilnya di demo
 (06-architecture.md keputusan 8). Logikanya sendiri ada di `src/db/job.ts` sebagai
 fungsi yang menerima klien database, jadi bisa diuji tanpa server.
 
+`notifications.terkirim_at` berdefault `now()`: kanal `layar` sampai ke penerimanya
+begitu barisnya ditulis, dan layar A8 mengurutkan dari sana. Saat email sungguhan
+dibangun, jalur itu harus mengirim NULL eksplisit — "terkirim" untuk email berarti SMTP
+sudah menerimanya, bukan barisnya ada.
+
 Semua job **idempoten** — aman dijalankan ulang, dan itu bukan kemewahan: cron
 di-retry setelah timeout, telat, atau tumpang tindih dengan jalannya sendiri.
 

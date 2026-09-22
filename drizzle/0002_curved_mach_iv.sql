@@ -1,0 +1,1 @@
+ALTER TABLE "notifications" ALTER COLUMN "terkirim_at" SET DEFAULT now();

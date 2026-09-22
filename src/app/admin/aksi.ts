@@ -16,16 +16,28 @@ import {
   tandaiHadir,
   type KunciSetelan,
 } from "@/db/admin";
+import { batalkan, bookingkan } from "@/db/pesanan";
+import { berikanPaket } from "@/db/kelola";
+import { hariWib } from "@/lib/waktu";
 import { seed } from "@/db/seed";
-import { pastikanAdmin } from "@/lib/masuk";
+import { pastikanAdmin, pastikanOwner } from "@/lib/masuk";
 
 function kembali(pesan: string): never {
   redirect(`/admin?kabar=${encodeURIComponent(pesan)}`);
 }
 const keAdmin = kembali;
 
+/**
+ * Kewenangan OWNER, bukan admin — 02-rules.md bagian 5.
+ *
+ * Mengubah batas pembatalan dari 12 jam jadi 2 jam memindahkan kerugian kursi
+ * kosong ke pemilik studio, dan berlaku untuk semua member sekaligus. Yang
+ * menanggung akibatnya, yang memutuskan. Kartunya juga disembunyikan dari
+ * admin di layar, tapi penjaga sebenarnya ada di sini — kartu tersembunyi
+ * bukan kartu yang tidak bisa dikirim.
+ */
 export async function ubahSetelan(formData: FormData) {
-  await pastikanAdmin();
+  await pastikanOwner();
 
   // Batas divalidasi di sini, bukan hanya lewat atribut min/max di input:
   // form bisa dikirim tanpa browser sama sekali.
@@ -171,6 +183,90 @@ export async function koreksiKreditManual(formData: FormData) {
     hasil.ok
       ? `Koreksi ${delta > 0 ? "+" : ""}${delta} tercatat. Sisa paket sekarang ${hasil.sisa}.`
       : `Ditolak — sisa paket cuma ${hasil.sisa}, koreksi itu membuatnya minus.`,
+  );
+}
+
+/* ── Atas nama member — UC-A05, UC-A06, UC-A13 ────────────────────────────
+   BR-9.2. Meja depan melakukan untuk member apa yang member bisa lakukan
+   sendiri — dengan aturan yang sama persis. Admin tidak menembus jendela
+   booking, tidak menembus kapasitas, dan batal telat tetap hangus (BR-3.2).
+   Kalau studio mau mengampuni, jalannya koreksi kredit yang wajib beralasan. */
+
+export async function bookingAtasNama(formData: FormData) {
+  const admin = await pastikanAdmin();
+  const session_id = String(formData.get("session_id"));
+  const user_id = String(formData.get("user_id"));
+  if (!user_id) keSesi(session_id, "Pilih member dulu.");
+
+  const hasil = await bookingkan(pg, {
+    session_id,
+    user_id,
+    sumber: "admin",
+    pelaku_id: admin.id,
+    sekarang: new Date(),
+  });
+
+  revalidatePath(`/admin/sesi/${session_id}`);
+  revalidatePath("/jadwal");
+  revalidatePath("/akun");
+  keSesi(
+    session_id,
+    hasil.ok
+      ? `Didaftarkan. Alat nomor ${hasil.nomor_alat}, 1 kredit member dipotong.`
+      : hasil.pesan,
+  );
+}
+
+export async function batalkanBookingMember(formData: FormData) {
+  const admin = await pastikanAdmin();
+  const session_id = String(formData.get("session_id"));
+
+  const hasil = await batalkan(pg, {
+    booking_id: String(formData.get("booking_id")),
+    // Tanpa user_id: ini jalur admin, kepemilikan sengaja tidak dipakai
+    // sebagai filter. Penjaganya pastikanAdmin() di baris pertama.
+    pelaku_id: admin.id,
+    sekarang: new Date(),
+  });
+  if (!hasil.ok) keSesi(session_id, hasil.pesan);
+
+  revalidatePath(`/admin/sesi/${session_id}`);
+  revalidatePath("/jadwal");
+  revalidatePath("/akun");
+  keSesi(
+    session_id,
+    (hasil.kredit_kembali
+      ? "Booking dibatalkan, 1 kredit kembali ke paket member."
+      : "Booking dibatalkan. Sudah lewat batas waktu, jadi kreditnya hangus (BR-3.2).") +
+      (hasil.naik ? " Satu orang dari daftar tunggu langsung naik." : ""),
+  );
+}
+
+/**
+ * UC-A13 — berikan paket ke member. Di demo ini pengganti pembayaran; di
+ * versi nyata yang memanggilnya webhook QRIS, bukan tombol.
+ *
+ * Dua baris sekaligus dalam satu transaksi: `member_packages` yang menyimpan
+ * masa berlaku, dan satu baris ledger `beli` sebesar kreditnya. Paket tanpa
+ * baris ledger berarti kredit yang tidak pernah ada — BR-1.7 menghitung sisa
+ * dari buku besar, bukan dari kolom.
+ */
+export async function beriPaket(formData: FormData) {
+  const admin = await pastikanAdmin();
+  const user_id = String(formData.get("user_id"));
+  const package_id = String(formData.get("package_id"));
+  if (!package_id) keMember(user_id, "Pilih paket dulu.");
+
+  const hasil = await berikanPaket(pg, { user_id, package_id, pelaku_id: admin.id });
+  if (!hasil) keMember(user_id, "Paket itu sudah tidak dijual.");
+
+  revalidatePath(`/admin/member/${user_id}`);
+  revalidatePath("/admin");
+  revalidatePath("/jadwal");
+  revalidatePath("/akun");
+  keMember(
+    user_id,
+    `Paket "${hasil.nama}" ditambahkan — ${hasil.jumlah_kredit} kredit, hangus ${hariWib(hasil.hangus_at)}.`,
   );
 }
 

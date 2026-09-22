@@ -18,7 +18,8 @@ import { pastikanAdmin } from "@/lib/masuk";
 import { hariWib, jamWib, selisihManusiawi } from "@/lib/waktu";
 import { tautanWa } from "@/lib/wa";
 import { Angka, Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
-import { koreksiKreditManual } from "../../aksi";
+import { paketDijual } from "@/db/kelola";
+import { beriPaket, koreksiKreditManual } from "../../aksi";
 
 export const dynamic = "force-dynamic";
 
@@ -94,10 +95,11 @@ export default async function A3({
   const member = await detailMember(pg, id);
   if (!member) notFound();
 
-  const [dompet, riwayat] = await Promise.all([
+  const [dompet, riwayat, katalog] = await Promise.all([
     dompetMember(pg, id),
     // Buku besar LENGKAP — ini layar sengketa, bukan ringkasan.
     riwayatKredit(pg, id, 500),
+    paketDijual(pg),
   ]);
 
   const aktif = dompet.filter((p) => p.hangus_at > sekarang && p.sisa > 0);
@@ -169,6 +171,35 @@ export default async function A3({
         <div className="space-y-sedang">
           <Kartu>
             <Angka nilai={sisa} label="Kredit aktif" catatan={`${dompet.length} paket tercatat`} />
+          </Kartu>
+
+          {/* UC-A13 — di demo ini pengganti pembayaran; di versi nyata yang
+              memanggilnya webhook QRIS, bukan tombol. Masa berlaku dihitung
+              dari hari ini + masa_berlaku_hari paketnya (BR-1.2). */}
+          <Kartu
+            judul="Berikan paket"
+            catatan="Dipakai saat member bayar di tempat. Tercatat sebagai pembelian di buku besar."
+          >
+            <form action={beriPaket} className="space-y-3">
+              <input type="hidden" name="user_id" value={member.id} />
+              <label className="sr-only" htmlFor="package_id">
+                Paket
+              </label>
+              <select
+                id="package_id"
+                name="package_id"
+                required
+                className="h-12 w-full rounded-sm border border-border bg-background px-3 text-app-body"
+              >
+                <option value="">Pilih paket…</option>
+                {katalog.map((k) => (
+                  <option key={k.id} value={k.id}>
+                    {k.nama} · {k.jumlah_kredit} kredit · {k.masa_berlaku_hari} hari
+                  </option>
+                ))}
+              </select>
+              <Tombol penuh anak="Tambahkan paket" />
+            </form>
           </Kartu>
 
           <Kartu
