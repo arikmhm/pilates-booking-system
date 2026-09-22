@@ -1,16 +1,22 @@
 // Kerangka layar aplikasi — dipakai M1, M3, A1, A2, A3.
 //
-// Navigasi pindah ke sidebar shadcn (`components/ui/sidebar.tsx`): di layar
-// lebar ia menempel kiri, di HP jadi sheet lewat tombol di bilah atas. Token
+// Navigasi ada di sidebar shadcn (`components/ui/sidebar.tsx`): di layar lebar
+// ia menempel kiri, di HP jadi sheet lewat tombol di bilah atas. Token
 // `--sidebar-*` sudah dialiaskan ke palet 07-design.md di globals.css, jadi
 // tidak ada warna baru yang masuk lewat pintu ini (DS-1).
 //
-// Isi halaman tetap di satu lebar terkunci — 34rem member, 1200px admin
-// (DS-27), ditulis sebagai nilai eksplisit supaya tidak bertabrakan dengan
-// skala container Tailwind (DS-30).
+// Isi memakai lebar penuh area kerja (DS-27): sidebar sudah memakan 256px di
+// kiri, dan tabel admin serta kalender mingguan memang butuh sisanya.
 
 import Link from "next/link";
-import { CalendarDays, LayoutDashboard, Store, Wallet } from "lucide-react";
+import {
+  CalendarDays,
+  LayoutDashboard,
+  Store,
+  Users,
+  Wallet,
+} from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
   SidebarContent,
@@ -28,16 +34,23 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-type Lebar = "member" | "admin";
 type Butir = { href: string; label: string; ikon: typeof CalendarDays };
 
+// Satu peran, satu daftar. Coach tidak punya kredit jadi tidak punya Akun
+// Saya; member tidak punya dashboard. Menu yang tidak bisa dipakai peran itu
+// lebih buruk daripada menu yang pendek.
 const NAV: Record<string, Butir[]> = {
   member: [
-    { href: "/jadwal", label: "Jadwal", ikon: CalendarDays },
+    { href: "/jadwal", label: "Jadwal Kelas", ikon: CalendarDays },
     { href: "/akun", label: "Akun Saya", ikon: Wallet },
   ],
-  admin: [{ href: "/admin", label: "Dashboard", ikon: LayoutDashboard }],
+  coach: [{ href: "/jadwal", label: "Jadwal Kelas", ikon: CalendarDays }],
+  admin: [
+    { href: "/admin", label: "Dashboard", ikon: LayoutDashboard },
+    { href: "/jadwal", label: "Jadwal Kelas", ikon: CalendarDays },
+  ],
 };
+NAV.owner = NAV.admin;
 
 const PERAN: Record<string, string> = {
   member: "Member",
@@ -55,23 +68,20 @@ export function Kerangka({
   nama,
   peran,
   aktif,
+  judul,
   kabar,
-  lebar = "member",
   children,
 }: {
   nama: string;
   peran: string;
   aktif?: string;
+  judul?: string;
   kabar?: string;
-  lebar?: Lebar;
   children: React.ReactNode;
 }) {
-  const nav = NAV[peran === "member" || peran === "coach" ? "member" : "admin"];
-  const judul = nav.find((b) => b.href === aktif)?.label ?? "Kenari";
-  const wadah =
-    lebar === "admin"
-      ? "mx-auto w-full max-w-[1200px] px-gutter"
-      : "mx-auto w-full max-w-[34rem] px-gutter";
+  const nav = NAV[peran] ?? NAV.member;
+  const staf = peran === "admin" || peran === "owner";
+  const tajuk = judul ?? nav.find((b) => b.href === aktif)?.label ?? "Kenari";
 
   return (
     <SidebarProvider className="flex-1">
@@ -90,7 +100,7 @@ export function Kerangka({
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupLabel className="text-app-label uppercase">
-              Menu
+              {staf ? "Kelola" : "Menu"}
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -122,7 +132,7 @@ export function Kerangka({
                   <SidebarMenuButton asChild className={BUTIR}>
                     <Link href="/">
                       <Store />
-                      <span>Halaman Studio</span>
+                      <span>Halaman Publik</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -143,6 +153,7 @@ export function Kerangka({
             <SidebarMenuItem>
               <SidebarMenuButton asChild className={BUTIR}>
                 <Link href="/masuk">
+                  <Users />
                   <span>Ganti Pengguna</span>
                 </Link>
               </SidebarMenuButton>
@@ -152,14 +163,17 @@ export function Kerangka({
       </Sidebar>
 
       <SidebarInset className="bg-muted">
+        {/* Mepet kiri seperti bawaan shadcn — tidak ada pembungkus terpusat di
+            sini, kalau tidak tombol sidebar mengambang jauh dari sidebarnya. */}
         <header className="border-b border-border bg-background">
-          <div className={`${wadah} flex h-16 items-center gap-3`}>
+          <div className="flex h-16 items-center gap-2 px-gutter">
             <SidebarTrigger className="size-11" />
-            <span className="text-app-section">{judul}</span>
+            <Separator orientation="vertical" className="mr-1 h-6" />
+            <span className="text-app-section">{tajuk}</span>
           </div>
         </header>
 
-        <div className={`${wadah} flex-1 py-sedang`}>
+        <div className="w-full flex-1 px-gutter py-sedang">
           {kabar && (
             <p className="mb-dekat rounded-md border border-border bg-background p-4 text-app-body-sm">
               {kabar}

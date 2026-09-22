@@ -119,7 +119,7 @@ export type BarisJadwal = Sesi & {
 
 export async function jadwal(
   sql: Sql,
-  args: { user_id: string; sampai: Date },
+  args: { user_id: string; dari: Date; sampai: Date },
 ): Promise<BarisJadwal[]> {
   const baris = await sql<BarisJadwal[]>`
     select s.id,
@@ -144,7 +144,8 @@ export async function jadwal(
       join class_types ct on ct.id = s.class_type_id
       left join users c on c.id = s.coach_id
       left join bookings b on b.session_id = s.id
-     where s.mulai_at between now() and ${ts(args.sampai)}::timestamptz
+     where s.mulai_at >= ${ts(args.dari)}::timestamptz
+       and s.mulai_at <  ${ts(args.sampai)}::timestamptz
      group by s.id, ct.nama, c.nama
      order by s.mulai_at`;
   return baris.map((b) => ({ ...b, mulai_at: saat(b.mulai_at) }));

@@ -25,8 +25,8 @@ Belum ada. Penyiapan proyek selesai, menunggu skema database ditulis.
 - [x] Model booking dipilih: class-based
 - [x] 53 aturan bisnis `BR-1.1`–`BR-9.5`
 - [x] Model data — 12 tabel inti, constraint, 4 query kunci
-- [x] 44 use case, 12 alur keputusan
-- [x] Lingkup demo dikunci: 31 use case nyata, 5 layar
+- [x] 45 use case, 12 alur keputusan
+- [x] Lingkup demo dikunci: 32 use case nyata, 6 layar
 - [x] Stack dan arsitektur diputuskan
 - [x] Notifikasi: email + tombol kirim-WA, WhatsApp API ditunda
 - [x] Sistem desain — token, tipografi, komponen, status, pemetaan 6 layar
@@ -73,6 +73,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | M1 jadi kalender mingguan ala Google Calendar (DS-32) — hari jadi kolom, jam jadi sumbu tegak, bisa geser ke minggu mana pun; daftar per hari tetap dipakai di HP. Layar tiga peran: member dapat tombol booking, staf dapat tautan ke detail sesi, coach hanya melihat. Isi dilebarkan penuh dan bilah atas dimepetkan kiri (DS-27), menu sidebar dipangkas per peran (DS-33). UC-A15 baru; aritmetika hari WIB pindah ke `waktu.ts` + test |
 | 2026-09-22 | Navigasi pindah ke sidebar shadcn (`ui/sidebar.tsx`, sheet di HP). Token `--sidebar-*` dialiaskan ke palet sendiri, butir aktif pakai `primary` supaya tidak tertukar dengan hover, tinggi butir 48px (DS-11), teks pembaca layar diterjemahkan. `use-mobile` ditulis ulang pakai `useSyncExternalStore` dan `SidebarMenuSkeleton` dibuang — keduanya ditolak `react-hooks` lint. DS-31 |
 | 2026-09-22 | **Bug tata letak besar diperbaiki**: nama token `--spacing-lg` dll. bertabrakan dengan skala container Tailwind, sehingga `max-w-lg` = 60px dan `max-w-md` = 40px. Semua layar member dan halaman masuk selama ini selebar 40–60px. Token diganti nama Indonesia, lebar isi jadi nilai eksplisit, ditambah test penjaga (DS-29, DS-30) |
 | 2026-09-22 | Pembenahan tampilan kelima layar aplikasi: kerangka bersama (bilah atas + latar muted + kartu putih), primitif `Kartu`/`Tombol`/`Chip`/`Angka`, DS-26–DS-28. Sesi demo batas 12 jam tidak lagi dibuat manual — dulu bisa mendarat pukul 01.18 di jadwal |

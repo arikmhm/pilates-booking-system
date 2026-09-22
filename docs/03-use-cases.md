@@ -86,7 +86,7 @@ flowchart LR
 
 | ID | Use case | Aturan | Demo |
 |---|---|---|:--:|
-| UC-M01 | Lihat jadwal kelas per hari | BR-2.1 | ✅ |
+| UC-M01 | Lihat jadwal kelas — kalender mingguan di laptop, daftar per hari di HP | BR-2.1 | ✅ |
 | UC-M02 | Lihat detail kelas dan sisa kursi | BR-7.2 | ✅ |
 | UC-M03 | Booking kelas | BR-2.1–2.7 | ✅ |
 | UC-M04 | Pilih nomor alat *— include dari M03* | BR-2.6 | ✅ |
@@ -167,6 +167,7 @@ flowchart LR
 | UC-A12 | Koreksi kredit manual + wajib alasan | BR-1.8 | ✅ |
 | UC-A13 | Tambahkan paket ke member *— pengganti pembayaran di demo* | BR-8.1 | ✅ |
 | UC-A14 | Ubah setelan aturan: batas batal, jendela booking, maks waitlist | 02-rules.md bagian 3 | ✅ |
+| UC-A15 | Kalender mingguan seluruh studio, bisa geser ke minggu mana pun | BR-7.1 | ✅ |
 
 ---
 
@@ -380,11 +381,11 @@ sequenceDiagram
 | Kelompok | Total UC | Demo ✅ | Palsu ◐ | Real ⬜ |
 |---|:--:|:--:|:--:|:--:|
 | Member | 13 | 10 | 2 | 1 |
-| Admin | 14 | 14 | — | — |
+| Admin | 15 | 15 | — | — |
 | Sistem | 7 | 7 | — | — |
 | Owner | 8 | — | — | 8 |
 | Coach | 2 | — | — | 2 |
-| **Total** | **44** | **31** | **2** | **11** |
+| **Total** | **45** | **32** | **2** | **11** |
 
-Demo menjalankan **31 dari 44 use case secara nyata** — 70%. Yang tersisa hampir
+Demo menjalankan **32 dari 45 use case secara nyata** — 71%. Yang tersisa hampir
 seluruhnya modul pengelolaan master data dan laporan, bukan logika bisnis baru.

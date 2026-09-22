@@ -364,12 +364,42 @@ Blok `.dark` yang ditulis CLI shadcn dibuang: sistem ini hanya punya satu palet.
 Varian `dark:` sendiri dibiarkan terdaftar ke `.dark` yang tak pernah dipasang, supaya
 aturan bawaan komponen tidak diam-diam menyala mengikuti tema OS pengguna.
 
-`DS-27` — Lebar isi: layar member `max-w-[34rem]`, layar admin `max-w-[1200px]`, diukur
-di dalam area isi (sidebar 256px berada di luarnya). Member dirancang HP dulu; kolom
-sempit di laptop itu disengaja, bukan lupa.
+`DS-27` — **Isi memakai lebar penuh area kerja**, hanya berselokan `gutter` 24px.
+Sidebar sudah memakan 256px di kiri dan itulah batas kiri yang dibutuhkan; menambah
+`max-width` di atasnya menyisakan pita kosong di kanan yang tidak menjelaskan apa pun.
+Bilah atas ikut mepet kiri — tombol sidebar yang mengambang jauh dari sidebarnya
+terbaca sebagai dua hal yang tidak berhubungan.
+
+Paragraf editorial tetap dibatasi 60ch (DS-22). Yang boleh melebar adalah tabel,
+daftar, dan kalender — bukan kalimat.
 
 `DS-28` — **Jam jadi jangkar kiri** di tiap daftar sesi, lebar tetap, `tabular-nums`.
 Mata menyusuri satu kolom lurus, bukan zigzag mengikuti panjang nama kelas.
+
+`DS-32` — **Jadwal digambar sebagai kalender mingguan di ≥ 768px** dan daftar per hari
+di bawahnya (`src/app/jadwal/kalender.tsx`). Hari jadi kolom, jam jadi sumbu tegak,
+tinggi blok sebanding durasi. Yang dibeli dari pola Google Calendar itu bukan
+kemiripannya: **jeda antar kelas jadi terlihat**. Pemilik studio membaca lubang jadwal
+dari ruang kosong, dan itu mustahil di daftar — daftar merapatkan 06.00 dan 16.00 jadi
+dua baris bertetangga.
+
+Empat hal yang mengikat:
+
+1. **Rentang jam mengikuti isi minggunya**, tidak pernah 00.00–24.00. Menggambar hari
+   penuh berarti 1728px yang dua pertiganya kosong.
+2. **Sesi yang tumpang tindih dibagi jadi lajur berdampingan.** Blok yang tertutup blok
+   lain sama saja dengan kelas yang tidak ada.
+3. **Seluruh blok itu satu target sentuh** — tombol booking, tautan ke detail sesi, atau
+   mati sama sekali. Tidak ada tombol kecil di dalam blok setinggi 60px; DS-11 tidak
+   bisa dipenuhi di ruang sesempit itu.
+4. **Rupa blok diputuskan satu fungsi** (`rupa()` di `src/app/jadwal/page.tsx`) yang
+   dipakai kalender dan daftar HP sekaligus, supaya keduanya tidak pernah bercerita
+   berbeda tentang sesi yang sama.
+
+`DS-33` — **Menu sidebar hanya berisi yang bisa dipakai peran itu.** Member: Jadwal
+Kelas, Akun Saya. Coach: Jadwal Kelas saja — coach tidak punya kredit, jadi tidak
+punya Akun Saya. Admin dan owner: Dashboard, Jadwal Kelas. Menu yang menolak
+pemiliknya sendiri saat diklik lebih buruk daripada menu yang pendek.
 
 | Layar | Perangkat | Yang menentukan tampilannya |
 |---|---|---|

@@ -69,7 +69,6 @@ export default async function A1({
       peran={pengguna.peran}
       aktif="/admin"
       kabar={kabar}
-      lebar="admin"
     >
       <div className="flex flex-wrap items-baseline justify-between gap-4">
         <div>

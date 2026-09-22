@@ -59,7 +59,6 @@ export default async function A2({
       peran={pengguna.peran}
       aktif="/admin"
       kabar={kabar}
-      lebar="admin"
     >
       <Link
         href="/admin"
