@@ -12,7 +12,7 @@
 // (`components/bilah-publik.tsx`), supaya tamu tidak merasa berpindah situs.
 
 import Link from "next/link";
-import { BilahPublik } from "@/components/bilah-publik";
+import { BilahPublik, FOTO } from "@/components/bilah-publik";
 
 export function RangkaPublik({
   judul,
@@ -30,9 +30,47 @@ export function RangkaPublik({
     <div className="flex min-h-full flex-1 flex-col bg-background">
       <BilahPublik aktif="/jadwal" />
 
+      {/* Hero pendek — DS-46. Sepertiga tinggi hero halaman profil: di sini
+          orang datang untuk membaca jadwal, bukan untuk dibujuk, dan hero
+          setinggi 70vh berarti kalendernya harus digulung dulu sebelum
+          terlihat. Fotonya belum ada, jadi blok gradien yang sama dengan
+          halaman profil (DS-25) — tata letaknya tidak akan bergeser saat foto
+          aslinya dipasang. */}
+      <section className="relative flex h-40 items-end overflow-hidden sm:h-52">
+        <div aria-hidden className={`absolute inset-0 ${FOTO}`} />
+
+        {/* DS-20 — tirai wajib sebelum teks putih. Arahnya dari bawah, bukan
+            dari kiri seperti hero profil: judulnya duduk di dasar hero. */}
+        <div
+          aria-hidden
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to top, var(--photo-scrim) 0%, var(--photo-scrim) 38%, transparent 92%)",
+          }}
+        />
+
+        {/* Kata raksasa yang setengah tenggelam di tepi bawah. Murni hiasan —
+            `aria-hidden`, dan opasitasnya 10% supaya ia jadi tekstur, bukan
+            teks kedua yang ikut dibaca. Disembunyikan di HP: di 375px ia
+            menabrak judulnya sendiri. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -bottom-10 right-4 hidden select-none text-[9rem] font-medium uppercase leading-none tracking-tight text-white/10 sm:block lg:text-[12rem]"
+        >
+          Kenari
+        </span>
+
+        <div className="relative mx-auto w-full max-w-[1200px] px-gutter pb-5">
+          <p className="text-app-label uppercase tracking-[0.18em] text-white/70">
+            Studio Pilates Kenari
+          </p>
+          <h1 className="mt-1 text-marketing-h2 text-white">{judul}</h1>
+        </div>
+      </section>
+
       <main className="mx-auto w-full max-w-[1200px] flex-1 px-gutter py-sedang">
-        <h1 className="text-app-title">{judul}</h1>
-        <p className="mt-1 max-w-[60ch] text-app-body text-muted-foreground">
+        <p className="max-w-[60ch] text-app-body text-muted-foreground">
           {catatan}
         </p>
 

@@ -13,6 +13,14 @@
 
 import Link from "next/link";
 
+/**
+ * Slot foto yang belum ada isinya — DS-25. Blok gradien hangat dengan rasio
+ * terkunci, dipakai hero halaman profil dan hero jadwal publik. Memasang foto
+ * asli nanti cukup mengganti nilai ini di satu tempat.
+ */
+export const FOTO =
+  "bg-[linear-gradient(135deg,var(--accent-warm),var(--photo-warm))]";
+
 const NAV: [string, string][] = [
   ["Kelas", "/#kelas"],
   ["Paket", "/#paket"],

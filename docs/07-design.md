@@ -390,6 +390,19 @@ Yang tetap butuh akun: memesan kursi, ikut daftar tunggu, membeli paket, dan
 seluruh layar M3/A/O. Pintu login muncul saat orang menekan salah satunya, bukan
 saat ia membuka jadwal.
 
+`DS-46` — **Hero halaman dalam lebih pendek dari hero halaman profil.** Hero
+profil `min-h-[70vh]` bertugas membujuk; hero `/jadwal` hanya bertugas menamai
+halaman, jadi tingginya tetap `h-40` (160px) di HP dan `h-52` (208px) sejak
+`sm` — kalender harus sudah terlihat tanpa menggulung. Bahannya sama: blok
+`photo-warm` (DS-25) dengan tirai `photo-scrim` (DS-20), kali ini bergradasi
+dari bawah karena judulnya duduk di dasar hero.
+
+Hiasan "tenggelam" di tepi bawah — wordmark raksasa `text-white/10` yang
+terpotong batas hero — wajib `aria-hidden` dan disembunyikan di bawah `sm`.
+Pada 10% ia jadi tekstur; dinaikkan lagi ia berubah jadi teks kedua yang ikut
+dibaca dan bersaing dengan `<h1>`-nya. Judulnya sendiri tetap putih pekat di
+atas tirai — yang diberi opasitas hiasannya, tidak pernah tulisannya.
+
 `DS-43` — **Tidak ada tautan mati, di halaman publik maupun di dalam aplikasi.**
 
 Tiap butir menu menuju salah satu dari tiga tempat saja:

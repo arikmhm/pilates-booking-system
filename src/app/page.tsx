@@ -12,10 +12,8 @@
 // memperagakan kebalikan dari yang dijual.
 
 import Link from "next/link";
-import { BilahPublik } from "@/components/bilah-publik";
+import { BilahPublik, FOTO } from "@/components/bilah-publik";
 import { tautanWa } from "@/lib/wa";
-
-const FOTO = "bg-[linear-gradient(135deg,var(--accent-warm),var(--photo-warm))]";
 
 /** Nomor meja depan di seed demo (`src/db/seed.ts`, staf ke-3 = admin). */
 const TELEPON = "0811550002";
