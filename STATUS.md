@@ -2,7 +2,7 @@
 
 > Baca ini **lebih dulu** tiap sesi baru. Perbarui di akhir tiap sesi yang mengubah apa pun.
 
-**Tahap:** 6 layar + 4 job terjadwal selesai · sisa latihan presentasi dan deploy
+**Tahap:** 11 layar + 4 job terjadwal selesai · sisa latihan presentasi dan deploy
 **Terakhir diperbarui:** 2026-09-22
 
 ---
@@ -25,8 +25,8 @@ presentasi dan deploy.
 - [x] Model booking dipilih: class-based
 - [x] 53 aturan bisnis `BR-1.1`–`BR-9.5`
 - [x] Model data — 12 tabel inti, constraint, 4 query kunci
-- [x] 45 use case, 12 alur keputusan
-- [x] Lingkup demo dikunci: 32 use case nyata, 6 layar
+- [x] 46 use case, 12 alur keputusan
+- [x] Lingkup demo: 38 dari 46 use case nyata, 11 layar
 - [x] Stack dan arsitektur diputuskan
 - [x] Notifikasi: email + tombol kirim-WA, WhatsApp API ditunda
 - [x] Sistem desain — token, tipografi, komponen, status, pemetaan 6 layar
@@ -43,7 +43,10 @@ presentasi dan deploy.
 - [x] Layar A3 Detail member — dompet kredit, buku besar lengkap, koreksi manual (BR-1.8)
 - [x] **Keenam layar demo selesai** — M1 M2* M3 A1 A2 A3 (*M2 masih ditentukan sistem)
 - [x] Tombol Reset Demo — satu transaksi, id user tetap, presenter tidak terlempar keluar
-- [x] Navigasi sidebar shadcn + kalender mingguan M1 (DS-31–DS-33)
+- [x] Navigasi sidebar shadcn + kalender mingguan M1 (DS-31–DS-34)
+- [x] **Lima layar pengelolaan**: direktori member (A4), pelatih & staf (A5),
+      layanan & paket (A6), aturan jadwal (A7), laporan pemilik (O1), kelas coach (C1)
+- [x] Peran owner dan coach dipisah dari admin — owner lihat omzet, admin tidak
 - [x] **Empat job terjadwal** sebagai endpoint HTTP berpenjaga `CRON_SECRET` —
       idempotensinya diuji dengan menjalankan tiap job dua kali, dua penjaga baru
       pindah ke database
@@ -77,6 +80,7 @@ Terbaru di atas. Satu baris per perubahan.
 
 | Tanggal | Perubahan |
 |---|---|
+| 2026-09-22 | Menu dilengkapi jadi sistem utuh: direktori member (A4), pelatih & staf (A5), layanan & paket dengan pembuatan paket (A6), aturan jadwal + kelas sekali jalan (A7), laporan pemilik (O1), dan kelas coach (C1). Peran owner dipisah dari admin — omzet hanya untuk owner (BR-9.1), coach hanya baca (BR-9.4). Halaman Publik dikeluarkan dari menu member dan coach. Lima baris di peta Demo vs Real pindah dari ⬜ ke ✅/◐. Tidak ada tabel baru — semua layar ini membaca 12 tabel yang sudah ada, yang hilang cuma pintunya |
 | 2026-09-22 | Empat job terjadwal jadi endpoint HTTP di `src/app/api/cron/`, logikanya di `src/db/job.ts`. Idempotensi diuji dengan menjalankan tiap job dua kali, dan dua penjaga baru dipindah ke database: `credit_ledger_hangus_key` (BR-1.6) dan `sessions_rule_mulai_key` (BR-7.1) — cek-lalu-tulis bocor di cron yang tumpang tindih, persis seperti pada kapasitas. Mutasi membuktikan testnya tidak kosong. Test integrasi dijalankan berurutan: dua berkas berbagi satu database dan saling menghapus fixture |
 | 2026-09-22 | M1 jadi kalender mingguan ala Google Calendar (DS-32) — hari jadi kolom, jam jadi sumbu tegak, bisa geser ke minggu mana pun; daftar per hari tetap dipakai di HP. Layar tiga peran: member dapat tombol booking, staf dapat tautan ke detail sesi, coach hanya melihat. Isi dilebarkan penuh dan bilah atas dimepetkan kiri (DS-27), menu sidebar dipangkas per peran (DS-33). UC-A15 baru; aritmetika hari WIB pindah ke `waktu.ts` + test |
 | 2026-09-22 | Navigasi pindah ke sidebar shadcn (`ui/sidebar.tsx`, sheet di HP). Token `--sidebar-*` dialiaskan ke palet sendiri, butir aktif pakai `primary` supaya tidak tertukar dengan hover, tinggi butir 48px (DS-11), teks pembaca layar diterjemahkan. `use-mobile` ditulis ulang pakai `useSyncExternalStore` dan `SidebarMenuSkeleton` dibuang — keduanya ditolak `react-hooks` lint. DS-31 |

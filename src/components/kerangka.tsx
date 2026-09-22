@@ -1,4 +1,4 @@
-// Kerangka layar aplikasi — dipakai M1, M3, A1, A2, A3.
+// Kerangka layar aplikasi — bilah atas + sidebar + area isi.
 //
 // Navigasi ada di sidebar shadcn (`components/ui/sidebar.tsx`): di layar lebar
 // ia menempel kiri, di HP jadi sheet lewat tombol di bilah atas. Token
@@ -11,8 +11,13 @@
 import Link from "next/link";
 import {
   CalendarDays,
+  ClipboardList,
   LayoutDashboard,
+  LineChart,
+  Package,
+  Repeat,
   Store,
+  UserCog,
   Users,
   Wallet,
 } from "lucide-react";
@@ -35,22 +40,59 @@ import {
 } from "@/components/ui/sidebar";
 
 type Butir = { href: string; label: string; ikon: typeof CalendarDays };
+type Grup = { judul: string; butir: Butir[] };
 
-// Satu peran, satu daftar. Coach tidak punya kredit jadi tidak punya Akun
-// Saya; member tidak punya dashboard. Menu yang tidak bisa dipakai peran itu
-// lebih buruk daripada menu yang pendek.
-const NAV: Record<string, Butir[]> = {
+const JADWAL = { href: "/jadwal", label: "Jadwal Kelas", ikon: CalendarDays };
+const PUBLIK = { href: "/", label: "Halaman Publik", ikon: Store };
+
+// DS-33 — satu peran, satu daftar; yang tidak bisa dipakai peran itu tidak
+// ditampilkan. "Halaman Publik" sengaja hanya ada di sisi staf: itu alat kerja
+// mereka (menunjukkan harga ke calon member, menyalin tautannya), bukan menu
+// member — member sudah di dalam, mengembalikannya ke halaman jualan itu
+// jalan mundur.
+const HARIAN: Butir[] = [
+  { href: "/admin", label: "Dashboard", ikon: LayoutDashboard },
+  JADWAL,
+  { href: "/admin/member", label: "Member", ikon: Users },
+];
+const STUDIO: Butir[] = [
+  { href: "/admin/tim", label: "Pelatih & Staf", ikon: UserCog },
+  { href: "/admin/layanan", label: "Layanan & Paket", ikon: Package },
+  { href: "/admin/jadwal", label: "Aturan Jadwal", ikon: Repeat },
+  PUBLIK,
+];
+
+const NAV: Record<string, Grup[]> = {
   member: [
-    { href: "/jadwal", label: "Jadwal Kelas", ikon: CalendarDays },
-    { href: "/akun", label: "Akun Saya", ikon: Wallet },
+    {
+      judul: "Menu",
+      butir: [JADWAL, { href: "/akun", label: "Akun Saya", ikon: Wallet }],
+    },
   ],
-  coach: [{ href: "/jadwal", label: "Jadwal Kelas", ikon: CalendarDays }],
+  coach: [
+    {
+      judul: "Menu",
+      butir: [
+        { href: "/pelatih", label: "Kelas Saya", ikon: ClipboardList },
+        JADWAL,
+      ],
+    },
+  ],
   admin: [
-    { href: "/admin", label: "Dashboard", ikon: LayoutDashboard },
-    { href: "/jadwal", label: "Jadwal Kelas", ikon: CalendarDays },
+    { judul: "Harian", butir: HARIAN },
+    { judul: "Studio", butir: STUDIO },
+  ],
+  owner: [
+    { judul: "Harian", butir: HARIAN },
+    { judul: "Studio", butir: STUDIO },
+    // BR-9.1 — angka uang hanya untuk pemilik. Staf resepsionis melihat
+    // semuanya kecuali ini, dan pemisahan itu sendiri yang dijual.
+    {
+      judul: "Bisnis",
+      butir: [{ href: "/admin/laporan", label: "Laporan", ikon: LineChart }],
+    },
   ],
 };
-NAV.owner = NAV.admin;
 
 const PERAN: Record<string, string> = {
   member: "Member",
@@ -79,15 +121,15 @@ export function Kerangka({
   kabar?: string;
   children: React.ReactNode;
 }) {
-  const nav = NAV[peran] ?? NAV.member;
-  const staf = peran === "admin" || peran === "owner";
-  const tajuk = judul ?? nav.find((b) => b.href === aktif)?.label ?? "Kenari";
+  const grup = NAV[peran] ?? NAV.member;
+  const semua = grup.flatMap((g) => g.butir);
+  const tajuk = judul ?? semua.find((b) => b.href === aktif)?.label ?? "Kenari";
 
   return (
     <SidebarProvider className="flex-1">
       <Sidebar>
         <SidebarHeader className="px-4 py-4">
-          <Link href={nav[0].href} className="inline-flex flex-col">
+          <Link href={semua[0].href} className="inline-flex flex-col">
             <span className="text-app-label font-medium uppercase tracking-[0.14em]">
               Kenari
             </span>
@@ -98,47 +140,31 @@ export function Kerangka({
         </SidebarHeader>
 
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-app-label uppercase">
-              {staf ? "Kelola" : "Menu"}
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {nav.map(({ href, label, ikon: Ikon }) => (
-                  <SidebarMenuItem key={href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={aktif === href}
-                      className={BUTIR}
-                    >
-                      <Link href={href}>
-                        <Ikon />
-                        <span>{label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-app-label uppercase">
-              Studio
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild className={BUTIR}>
-                    <Link href="/">
-                      <Store />
-                      <span>Halaman Publik</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          {grup.map((g) => (
+            <SidebarGroup key={g.judul}>
+              <SidebarGroupLabel className="text-app-label uppercase">
+                {g.judul}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {g.butir.map(({ href, label, ikon: Ikon }) => (
+                    <SidebarMenuItem key={href}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={aktif === href}
+                        className={BUTIR}
+                      >
+                        <Link href={href}>
+                          <Ikon />
+                          <span>{label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
         </SidebarContent>
 
         <SidebarFooter className="gap-0 p-0">

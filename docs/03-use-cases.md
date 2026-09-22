@@ -168,6 +168,7 @@ flowchart LR
 | UC-A13 | Tambahkan paket ke member *— pengganti pembayaran di demo* | BR-8.1 | ✅ |
 | UC-A14 | Ubah setelan aturan: batas batal, jendela booking, maks waitlist | 02-rules.md bagian 3 | ✅ |
 | UC-A15 | Kalender mingguan seluruh studio, bisa geser ke minggu mana pun | BR-7.1 | ✅ |
+| UC-A16 | Direktori member: cari, lihat sisa kredit dan kapan terakhir hadir | BR-1.7 | ✅ |
 
 ---
 
@@ -234,16 +235,16 @@ flowchart LR
 | UC-S05 | **Naikkan waitlist saat ada kursi kosong** | Saat ada pembatalan | BR-4.3–4.4 | ✅ |
 | UC-S06 | Kirim notifikasi | Saat peristiwa | BR-4.3, 5.3 | ✅ |
 | UC-S07 | Ingatkan member kredit segera hangus | Harian | — | ✅ |
-| UC-O01 | Kelola jadwal berulang | — | BR-7.1, 7.3 | ⬜ |
-| UC-O02 | Kelola jenis kelas & kapasitas | — | BR-7.2 | ⬜ |
-| UC-O03 | Kelola paket & harga | — | BR-1.4 | ⬜ |
-| UC-O04 | Kelola coach & staf | — | BR-9.3 | ⬜ |
+| UC-O01 | Kelola jadwal berulang | — | BR-7.1, 7.3 | ✅ |
+| UC-O02 | Kelola jenis kelas & kapasitas | — | BR-7.2 | ◐ |
+| UC-O03 | Kelola paket & harga | — | BR-1.4 | ✅ |
+| UC-O04 | Kelola coach & staf | — | BR-9.3 | ◐ |
 | UC-O05 | Atur hari libur / blackout | — | BR-7.4 | ⬜ |
-| UC-O06 | Laporan pendapatan & okupansi | — | — | ⬜ |
+| UC-O06 | Laporan pendapatan & okupansi | — | — | ✅ |
 | UC-O07 | Ekspor data | — | — | ⬜ |
 | UC-O08 | Lihat audit log | — | BR-9.5 | ⬜ |
-| UC-C01 | Lihat jadwal mengajar sendiri | — | BR-9.4 | ⬜ |
-| UC-C02 | Lihat daftar peserta kelasnya | — | BR-9.4 | ⬜ |
+| UC-C01 | Lihat jadwal mengajar sendiri | — | BR-9.4 | ✅ |
+| UC-C02 | Lihat daftar peserta kelasnya | — | BR-9.4 | ✅ |
 
 **UC-S05 adalah use case paling bernilai di seluruh sistem.** Itu yang mengubah
 kursi kosong jadi uang, dan itu inti skenario B di presentasi.
@@ -381,11 +382,11 @@ sequenceDiagram
 | Kelompok | Total UC | Demo ✅ | Palsu ◐ | Real ⬜ |
 |---|:--:|:--:|:--:|:--:|
 | Member | 13 | 10 | 2 | 1 |
-| Admin | 15 | 15 | — | — |
+| Admin | 16 | 16 | — | — |
 | Sistem | 7 | 7 | — | — |
-| Owner | 8 | — | — | 8 |
-| Coach | 2 | — | — | 2 |
-| **Total** | **45** | **32** | **2** | **11** |
+| Owner | 8 | 3 | 2 | 3 |
+| Coach | 2 | 2 | — | — |
+| **Total** | **46** | **38** | **4** | **4** |
 
-Demo menjalankan **32 dari 45 use case secara nyata** — 71%. Yang tersisa hampir
+Demo menjalankan **38 dari 46 use case secara nyata** — 83%. Yang tersisa hampir
 seluruhnya modul pengelolaan master data dan laporan, bukan logika bisnis baru.

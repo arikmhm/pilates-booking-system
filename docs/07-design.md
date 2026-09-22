@@ -396,10 +396,42 @@ Empat hal yang mengikat:
    dipakai kalender dan daftar HP sekaligus, supaya keduanya tidak pernah bercerita
    berbeda tentang sesi yang sama.
 
-`DS-33` — **Menu sidebar hanya berisi yang bisa dipakai peran itu.** Member: Jadwal
-Kelas, Akun Saya. Coach: Jadwal Kelas saja — coach tidak punya kredit, jadi tidak
-punya Akun Saya. Admin dan owner: Dashboard, Jadwal Kelas. Menu yang menolak
-pemiliknya sendiri saat diklik lebih buruk daripada menu yang pendek.
+`DS-33` — **Menu sidebar hanya berisi yang bisa dipakai peran itu.** Menu yang
+menolak pemiliknya sendiri saat diklik lebih buruk daripada menu yang pendek.
+
+| Peran | Kelompok | Butir |
+|---|---|---|
+| Member | Menu | Jadwal Kelas · Akun Saya |
+| Coach | Menu | Kelas Saya · Jadwal Kelas |
+| Admin | Harian | Dashboard · Jadwal Kelas · Member |
+| | Studio | Pelatih & Staf · Layanan & Paket · Aturan Jadwal · Halaman Publik |
+| Owner | | semua milik admin, **+ Bisnis: Laporan** |
+
+Tiga hal yang diputuskan tabel itu:
+
+1. **Coach tidak punya Akun Saya** — dia tidak punya kredit, layarnya akan kosong.
+2. **Halaman Publik hanya di sisi staf.** Itu alat kerja mereka: menunjukkan harga ke
+   calon member, menyalin tautannya, memastikan apa yang terbaca orang luar. Untuk
+   member ia jalan mundur — mereka sudah di dalam, dan halaman jualan tidak punya
+   satu pun hal yang bisa mereka lakukan.
+3. **Laporan hanya untuk owner** (BR-9.1). Resepsionis perlu seluruh jadwal dan
+   seluruh member, tapi tidak perlu omzet. Pemisahan itu sendiri bagian dari yang
+   dijual, jadi ia harus terlihat: admin yang membuka `/admin/laporan` dipantulkan
+   ke dashboard, bukan ke halaman masuk — dia sudah masuk, cuma salah pintu.
+
+Begitu satu peran punya lebih dari empat butir, menunya dikelompokkan. "Harian" untuk
+yang dibuka tiap hari, "Studio" untuk yang dibuka saat menata, "Bisnis" untuk angka.
+Urutannya mengikuti seberapa sering dipakai, bukan abjad.
+
+`DS-34` — **Layar kelola memakai satu pola: daftar di kiri, formulir di kanan**
+(`grid lg:grid-cols-[minmax(0,1fr)_26rem]`), menumpuk jadi satu kolom di bawah 1024px.
+Formulir yang bersembunyi di balik tombol "Tambah" memaksa orang menghafal isi daftar
+sebelum mengisinya; diletakkan bersebelahan, daftar itu jadi contoh hidup untuk
+formulirnya. Berlaku di A6 dan A7.
+
+Semua batas nilai di formulir **diulang di server action**, bukan cuma `min`/`max` di
+input. Atribut HTML itu kenyamanan pengguna; server action bisa dipanggil tanpa
+browser sama sekali.
 
 | Layar | Perangkat | Yang menentukan tampilannya |
 |---|---|---|

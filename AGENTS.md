@@ -139,7 +139,7 @@ selagi konteksnya masih di kepala.
 | Token desain atau layar | `07-design.md` · `02-rules.md` bagian 6.1 kalau layarnya berubah |
 | **Apa pun** | `STATUS.md` — tambah satu baris di Log |
 
-Angka yang diklaim dokumen (53 aturan, 45 use case, 12 tabel, 12 alur) harus tetap cocok
+Angka yang diklaim dokumen (53 aturan, 46 use case, 12 tabel, 12 alur) harus tetap cocok
 dengan isinya. Jalankan sebelum commit:
 
 ```bash

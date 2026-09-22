@@ -203,14 +203,14 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | Pendaftaran member baru | ◐ | ✅ | Demo: sudah ada di seed |
 | Beli paket sendiri | ◐ | ✅ | Demo: kredit dari seed / ditambah admin |
 | **Hanya di real** | | | |
-| Kelola jadwal berulang (CRUD) | ⬜ | ✅ | Demo pakai seed statis |
-| Kelola paket & harga | ⬜ | ✅ | |
-| Kelola coach, ruang, alat | ⬜ | ✅ | |
+| Kelola jadwal berulang | ✅ | ✅ | Tambah & hentikan slot mingguan + kelas sekali jalan (A7). Mengubah slot yang sudah jalan: hentikan lalu buat baru |
+| Kelola paket & harga | ✅ | ✅ | Buat paket baru, sembunyikan yang lama (A6). Harga paket lama tidak diubah — yang sudah beli memegang kreditnya |
+| Kelola coach, ruang, alat | ◐ | ✅ | Demo: daftar pelatih & staf terlihat beserta bebannya (A5). Menambah orang butuh undangan email, satu paket dengan magic link |
 | Hari libur / blackout | ⬜ | ✅ | BR-7.4 |
-| Laporan pendapatan & okupansi | ⬜ | ✅ | Demo: angka ringkas di dashboard |
+| Laporan pendapatan & okupansi | ✅ | ✅ | Pendapatan per bulan, okupansi, kehadiran, nilai kredit hangus (O1). Belum ada ekspor dan biaya operasional |
 | Audit log | ⬜ | ✅ | BR-9.5 |
 | Ekspor data & backup | ⬜ | ✅ | |
-| Peran owner & coach terpisah | ⬜ | ✅ | Demo: satu peran admin |
+| Peran owner & coach terpisah | ✅ | ✅ | Owner melihat Laporan, admin tidak (BR-9.1). Coach punya layar sendiri, hanya baca (BR-9.4) |
 | **Hanya di demo** | | | |
 | Tombol Reset Demo | ✅ | ⬜ | Wajib — skenario diulang puluhan kali. Ada di A1, hanya muncul di database demo |
 | Ganti identitas studio cepat | ✅ | ⬜ | Nama, logo, warna — personalisasi per prospek |
@@ -219,7 +219,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 
 ## 6. Lingkup demo
 
-### 6.1 Layar — 5 halaman, titik
+### 6.1 Layar
 
 **Member (tampilan HP)**
 
@@ -236,6 +236,22 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | A1 | Dashboard hari ini | Sesi hari ini + okupansi · **panel "kredit hangus ≤ 7 hari"** + tombol kirim-WA · kartu setelan — `src/app/admin/` |
 | A2 | Detail sesi | Peserta · waitlist · centang kehadiran · tombol **Batalkan Kelas** — `src/app/admin/sesi/[id]/` |
 | A3 | Detail member | Dompet kredit · buku besar lengkap · koreksi manual — `src/app/admin/member/[id]/` |
+| A4 | Direktori member | Cari nama/nomor HP · sisa kredit · kapan hangus · kelas dipesan · terakhir hadir — `src/app/admin/member/` |
+| A5 | Pelatih & staf | Beban mengajar 7 hari · tombol chat-WA coach · siapa punya peran apa — `src/app/admin/tim/` |
+| A6 | Layanan & paket | Jenis kelas · katalog paket + harga · **buat paket baru** · sembunyikan paket lama — `src/app/admin/layanan/` |
+| A7 | Aturan jadwal | Slot mingguan · tambah & hentikan slot · **kelas tambahan sekali jalan** — `src/app/admin/jadwal/` |
+
+**Owner (tampilan laptop)** — admin tidak melihat layar ini (BR-9.1)
+
+| ID | Layar | Isi |
+|---|---|---|
+| O1 | Laporan | Pendapatan per bulan · okupansi · tingkat kehadiran · **nilai rupiah kredit yang hangus** — `src/app/admin/laporan/` |
+
+**Coach (tampilan HP)** — hanya baca, absensi tetap milik admin (BR-9.4)
+
+| ID | Layar | Isi |
+|---|---|---|
+| C1 | Kelas saya | Jadwal mengajar sendiri · daftar peserta tiap kelas + status kehadiran — `src/app/pelatih/` |
 
 M3 adalah jantung skenario A. Panel kredit hangus di A1 = daftar orang yang harus di-chat hari ini.
 

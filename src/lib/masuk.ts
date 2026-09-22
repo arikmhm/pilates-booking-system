@@ -48,3 +48,28 @@ export async function pastikanAdmin() {
   if (pengguna.peran === "member" || pengguna.peran === "coach") redirect("/jadwal");
   return pengguna;
 }
+
+/**
+ * Penjaga layar khusus pemilik — BR-9.1.
+ *
+ * Sampai sekarang demo menyamakan admin dan owner. Begitu ada layar yang
+ * memuat omzet, penyamaan itu berhenti masuk akal: resepsionis perlu melihat
+ * seluruh jadwal dan seluruh member, tapi tidak perlu melihat pemasukan.
+ * Admin yang membuka layar pemilik dilempar ke dashboard, bukan ke /masuk —
+ * dia sudah masuk, cuma salah pintu.
+ */
+export async function pastikanOwner() {
+  const pengguna = await pastikanAdmin();
+  if (pengguna.peran !== "owner") redirect("/admin");
+  return pengguna;
+}
+
+/** Penjaga layar coach — BR-9.4. Staf boleh ikut melihat, member tidak. */
+export async function pastikanCoach() {
+  const user_id = await userSaatIni();
+  if (!user_id) redirect("/masuk");
+  const pengguna = await penggunaById(pg, user_id);
+  if (!pengguna) redirect("/masuk");
+  if (pengguna.peran === "member") redirect("/jadwal");
+  return pengguna;
+}

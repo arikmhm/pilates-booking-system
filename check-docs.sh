@@ -11,7 +11,7 @@ cek() { # nama, harapan, nyata
 }
 
 cek "aturan bisnis" 53 "$(grep -cE '^\| [0-9]+\.[0-9]+ \|' docs/02-rules.md)"
-cek "use case"      45 "$(grep -cE '^\| UC-'              docs/03-use-cases.md)"
+cek "use case"      46 "$(grep -cE '^\| UC-'              docs/03-use-cases.md)"
 cek "tabel inti"    12 "$(grep -cE '^\| `[a-z_]+` \|'     docs/05-data-model.md)"
 cek "alur"          12 "$(grep -c '```mermaid'            docs/04-flows.md)"
 

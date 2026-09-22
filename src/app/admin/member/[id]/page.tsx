@@ -107,7 +107,7 @@ export default async function A3({
     <Kerangka
       nama={pengguna.nama}
       peran={pengguna.peran}
-      aktif="/admin"
+      aktif="/admin/member"
       kabar={kabar}
     >
       <Link
