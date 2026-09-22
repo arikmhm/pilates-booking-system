@@ -67,7 +67,7 @@ karena tampil apa adanya di layar riwayat kredit member.
 daftar yang sengaja **tidak** dipakai: `docs/06-architecture.md`.
 
 ```bash
-npm run db:up        # Postgres lokal lewat Docker
+npm run db:up        # Postgres lokal lewat Docker — dipakai dev dan test
 npm run dev          # http://localhost:3000
 npm run typecheck    # tsc --noEmit
 npm test             # Vitest — hanya 8 titik rawan
@@ -77,6 +77,11 @@ npm run db:migrate   # terapkan migrasi
 ```
 
 Salin `.env.example` jadi `.env.local` sebelum menjalankan apa pun.
+
+`DATABASE_URL` menunjuk Neon (demo di Vercel); `TEST_DATABASE_URL` menunjuk Postgres
+lokal dan **wajib `localhost`** — test menjalankan `TRUNCATE CASCADE` dan akan menolak
+jalan kalau diarahkan ke database sungguhan. Rinciannya di `docs/06-architecture.md`
+bagian 4.
 
 ## Aturan menulis kode
 

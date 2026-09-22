@@ -75,6 +75,28 @@ setelah presentasi selesai.
 
 Produksi per klien: **VPS**, Docker Compose berisi Next.js + Postgres + Caddy.
 
+### Tiga database, satu skema
+
+Vercel tidak bisa menjalankan Postgres dari `docker-compose.yml`, jadi demo butuh
+Postgres terkelola. Dipakai **Neon** (`purple-moon-87115116`, region
+`aws-ap-southeast-1` — Singapura, hop terdekat dari Kudus).
+
+| Lingkungan | Database | Diisi dari |
+|---|---|---|
+| Lokal — dev dan test | Docker Compose | `TEST_DATABASE_URL`, wajib `localhost` |
+| Demo di Vercel | Neon branch `production` | `DATABASE_URL` hasil `neon link` |
+| Produksi di VPS klien | Postgres di Docker Compose | `DATABASE_URL` di `.env` server |
+
+Ketiganya memakai migrasi yang sama. **Tidak ada kode yang tahu ia berjalan di Neon** —
+`neon deploy` melaporkan `Utilized services: Postgres`, tanpa Neon Auth, Neon Functions,
+maupun object storage. Satu-satunya artefak khusus Neon adalah `neon.ts` yang isinya
+kosong dan `.neon` yang tidak ikut commit; menghapus keduanya tidak mengubah satu baris
+pun kode aplikasi. Aturan portabilitas di [../AGENTS.md](../AGENTS.md) tetap utuh.
+
+> **Test tidak boleh menyentuh Neon.** `src/db/kapasitas.test.ts` menjalankan
+> `TRUNCATE CASCADE`. Karena `neon link` menimpa `DATABASE_URL`, test memakai
+> `TEST_DATABASE_URL` dan menolak jalan kalau host-nya bukan `localhost`.
+
 | | Vercel | Railway | **VPS** |
 |---|---|---|---|
 | Ops | Nol | Nol | Backup, update, TLS — tanggunganmu |
