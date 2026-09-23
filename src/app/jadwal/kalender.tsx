@@ -1,28 +1,34 @@
 // Kalender mingguan — tampilan utama layar M1 di layar lebar.
 //
-// Pola Google Calendar: hari jadi kolom, jam jadi sumbu tegak, sesi jadi blok
-// yang tingginya sebanding dengan durasinya. Yang dibeli dari pola itu bukan
-// kemiripannya, tapi satu hal yang tidak bisa dilakukan daftar: jeda antar
-// kelas jadi terlihat. Pemilik studio membaca lubang jadwal dari ruang kosong.
+// Hari jadi kolom, jam jadi baris, sesi jadi kartu di dalam petak jam × hari.
+// Yang dibaca dari bentuk ini dan tidak bisa dibaca dari daftar: jam sibuk
+// terlihat sebagai baris yang menebal dan hari yang kosong sebagai kolom yang
+// melompong — berdampingan, dalam satu tatapan.
 //
 // Komponen server murni — semua perpindahan minggu lewat tautan, tidak ada
-// state klien. Blok digambar `position: absolute` di dalam kolom harinya,
-// karena grid CSS tidak bisa menaruh sesi 06.00 dan 06.50 di baris yang sama.
+// state klien.
 //
-// DS-40 — kalender menggulung sendiri MENDATAR saja. Tegaknya digambar utuh:
-// jadwal yang dipotong `max-height` menyembunyikan kelas sore di balik gulungan
-// kedua, dan lubang jadwal — satu-satunya alasan memakai bentuk kalender — baru
-// terbaca kalau seluruh harinya kelihatan sekaligus. Lajur jam tetap menempel
-// di kiri, kalau tidak yang tergulung mendatar kehilangan sumbunya.
+// DS-52 — tinggi baris mengikuti isinya, bukan durasinya. Versi sebelumnya
+// menggambar tiap blok `position:absolute` setinggi durasinya di atas sumbu
+// 72px/jam, dan membayar tiga hal: jam kosong tetap memakan tinggi penuh, dua
+// sesi berbarengan harus dibagi jadi lajur selebar separuh kolom, dan blok 50
+// menit cuma punya 60px untuk empat baris teks. Sekarang jam yang tidak ada
+// kelasnya tidak digambar sama sekali, sesi berbarengan ditumpuk di petak yang
+// sama, dan tiap kartu setinggi yang ia butuhkan. Yang hilang — jeda antar
+// kelas yang dulu terbaca dari ruang kosong — diganti durasi yang ditulis apa
+// adanya di tiap kartu.
+//
+// DS-40 — kalender menggulung sendiri MENDATAR saja; tegaknya digambar utuh.
 
-import { kunciHariWib, menitHariWib, namaHariWib, tanggalWib } from "@/lib/waktu";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  kunciHariWib,
+  menitHariWib,
+  namaHariWib,
+  nomorHariWib,
+} from "@/lib/waktu";
 import type { BarisJadwal } from "@/db/booking";
-
-/** Tinggi satu jam. 72px membuat kelas 50 menit masih muat tiga baris teks. */
-const JAM_PX = 72;
-
-/** Dipakai kalau minggu yang dibuka kosong — jangan sampai tingginya nol. */
-const RENTANG_BAKU = { awal: 6, akhir: 20 };
 
 export type IsiBlok = {
   /** Warna latar + garis blok, dari palet status 07-design.md bagian 7. */
@@ -34,173 +40,206 @@ export type IsiBlok = {
 };
 
 /**
- * Lajur untuk sesi yang tumpang tindih. Dua kelas di jam yang sama harus
- * berdampingan, bukan bertumpuk — blok yang tertutup blok lain sama saja
- * dengan kelas yang tidak ada.
+ * Sembilan kolom: lajur jam, tujuh hari, lajur tombol kanan. Dua lajur tepi
+ * itu yang menampung tombol geser minggu di baris kepala — DS-51 menuntut
+ * tombolnya menyatu dengan kalendernya, bukan berdiri sebagai baris sendiri
+ * di atasnya yang mengulang ketujuh tanggal yang sama.
  */
-function lajur(sesi: BarisJadwal[]) {
-  const akhirLajur: number[] = [];
-  const peta = new Map<string, number>();
-  for (const b of sesi) {
-    const mulai = menitHariWib(b.mulai_at);
-    let i = akhirLajur.findIndex((akhir) => akhir <= mulai);
-    if (i === -1) i = akhirLajur.length;
-    akhirLajur[i] = mulai + b.durasi_menit;
-    peta.set(b.id, i);
-  }
-  return { peta, jumlah: Math.max(1, akhirLajur.length) };
+const KOLOM =
+  "grid grid-cols-[2.75rem_repeat(7,minmax(0,1fr))_2.75rem]";
+
+function Geser({
+  href,
+  anak,
+  label,
+}: {
+  href: string;
+  anak: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      // DS-11 — 44px, sama seperti tombol lain. Lajur tepinya selebar itu.
+      className="inline-flex size-11 items-center justify-center justify-self-center rounded-full border border-border transition-colors hover:border-foreground"
+    >
+      {anak}
+    </Link>
+  );
+}
+
+/**
+ * Baris kepala minggu — nama hari di atas nomor tanggal, tombol minggu di dua
+ * lajur tepinya.
+ *
+ * Dipakai dua kali: sebagai kepala kalender (`tautan` kosong — di sana harinya
+ * cuma keterangan kolom, dan pemilih tanggalnya sudah ada di bilah kendali)
+ * dan sebagai pemilih hari di rupa daftar (`tautan` terisi, karena di sana
+ * cuma satu hari yang digambar).
+ */
+export function KepalaMinggu({
+  hari,
+  ditandai,
+  mundur,
+  maju,
+  tautan,
+}: {
+  hari: Date[];
+  /** Indeks 0–6 hari yang sedang dipilih. */
+  ditandai: number;
+  mundur: string;
+  maju: string;
+  /** Kalau ada, tiap hari jadi tautan. Kalau tidak, harinya keterangan saja. */
+  tautan?: (i: number) => string;
+}) {
+  return (
+    <div className={`${KOLOM} items-center bg-background`}>
+      <Geser
+        href={mundur}
+        anak={<ChevronLeft className="size-4" />}
+        label="Minggu sebelumnya"
+      />
+
+      {hari.map((h, i) => {
+        const pilih = i === ditandai;
+        const dalam = (
+          <>
+            <span className="text-app-label uppercase text-muted-foreground">
+              {namaHariWib(h)}
+            </span>
+            <span
+              className={`mt-0.5 inline-flex size-7 items-center justify-center rounded-full text-app-body tabular-nums ${
+                pilih ? "bg-primary text-primary-foreground" : ""
+              }`}
+            >
+              {nomorHariWib(h)}
+            </span>
+          </>
+        );
+        const gaya = "flex flex-col items-center py-2";
+
+        return tautan ? (
+          <Link
+            key={kunciHariWib(h)}
+            href={tautan(i)}
+            aria-current={pilih ? "date" : undefined}
+            className={`${gaya} transition-colors hover:bg-muted`}
+          >
+            {dalam}
+          </Link>
+        ) : (
+          <div
+            key={kunciHariWib(h)}
+            aria-current={pilih ? "date" : undefined}
+            className={gaya}
+          >
+            {dalam}
+          </div>
+        );
+      })}
+
+      <Geser
+        href={maju}
+        anak={<ChevronRight className="size-4" />}
+        label="Minggu berikutnya"
+      />
+    </div>
+  );
+}
+
+/** Satu sesi sebagai kartu di dalam petaknya. Tingginya mengikuti isinya. */
+function KartuSesi({
+  b,
+  isi,
+}: {
+  b: BarisJadwal;
+  isi: (b: BarisJadwal) => IsiBlok;
+}) {
+  const { warna, catatan, bungkus } = isi(b);
+  const mulai = menitHariWib(b.mulai_at);
+  const dalam = (
+    <div
+      className={`flex w-full flex-col gap-0.5 rounded-sm border px-2 py-1.5 text-left ${warna}`}
+    >
+      <p className="text-app-label tabular-nums">
+        {String(Math.floor(mulai / 60)).padStart(2, "0")}.
+        {String(mulai % 60).padStart(2, "0")}
+        {/* Durasi ditulis apa adanya sejak tinggi kartu berhenti mewakilinya. */}
+        <span className="opacity-60"> · {b.durasi_menit}m</span>
+      </p>
+      <p className="truncate text-app-body-sm font-medium">{b.kelas}</p>
+      <p className="truncate text-app-label opacity-70">{b.coach ?? "—"}</p>
+      <p className="truncate text-app-label">{catatan}</p>
+    </div>
+  );
+  return bungkus ? bungkus(dalam) : dalam;
 }
 
 export function Kalender({
-  senin,
+  hari,
   baris,
   isi,
-  hariIni,
+  ditandai,
+  mundur,
+  maju,
 }: {
-  /** Senin 00.00 WIB. Tujuh kolomnya dihitung dari sini. */
-  senin: Date;
+  /** Tujuh hari minggu yang sedang dibuka, Senin lebih dulu. */
+  hari: Date[];
   baris: BarisJadwal[];
   isi: (b: BarisJadwal) => IsiBlok;
-  hariIni: string;
+  ditandai: number;
+  mundur: string;
+  maju: string;
 }) {
-  const hari = Array.from(
-    { length: 7 },
-    (_, i) => new Date(senin.getTime() + i * 86_400_000),
-  );
-
-  const perHari = new Map<string, BarisJadwal[]>();
+  // Petak jam × hari. Jam yang tidak punya satu pun kelas tidak pernah jadi
+  // baris — jeda siang 11.00–15.00 di studio ini lima baris kosong yang
+  // mendorong kelas sore keluar layar.
+  const petak = new Map<string, BarisJadwal[]>();
+  const jamAda = new Set<number>();
   for (const b of baris) {
-    const k = kunciHariWib(b.mulai_at);
-    perHari.set(k, [...(perHari.get(k) ?? []), b]);
+    const j = Math.floor(menitHariWib(b.mulai_at) / 60);
+    const kunci = `${j}|${kunciHariWib(b.mulai_at)}`;
+    petak.set(kunci, [...(petak.get(kunci) ?? []), b]);
+    jamAda.add(j);
   }
-
-  // Rentang jam mengikuti isi minggunya. Menggambar 00.00–24.00 berarti 1728px
-  // yang dua pertiganya kosong.
-  const menitMulai = baris.map((b) => menitHariWib(b.mulai_at));
-  const menitSelesai = baris.map(
-    (b) => menitHariWib(b.mulai_at) + b.durasi_menit,
-  );
-  const jamAwal = baris.length
-    ? Math.min(RENTANG_BAKU.awal, Math.floor(Math.min(...menitMulai) / 60))
-    : RENTANG_BAKU.awal;
-  const jamAkhir = baris.length
-    ? Math.max(RENTANG_BAKU.akhir, Math.ceil(Math.max(...menitSelesai) / 60))
-    : RENTANG_BAKU.akhir;
-
-  const tinggi = (jamAkhir - jamAwal) * JAM_PX;
-  const jamLabel = Array.from({ length: jamAkhir - jamAwal + 1 }, (_, i) => jamAwal + i);
-  const kolom = "grid grid-cols-[3rem_repeat(7,minmax(0,1fr))]";
-
-  // Garis jam digambar sebagai latar, bukan 105 div kosong.
-  const garis = {
-    backgroundImage:
-      "repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px " +
-      `${JAM_PX}px)`,
-  };
+  const jam = [...jamAda].sort((a, b) => a - b);
 
   return (
     <div className="overflow-x-auto rounded-md border border-border bg-background">
-      {/* 44rem = 7 kolom hari @ ~93px + lajur jam. Di bawah itu barulah muncul
-          gulung mendatar, dan ia berhenti di tepi kotak ini — bukan di tepi
-          halaman (DS-40). */}
-      {/* `pb-2` menampung separuh label jam terakhir yang menjorok ke bawah
-          kisi — tanpa itu kotaknya tergulung tegak 8px dan memunculkan bilah
-          gulung yang tidak menggulung apa-apa. */}
-      <div className="min-w-[44rem] pb-2">
-        <div className={`${kolom} border-b border-border bg-background`}>
-          {/* Sudut kiri atas ikut menempel saat digulung mendatar — tanpa ini
-              nama hari menyelinap ke bawah lajur jam. */}
-          <div className="sticky left-0 z-20 bg-background" />
-          {hari.map((h) => {
-            const ini = kunciHariWib(h) === hariIni;
-            return (
+      {/* 46rem = 7 kolom hari @ ~85px + dua lajur tepi. Di bawah itu barulah
+          muncul gulung mendatar, dan ia berhenti di tepi kotak ini (DS-40). */}
+      <div className="min-w-[46rem]">
+        <KepalaMinggu
+          hari={hari}
+          ditandai={ditandai}
+          mundur={mundur}
+          maju={maju}
+        />
+
+        {jam.map((j) => (
+          <div key={j} className={`${KOLOM} border-t border-border`}>
+            {/* Label jam duduk DI DALAM barisnya, rata atas — bukan di tengah
+                garis pemisah. Angka yang membelah garis tidak jelas milik
+                baris yang mana (DS-52). */}
+            <div className="py-2 pr-1.5 text-right text-app-label tabular-nums text-muted-foreground">
+              {String(j).padStart(2, "0")}.00
+            </div>
+
+            {hari.map((h) => (
               <div
                 key={kunciHariWib(h)}
-                className={`border-l border-border px-2 py-2 text-center ${
-                  ini ? "bg-primary" : ""
-                }`}
+                className="flex flex-col gap-1 border-l border-border p-1"
               >
-                <p
-                  className={`text-app-label uppercase ${
-                    ini ? "text-primary-foreground" : "text-muted-foreground"
-                  }`}
-                >
-                  {namaHariWib(h)}
-                </p>
-                <p className="text-app-body">{tanggalWib(h)}</p>
+                {(petak.get(`${j}|${kunciHariWib(h)}`) ?? []).map((b) => (
+                  <KartuSesi key={b.id} b={b} isi={isi} />
+                ))}
               </div>
-            );
-          })}
-        </div>
-
-        <div className={kolom}>
-          <div
-            className="sticky left-0 z-20 bg-background"
-            style={{ height: tinggi }}
-          >
-            {jamLabel.map((j, i) => (
-              <span
-                key={j}
-                className="absolute right-2 -translate-y-1/2 text-app-label tabular-nums text-muted-foreground"
-                style={{ top: i * JAM_PX }}
-              >
-                {String(j).padStart(2, "0")}.00
-              </span>
             ))}
+
+            <div className="border-l border-border" />
           </div>
-
-          {hari.map((h) => {
-            const kunci = kunciHariWib(h);
-            const sesi = perHari.get(kunci) ?? [];
-            const { peta, jumlah } = lajur(sesi);
-
-            return (
-              <div
-                key={kunci}
-                className="relative border-l border-border"
-                style={{ height: tinggi, ...garis }}
-              >
-                {sesi.map((b) => {
-                  const { warna, catatan, bungkus } = isi(b);
-                  const mulai = menitHariWib(b.mulai_at);
-                  const i = peta.get(b.id) ?? 0;
-                  const dalam = (
-                    <div
-                      className={`flex h-full w-full flex-col overflow-hidden rounded-sm border px-2 py-1 text-left ${warna}`}
-                    >
-                      <p className="text-app-label tabular-nums">
-                        {String(Math.floor(mulai / 60)).padStart(2, "0")}.
-                        {String(mulai % 60).padStart(2, "0")}
-                      </p>
-                      <p className="truncate text-app-body-sm font-medium">
-                        {b.kelas}
-                      </p>
-                      <p className="truncate text-app-label opacity-70">
-                        {b.coach ?? "—"}
-                      </p>
-                      <p className="mt-auto truncate text-app-label">{catatan}</p>
-                    </div>
-                  );
-
-                  return (
-                    <div
-                      key={b.id}
-                      className="absolute p-[2px]"
-                      style={{
-                        top: ((mulai - jamAwal * 60) / 60) * JAM_PX,
-                        height: (b.durasi_menit / 60) * JAM_PX,
-                        left: `${(i * 100) / jumlah}%`,
-                        width: `${100 / jumlah}%`,
-                      }}
-                    >
-                      {bungkus ? bungkus(dalam) : dalam}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
+        ))}
       </div>
     </div>
   );

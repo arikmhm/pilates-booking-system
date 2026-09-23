@@ -227,7 +227,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 
 | ID | Layar | Isi |
 |---|---|---|
-| M1 | Jadwal | Strip tujuh hari sebagai kendali minggu (DS-51) · dua rupa untuk data yang sama: kalender mingguan (bawaan, ≥ 768px) dan daftar satu hari (`?rupa=daftar`, selalu dipakai di HP) · sisa kursi · blok membuka panel konfirmasi M2, blok penuh langsung mengantre — `src/app/jadwal/`. **Terbuka untuk tamu**: pengunjung yang belum masuk melihat jadwal yang sama dalam kerangka publik, tanpa tombol booking dan tanpa kartu kredit (DS-45) |
+| M1 | Jadwal | Bilah kendali menempel di atas: saringan jenis kelas, saringan pelatih, pemilih tanggal, sakelar rupa (DS-51) · dua rupa untuk data yang sama: kalender mingguan (bawaan, ≥ 768px, baris jam setinggi isinya — DS-52) dan daftar satu hari (`?rupa=daftar`, selalu dipakai di HP) · sisa kursi · kartu sesi membuka panel konfirmasi M2, kartu penuh langsung mengantre — `src/app/jadwal/`. **Terbuka untuk tamu**: pengunjung yang belum masuk melihat jadwal yang sama dalam kerangka publik, tanpa tombol booking dan tanpa kartu kredit (DS-45) |
 | M2 | Konfirmasi *(panel geser)* | Pilih nomor alat · info "1 kredit dipotong" + sisa sesudahnya · aturan batal tertulis · terbuka-tutup lewat `?pilih=` — `src/app/jadwal/konfirmasi.tsx` |
 | M4 | Transaksi | **Uang**: satu baris satu pembelian paket. Tiap baris membuka detail transaksi — yang dibeli (kredit, masa berlaku, jenis kelas yang tercakup) + ringkasan empat angka nasib kreditnya, lalu menautkan ke buku kredit di Akun Saya (DS-48) — `src/app/transaksi/`, `src/app/transaksi/[id]/` |
 | M3 | Akun Saya | **Sisa kredit + tanggal hangus + hitung mundur** · booking aktif · **daftar tunggu + tombol keluar** (BR-4.7) · riwayat kredit — `src/app/akun/` |

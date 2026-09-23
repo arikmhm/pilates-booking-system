@@ -558,24 +558,22 @@ daftar, dan kalender — bukan kalimat.
 `DS-28` — **Jam jadi jangkar kiri** di tiap daftar sesi, lebar tetap, `tabular-nums`.
 Mata menyusuri satu kolom lurus, bukan zigzag mengikuti panjang nama kelas.
 
-`DS-32` — **Jadwal digambar sebagai kalender mingguan di ≥ 768px** dan daftar per hari
-di bawahnya (`src/app/jadwal/kalender.tsx`). Hari jadi kolom, jam jadi sumbu tegak,
-tinggi blok sebanding durasi. Yang dibeli dari pola Google Calendar itu bukan
-kemiripannya: **jeda antar kelas jadi terlihat**. Pemilik studio membaca lubang jadwal
-dari ruang kosong, dan itu mustahil di daftar — daftar merapatkan 06.00 dan 16.00 jadi
-dua baris bertetangga.
+`DS-32` — **Jadwal digambar sebagai kalender mingguan di ≥ 768px** dan daftar satu hari
+di bawahnya (`src/app/jadwal/kalender.tsx`). Hari jadi kolom, jam jadi baris, sesi jadi
+kartu di dalam petak jam × hari. Yang dibeli dari bentuk kisi itu dan tidak bisa dibaca
+dari daftar: jam sibuk terlihat sebagai baris yang menebal dan hari yang kosong sebagai
+kolom yang melompong — berdampingan, dalam satu tatapan.
 
 Empat hal yang mengikat:
 
-1. **Rentang jam mengikuti isi minggunya**, tidak pernah 00.00–24.00. Menggambar hari
-   penuh berarti 1728px yang dua pertiganya kosong.
-2. **Sesi yang tumpang tindih dibagi jadi lajur berdampingan.** Blok yang tertutup blok
-   lain sama saja dengan kelas yang tidak ada.
-3. **Seluruh blok itu satu target sentuh** — tombol booking, tautan ke detail sesi, atau
-   mati sama sekali. Tidak ada tombol kecil di dalam blok setinggi 60px; DS-11 tidak
-   bisa dipenuhi di ruang sesempit itu.
-4. **Rupa blok diputuskan satu fungsi** (`rupa()` di `src/app/jadwal/page.tsx`) yang
-   dipakai kalender dan daftar HP sekaligus, supaya keduanya tidak pernah bercerita
+1. **Hanya jam yang punya kelas jadi baris**, dan tingginya mengikuti isinya (`DS-52`).
+2. **Sesi yang berbarengan ditumpuk di petak yang sama**, bukan dibagi jadi lajur
+   selebar separuh kolom. Dua kartu utuh terbaca; dua kartu separuh tidak.
+3. **Seluruh kartu itu satu target sentuh** — tombol booking, tautan ke detail sesi,
+   atau mati sama sekali. Tidak ada tombol kecil di dalam kartu; DS-11 tidak bisa
+   dipenuhi di ruang sesempit itu.
+4. **Rupa kartu diputuskan satu fungsi** (`rupa()` di `src/app/jadwal/page.tsx`) yang
+   dipakai kalender dan daftar sekaligus, supaya keduanya tidak pernah bercerita
    berbeda tentang sesi yang sama.
 
 `DS-33` — **Menu sidebar hanya berisi yang bisa dipakai peran itu.** Menu yang
@@ -724,18 +722,18 @@ browser sama sekali.
 `DS-40` — **Kalender jadwal: satu bilah kendali di kiri atas, dan kalender yang
 menggulung sendiri.**
 
-Rentang tanggal, geser minggu, dan saringan alat berdiri berdampingan dalam satu baris
-di kiri atas — bukan judul besar dengan subjudul di bawahnya. Rentang tanggal tidak
-pernah menjadi judul halaman: ia keterangan bagi kendali di sebelahnya, dan nama
-halamannya sudah disebut remah roti (`DS-38`).
+Semua saringan duduk di satu bilah yang menempel di atas (`DS-51`). Rentang tanggal
+berdiri sendiri tepat di atas kalender, sebagai keterangan bagi kepala kalender yang
+cuma menyebut nomor tanggal — bukan judul besar dengan subjudul di bawahnya.
 
-**Saringan alat.** Satu studio bisa punya beberapa ruang dengan satu alat di
-masing-masing — Reformer di bawah, Mat di atas — jadi dua sesi berjalan di jam yang
-sama dan kalender menaruhnya berdampingan. Terbaca, tapi separuh lebar. Memilih satu
-alat mengembalikan kolom harinya jadi selebar satu sesi. Nilainya nama jenis kelas di
-URL (`?alat=Reformer`), ikut terbawa saat pindah minggu, dan angkanya jumlah sesi
-minggu yang sedang dibuka. Alat yang sedang dipilih tetap ditampilkan walau nol —
-kalau tidak, pindah ke minggu yang kosong membuat pilihannya tidak bisa dilepas lagi.
+**Saringan jenis kelas dan pelatih.** Satu studio bisa punya beberapa ruang dengan satu
+alat di masing-masing — Reformer di bawah, Mat di atas — jadi dua sesi berjalan di jam
+yang sama dan kalender menumpuknya di petak yang sama. Memilih satu jenis kelas
+mengembalikan petaknya jadi satu kartu. Nilainya nama jenis kelas dan nama pelatih di
+URL (`?alat=Reformer&pelatih=Rani%20Wulandari`), ikut terbawa saat pindah minggu, dan
+angka di tiap pilihan adalah jumlah sesi minggu yang sedang dibuka. Nilai yang sedang
+dipilih tetap ditampilkan walau nol — kalau tidak, pindah ke minggu yang kosong membuat
+pilihannya tidak bisa dilepas lagi.
 
 **Kisi 12 kolom, 8 untuk kalender dan 4 untuk panel buat-kelas, pisah di 1280px** —
 sama seperti `DS-36`. Formulir itu dulu tinggal di layar Aturan Jadwal, padahal
@@ -745,13 +743,12 @@ member, coach, dan tamu tidak melihat `BuatKelas`, jadi kalendernya memakai
 kedua belas kolom. Kalender yang menyisakan sepertiga layar kosong membayar
 ruang untuk panel yang tidak pernah digambar.
 
-**Saringan tidak pernah patah dua baris.** Lima chip yang turun ke baris kedua
-mendorong kalender setengah layar ke bawah, tepat di lebar yang layarnya paling
-sempit. Di bawah `sm` hurufnya yang mengecil (10px — satu-satunya tempat di luar
-skala `DS-4`), jaraknya merapat, dan "Semua alat" jadi "Semua"; tinggi sentuh
-44px tidak ikut dikorbankan (`DS-11`). Lima chip pas di 375px, dan
-`overflow-x-auto` tetap terpasang sebagai katup untuk studio yang punya jenis
-kelas keenam.
+**Saringan memakai `<select>`, bukan deretan chip.** Chip berjajar hanya muat selama
+pilihannya sedikit; begitu pelatih ikut jadi saringan, dua deret chip memakan seluruh
+baris kendali dan patah dua di 375px — tepat di lebar yang layarnya paling sempit.
+Dua `<select>` memakan lebar tetap berapa pun panjang daftarnya, membawa pencarian
+ketik bawaan sistem, dan sudah bisa dipakai penuh dari papan ketik tanpa satu baris
+kode tambahan.
 
 **Satu formulir, dua mode, dua layar.** `BuatKelas` melayani kelas sekali jalan dan
 slot mingguan berulang; sakelarnya lewat URL (`?buat=berulang`), bukan state klien.
@@ -762,19 +759,17 @@ Admin tidak melihat sakelarnya sama sekali: slot mingguan kewenangan owner (BR-9
 dan tab yang ditolak servernya cuma memancing klik yang gagal.
 
 **Gulung mendatar berhenti di tepi kalender; tegaknya tidak digulung sama sekali.**
-Kalender punya `overflow-x-auto` sendiri dan lajur jam menempel di kiri — tanpa itu
-yang tergulung kehilangan sumbunya, dan panel di sebelahnya ikut terdorong keluar
-layar. Lebar minimum isinya 44rem (7 kolom hari ~93px + lajur jam); di bawah itu
-barulah muncul gulung mendatar, di dalam kotaknya.
+Kalender punya `overflow-x-auto` sendiri — tanpa itu panel di sebelahnya ikut terdorong
+keluar layar. Lebar minimum isinya 46rem (7 kolom hari ~92px + dua lajur tepi selebar
+44px untuk tombol minggu); di bawah itu barulah muncul gulung mendatar, di dalam
+kotaknya.
 
 Sumbu tegaknya digambar **utuh**, tanpa `max-height`. Kalender yang dipotong setinggi
-layar menyembunyikan kelas sore di balik gulungan kedua, dan lubang jadwal — satu-satunya
-alasan memakai bentuk kalender dan bukan daftar — baru terbaca kalau seluruh harinya
-kelihatan sekaligus. Yang dibayar untuk itu satu: baris hari tidak bisa lagi menempel di
-atas, karena `overflow-x-auto` menjadikan kotaknya wadah gulung tersendiri dan
-`sticky top` di dalamnya menempel pada wadah yang tidak pernah bergulir tegak. Strip hari
-(`DS-51`) yang duduk di atas kalender menanggung tugas itu: ia menyebut ketujuh
-tanggalnya sebelum kalendernya mulai.
+layar menyembunyikan kelas sore di balik gulungan kedua, dan yang justru ingin dibaca
+dari sebuah minggu adalah bentuknya yang utuh. Yang dibayar untuk itu satu: baris hari
+tidak bisa menempel di atas, karena `overflow-x-auto` menjadikan kotaknya wadah gulung
+tersendiri dan `sticky top` di dalamnya menempel pada wadah yang tidak pernah bergulir
+tegak. Bilah kendali (`DS-51`) yang menempel di luar kotak itu.
 
 **Penerbitan jadwal jadi strip tetap di kaki kartu, bukan tab ketiga.** Dua tab di
 atasnya membuat SATU kelas; menerbitkan menjalankan apa yang sudah dijanjikan aturan
@@ -809,45 +804,45 @@ dibedakan dari gagal oleh orang yang sedang menatap kalender minggu ini yang kos
 "8 sesi terbit, mulai Selasa, 29 September" bisa. Slot Selasa yang dibuat hari Rabu
 memang tidak punya sesi minggu ini.
 
-`DS-51` — **Strip hari jadi kendali minggu, dan jadwal punya dua rupa.**
+`DS-51` — **Satu bilah kendali yang menempel, dan jadwal punya dua rupa.**
 
-Tujuh sel — nama hari di atas nomor tanggal — dibagi rata `grid-cols-7`, diapit dua
-tombol geser minggu. Ia menggantikan teks rentang plus tiga tombol yang dipakai
-sebelumnya. Tiga hal yang dibelinya:
+Jenis kelas, pelatih, tanggal, dan sakelar rupa berdiri dalam **satu bilah yang
+menempel di atas** saat halaman digulung (`src/app/jadwal/kendali.tsx`). Jadwal sebulan
+lebih panjang dari layar, dan saringan yang harus dicari dengan menggulung ke atas dulu
+praktis tidak pernah dipakai — orang lebih memilih menyusuri seluruh daftarnya dengan
+mata.
 
-1. **Ketujuh harinya selalu terlihat.** "Kamis ada kelas apa" dijawab satu ketukan,
-   bukan dengan menghitung kolom kalender atau menggulung daftar tujuh hari.
-2. **Lebarnya tidak berubah-ubah.** Kolom yang melar mengikuti panjang nama hari
-   membuat mata mencari ulang tiap pindah minggu.
-3. **Ia muat di 375px.** Tujuh sel @30px dengan tinggi sentuh 48px (`DS-11`), nama
-   harinya 10px — pengecualian skala yang sama dengan saringan alat (`DS-40`).
+**Satu jangkar waktu: `?tgl=YYYY-MM-DD`.** Ia menentukan minggu mana yang digambar
+sekaligus hari mana yang dibuka rupa daftar, dan ia yang jadi nilai `<input
+type="date">`. Sebelumnya dua parameter — offset minggu plus indeks hari — yang harus
+dijaga tetap sejalan; pemilih tanggal membuat salah satunya mustahil dipetakan tanpa
+yang lain. Hari ini tidak perlu disebut: `/jadwal` polos sudah berarti itu, dan tombol
+"Hari ini" cuma muncul saat sedang tidak di sana.
 
-**Rentang tanggal tetap ada, di kanan baris pertama.** Strip cuma menyebut nomor
-tanggal, jadi bulan harus disebut di suatu tempat — dan justru minggu yang menyeberang
-bulan ("28 Sep – 4 Okt") yang paling butuh. Tombol "Minggu ini" hanya muncul saat
-sedang tidak di minggu ini; tombol yang mengantar ke halaman yang sedang dibuka bukan
-tombol.
+**Satu-satunya komponen klien di layar ini**, dan hanya untuk satu hal: `<select>` dan
+`<input type="date">` tidak bisa berpindah halaman sendiri tanpa JS. Formulirnya tetap
+`method="get"` yang sah dengan tombol kirim di dalam `<noscript>`, jadi tanpa JS ia
+masih bekerja — yang berubah cuma perlu-tidaknya menekan tombol itu. Semua keadaan
+tetap hidup di URL (`DS-42`), bukan di state klien.
+
+**Tombol geser minggu menyatu dengan kalendernya**, di dua lajur tepi baris kepalanya —
+bukan strip tanggal tersendiri di atas kalender. Strip semacam itu menulis ketujuh
+tanggal yang sama dua kali, sekali di stripnya dan sekali di kepala kolom, dan dua
+deret tanggal yang bersisian memaksa pembacanya menebak mana yang berlaku.
+
+**Kepala kolom kalender bukan tautan.** Ketujuh harinya sudah tergambar sekaligus, jadi
+tidak ada tanggal yang perlu "dibuka" dari sana — dan pemilih tanggalnya sudah ada di
+bilah kendali. Komponen kepala yang sama (`KepalaMinggu`) dipakai kedua kalinya di rupa
+daftar, **di sana** dengan tautan, karena cuma satu hari yang digambar. Lebar 46rem-nya
+hanya berlaku saat ia menyangga kisi kalender; berdiri sendiri ia menciut sampai muat
+di 375px — tujuh kolom @34px, tombol minggu tetap 44px (`DS-11`).
 
 **Dua rupa, satu data: kalender dan daftar** (`?rupa=daftar`). Kalender menjawab
-"bagaimana bentuk minggu ini" — jeda, tumpukan, lubang. Daftar menjawab "hari ini saya
+"bagaimana bentuk minggu ini" — jam sibuk, hari kosong. Daftar menjawab "hari ini saya
 bisa ikut apa" dan memberi tiap sesi satu baris penuh: jam mulai di atas jam selesai,
-nama kelas, pelatih, dan chip statusnya. Rupa itu tersimpan di URL seperti `?buat=` dan
-`?pilih=` (`DS-42`), bukan di state klien — tautan ke satu hari tetap membuka hari itu.
-
-Yang mengikat:
-
-- **Hari yang diketuk di strip selalu membuka rupa daftar.** Di rupa kalender strip
-  tidak memilih apa pun — ketujuh harinya sudah tergambar sekaligus — jadi di sana ia
-  cuma menandai hari ini.
-- **Hari bawaannya hari ini**, dan Senin untuk minggu lain. Parameternya baru ditulis
-  ke URL kalau berbeda dari bawaan **minggu tujuan**: tanpa itu, geser minggu dari Rabu
-  mendarat di Senin.
-- **Di bawah 768px rupanya selalu daftar**, dan sakelarnya disembunyikan. Kalender
-  selebar 44rem tidak pernah digambar di sana, dan sakelar yang separuh pilihannya mati
-  cuma memancing ketukan yang gagal.
-- **Daftar menampilkan satu hari, bukan tujuh.** Versi HP sebelumnya menumpuk tujuh
-  kartu hari; dengan strip di atasnya, tumpukan itu jadi gulungan panjang yang
-  menjawab pertanyaan yang sudah dijawab strip.
+nama kelas, pelatih, dan chip statusnya. Di bawah 768px rupanya **selalu** daftar dan
+label sakelarnya menciut jadi ikon saja: kalender selebar 46rem tidak pernah digambar
+di sana.
 
 Jam selesai menggantikan durasi di tiap baris daftar: "55m" harus dijumlahkan sendiri
 oleh pembacanya, sedangkan yang ditanya orang yang menyusun harinya selalu "jam berapa
@@ -857,7 +852,28 @@ saya keluar".
 ini memetakan warna ke *status* (bagian 7), bukan ke alat, dan `DS-14` melarang warna
 jadi penanda tunggal. Menambah satu warna per jenis kelas berarti mengarang delapan
 warna baru yang harus lolos kontras dan tetap dibedakan pembaca buta warna — untuk
-keterangan yang sudah tertulis sebagai nama kelas di tiap blok.
+keterangan yang sudah tertulis sebagai nama kelas di tiap kartu.
+
+`DS-52` — **Tinggi baris jam mengikuti isinya, bukan durasinya.**
+
+Versi sebelumnya menggambar tiap blok `position:absolute` setinggi durasinya di atas
+sumbu 72px/jam. Pola Google Calendar itu membeli satu hal — jeda antar kelas terbaca
+dari ruang kosong — dan membayar tiga:
+
+1. **Jam kosong tetap memakan tinggi penuh.** Jeda siang 11.00–15.00 di studio ini
+   empat baris kosong yang mendorong kelas sore keluar layar.
+2. **Sesi berbarengan harus dibagi jadi lajur** selebar separuh kolom. Dua kartu utuh
+   yang ditumpuk terbaca; dua kartu separuh tidak.
+3. **Blok 50 menit cuma punya 60px** untuk empat baris teks, jadi jam, nama kelas,
+   pelatih, dan statusnya berdesakan di ruang yang tidak cukup untuk satu pun.
+
+Sekarang: jam yang tidak punya kelas tidak digambar sama sekali, sesi berbarengan
+ditumpuk di petak yang sama, dan tiap kartu setinggi yang ia butuhkan. Durasi yang
+dulu diwakili tinggi ditulis apa adanya di kartunya — "08.00 · 70m".
+
+**Label jam duduk di dalam barisnya, rata atas, dengan garis pemisah di atasnya.**
+Sebelumnya ia ditaruh tepat di garis (`-translate-y-1/2`), setengah di baris atas dan
+setengah di baris bawah; angka yang membelah garis tidak jelas milik baris yang mana.
 
 `DS-41` — **Satu tab, satu formulir, satu tombol, satu hasil.**
 

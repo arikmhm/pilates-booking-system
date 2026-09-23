@@ -14,7 +14,6 @@
 // bukan di sini. Berkas ini membaca database dan menggambar hasilnya.
 
 import Link from "next/link";
-import { CalendarDays, ChevronLeft, ChevronRight, List } from "lucide-react";
 import { pg } from "@/db";
 import {
   alatTerpakai,
@@ -30,18 +29,18 @@ import { userSaatIni } from "@/lib/masuk";
 import {
   awalHariWib,
   awalMingguWib,
+  dariKunciWib,
   hariWib,
   jamWib,
   kunciHariWib,
-  namaHariWib,
-  nomorHariWib,
   selisihManusiawi,
   tanggalWib,
 } from "@/lib/waktu";
 import { Angka, Chip, Kartu, Kerangka } from "@/components/kerangka";
 import { RangkaPublik } from "@/components/rangka-publik";
 import { Keterangan } from "./publik";
-import { Kalender, type IsiBlok } from "./kalender";
+import { Kalender, KepalaMinggu, type IsiBlok } from "./kalender";
+import { BilahKendali, type Rupa } from "./kendali";
 import { BuatKelas, type ModeBuat } from "./buat-kelas";
 import { Konfirmasi } from "./konfirmasi";
 import { ikutWaitlist } from "./aksi";
@@ -49,9 +48,6 @@ import { ikutWaitlist } from "./aksi";
 export const dynamic = "force-dynamic";
 
 type Mode = "tamu" | "member" | "staf" | "coach";
-
-/** DS-51 — dua rupa untuk data yang sama. Kalender bawaan, daftar lewat URL. */
-type Rupa = "kalender" | "daftar";
 
 type Konteks = {
   mode: Mode;
@@ -217,203 +213,15 @@ function Baris({ b, k }: { b: BarisJadwal; k: Konteks }) {
   return <li>{bungkus ? bungkus(dalam) : dalam}</li>;
 }
 
-function Geser({
-  href,
-  anak,
-  label,
-}: {
-  href: string;
-  anak: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <Link
-      href={href}
-      aria-label={label}
-      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-border px-3 text-app-label uppercase transition-colors hover:border-foreground"
-    >
-      {anak}
-    </Link>
-  );
-}
-
-/**
- * Saringan alat — DS-40.
- *
- * Satu studio bisa punya beberapa ruang, satu alat per ruang: Reformer di
- * lantai bawah, Mat di atas. Dua sesi bisa berjalan di jam yang sama dan
- * kalender menaruhnya berdampingan — terbaca, tapi sempit. Memilih satu alat
- * mengembalikan kolom harinya jadi selebar satu sesi.
- *
- * Angka di sebelah nama adalah jumlah sesi minggu INI, bukan total: yang
- * ditanya orang di depan kalender selalu "minggu ini ada berapa".
- *
- * Di HP barisnya TIDAK boleh turun — lima chip yang patah jadi dua baris
- * mendorong kalender turun setengah layar. Karena itu hurufnya yang mengecil
- * (10px, satu-satunya tempat di luar skala DS-4) dan "Semua alat" jadi
- * "Semua"; tinggi sentuhnya tetap 44px (DS-11). Lima chip pas di 375px dengan
- * sisa 2px, jadi `overflow-x-auto` tetap dipasang sebagai katup: studio yang
- * punya jenis kelas kelima harus bisa menggesernya, bukan kehilangannya.
- */
-function Saringan({
-  daftar,
-  aktif,
-  tautan,
-}: {
-  daftar: [string, number][];
-  aktif: string;
-  tautan: (alat: string) => string;
-}) {
-  return (
-    <div className="flex w-full items-center gap-0.5 overflow-x-auto rounded-sm border border-border p-1 sm:w-auto sm:gap-1">
-      {([["", "Semua", daftar.reduce((t, [, n]) => t + n, 0)]] as [
-        string,
-        string,
-        number,
-      ][])
-        .concat(daftar.map(([nama, n]) => [nama, nama, n]))
-        .map(([nilai, label, n]) => {
-          const dipilih = nilai === aktif;
-          return (
-            <Link
-              key={nilai || "semua"}
-              href={tautan(nilai)}
-              aria-current={dipilih ? "true" : undefined}
-              className={`inline-flex min-h-11 shrink-0 items-center gap-1 rounded-sm px-1.5 text-[0.625rem] uppercase tracking-[0.04em] transition-colors sm:gap-2 sm:px-3 sm:text-app-label ${
-                dipilih
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {label}
-              <span
-                className={`tabular-nums ${dipilih ? "opacity-70" : "opacity-60"}`}
-              >
-                {n}
-              </span>
-            </Link>
-          );
-        })}
-    </div>
-  );
-}
-
-/**
- * Strip hari — DS-51.
- *
- * Menggantikan teks rentang + tiga tombol geser sebagai kendali utama minggu.
- * Tujuh harinya selalu kelihatan, jadi "Kamis ada kelas apa" dijawab satu
- * ketukan, bukan dengan menghitung kolom kalender. Hari yang diketuk membuka
- * rupa daftar hari itu — di kalender strip ini menandai hari ini saja, karena
- * di sana ketujuh harinya memang sudah tergambar sekaligus.
- *
- * Lebarnya dibagi rata tujuh (`grid-cols-7`), bukan mengikuti isi: kolom yang
- * melebar-menyempit mengikuti panjang nama hari membuat matanya harus mencari
- * ulang tiap pindah minggu.
- */
-function StripHari({
-  hari,
-  ditandai,
-  tautan,
-  mundur,
-  maju,
-}: {
-  hari: Date[];
-  /** Indeks 0–6 yang disorot, atau −1 kalau minggunya tidak memuat hari ini. */
-  ditandai: number;
-  tautan: (i: number) => string;
-  mundur: string;
-  maju: string;
-}) {
-  return (
-    <div className="flex items-center gap-1">
-      <Geser
-        href={mundur}
-        anak={<ChevronLeft className="size-4" />}
-        label="Minggu sebelumnya"
-      />
-      <div className="grid flex-1 grid-cols-7 gap-0.5 rounded-sm border border-border p-1">
-        {hari.map((h, i) => {
-          const pilih = i === ditandai;
-          return (
-            <Link
-              key={kunciHariWib(h)}
-              href={tautan(i)}
-              aria-current={pilih ? "date" : undefined}
-              className={`flex min-h-11 flex-col items-center justify-center rounded-sm transition-colors ${
-                pilih
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted"
-              }`}
-            >
-              <span className="text-[0.625rem] uppercase tracking-[0.04em] sm:text-app-label">
-                {namaHariWib(h)}
-              </span>
-              <span className="text-app-body tabular-nums">{nomorHariWib(h)}</span>
-            </Link>
-          );
-        })}
-      </div>
-      <Geser
-        href={maju}
-        anak={<ChevronRight className="size-4" />}
-        label="Minggu berikutnya"
-      />
-    </div>
-  );
-}
-
-/**
- * Sakelar rupa — DS-51.
- *
- * Hanya muncul di ≥ 768px. Di bawah itu kalendernya memang tidak pernah
- * digambar, dan sakelar yang separuh pilihannya tidak bisa dipakai cuma
- * memancing ketukan yang tidak menghasilkan apa-apa.
- */
-function SakelarRupa({
-  aktif,
-  tautan,
-}: {
-  aktif: Rupa;
-  tautan: (r: Rupa) => string;
-}) {
-  const pilihan = [
-    ["kalender", "Kalender", CalendarDays],
-    ["daftar", "Daftar", List],
-  ] as const;
-  return (
-    <div className="hidden items-center gap-0.5 rounded-sm border border-border p-1 md:flex">
-      {pilihan.map(([nilai, label, Ikon]) => {
-        const dipilih = nilai === aktif;
-        return (
-          <Link
-            key={nilai}
-            href={tautan(nilai)}
-            aria-current={dipilih ? "true" : undefined}
-            className={`inline-flex min-h-11 items-center gap-2 rounded-sm px-3 text-app-label uppercase transition-colors ${
-              dipilih
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Ikon className="size-4" />
-            {label}
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
-
 export default async function M1({
   searchParams,
 }: {
   searchParams: Promise<{
     kabar?: string;
-    minggu?: string;
-    hari?: string;
+    tgl?: string;
     rupa?: string;
     alat?: string;
+    pelatih?: string;
     buat?: string;
     pilih?: string;
   }>;
@@ -424,40 +232,36 @@ export default async function M1({
 
   const {
     kabar,
-    minggu,
-    hari: hariParam,
+    tgl: tglParam,
     rupa: rupaParam,
     alat: alatParam,
+    pelatih: pelatihParam,
     buat,
     pilih,
   } = await searchParams;
-  const geser = Math.trunc(Number(minggu)) || 0;
   const alat = (alatParam ?? "").trim();
+  const pelatih = (pelatihParam ?? "").trim();
   const modeBuat: ModeBuat = buat === "berulang" ? "berulang" : "sekali";
   const rupaAktif: Rupa = rupaParam === "daftar" ? "daftar" : "kalender";
   const sekarang = new Date();
 
-  const mingguIni = awalMingguWib(sekarang);
-  const senin = new Date(mingguIni.getTime() + geser * 7 * 86_400_000);
+  // SATU jangkar waktu untuk layar ini: tanggal yang sedang dipilih. Ia
+  // menentukan minggu mana yang digambar sekaligus hari mana yang dibuka rupa
+  // daftar — dan ia yang jadi nilai `<input type="date">` di bilah kendali.
+  // Sebelumnya dua parameter (`?minggu=` offset + `?hari=` indeks) yang harus
+  // dijaga tetap sejalan; pemilih tanggal membuat salah satunya mustahil
+  // dipetakan tanpa yang lain.
+  const hariIni = awalHariWib(sekarang);
+  const dipilih = (tglParam && dariKunciWib(tglParam)) || hariIni;
+  const senin = awalMingguWib(dipilih);
   const sampai = new Date(senin.getTime() + 7 * 86_400_000);
   const tujuhHari = Array.from(
     { length: 7 },
     (_, i) => new Date(senin.getTime() + i * 86_400_000),
   );
-
-  // Indeks hari ini di dalam minggunya sendiri, 0 = Senin. Jadi hari bawaan
-  // selama minggu itu yang dibuka — orang yang membuka jadwal hampir selalu
-  // bertanya soal hari ini dulu — dan jadi penanda strip di rupa kalender.
-  // Minggu lain jatuh ke Senin; tidak ada "hari ini" di sana.
-  const idxHariIni = Math.round(
-    (awalHariWib(sekarang).getTime() - mingguIni.getTime()) / 86_400_000,
+  const idxDipilih = Math.round(
+    (dipilih.getTime() - senin.getTime()) / 86_400_000,
   );
-  const hariBaku = geser === 0 ? idxHariIni : 0;
-  const hariMinta = Math.trunc(Number(hariParam));
-  const hariIdx =
-    hariParam !== undefined && hariMinta >= 0 && hariMinta <= 6
-      ? hariMinta
-      : hariBaku;
 
   // Tiga query terakhir milik pengguna yang sudah masuk. Nilai biasa di dalam
   // Promise.all tetap sah, jadi tamu tidak perlu cabang await sendiri.
@@ -485,29 +289,25 @@ export default async function M1({
 
   /** URL layar ini dengan satu bagian diganti — sisanya ikut terbawa. */
   const url = (ubah: {
-    minggu?: number;
-    hari?: number;
+    tgl?: Date;
     rupa?: Rupa;
     alat?: string;
+    pelatih?: string;
     buat?: ModeBuat;
     pilih?: string;
   }) => {
     const q = new URLSearchParams();
-    const m = ubah.minggu ?? geser;
+    const t = ubah.tgl ?? dipilih;
     const a = ubah.alat ?? alat;
+    const c = ubah.pelatih ?? pelatih;
     const b = ubah.buat ?? modeBuat;
     const r = ubah.rupa ?? rupaAktif;
-    const h = ubah.hari ?? hariIdx;
-    if (m) q.set("minggu", String(m));
+    // Hari ini tidak perlu disebut — `/jadwal` polos sudah berarti itu.
+    if (t.getTime() !== hariIni.getTime()) q.set("tgl", kunciHariWib(t));
     if (a) q.set("alat", a);
+    if (c) q.set("pelatih", c);
     if (b === "berulang") q.set("buat", b);
     if (r === "daftar") q.set("rupa", r);
-    // `hari` hanya ditulis kalau berbeda dari bawaan minggu TUJUAN — bukan
-    // minggu yang sedang dibuka. Tanpa itu, geser minggu dari Rabu mendarat
-    // di Senin: bawaan minggu ini (Rabu) sama dengan pilihan sekarang, jadi
-    // parameternya tidak ikut terbawa dan minggu depan memakai bawaannya
-    // sendiri.
-    if (h !== (m === 0 ? idxHariIni : 0)) q.set("hari", String(h));
     // `pilih` sengaja TIDAK diwarisi: geser minggu atau ganti saringan berarti
     // orang sedang melihat-lihat lagi, dan panelnya harus ikut tertutup.
     if (ubah.pilih) q.set("pilih", ubah.pilih);
@@ -525,18 +325,26 @@ export default async function M1({
     sini: url({}),
   };
 
-  // Saringan alat dihitung dari minggu yang sedang dibuka, bukan dari katalog
-  // jenis kelas: yang menarik adalah apa yang BERJALAN minggu ini. Alat yang
-  // sedang dipilih tetap disebut walau nol, kalau tidak pindah minggu bisa
-  // membuat chip-nya hilang dan pilihannya tidak bisa dilepas lagi.
-  const jumlahAlat = new Map<string, number>();
-  for (const b of baris) jumlahAlat.set(b.kelas, (jumlahAlat.get(b.kelas) ?? 0) + 1);
-  if (alat && !jumlahAlat.has(alat)) jumlahAlat.set(alat, 0);
-  const daftarAlat = [...jumlahAlat.entries()].sort((a, b) =>
-    a[0].localeCompare(b[0], "id"),
-  );
+  // Isi kedua saringan dihitung dari minggu yang sedang dibuka, bukan dari
+  // katalog jenis kelas atau daftar pelatih: yang menarik adalah apa yang
+  // BERJALAN minggu ini. Nilai yang sedang dipilih tetap disebut walau nol —
+  // kalau tidak, pindah ke minggu tanpa kelas itu membuat pilihannya hilang
+  // dari daftar dan tidak bisa dilepas lagi.
+  const hitung = (ambil: (b: BarisJadwal) => string | null, terpilih: string) => {
+    const n = new Map<string, number>();
+    for (const b of baris) {
+      const v = ambil(b);
+      if (v) n.set(v, (n.get(v) ?? 0) + 1);
+    }
+    if (terpilih && !n.has(terpilih)) n.set(terpilih, 0);
+    return [...n.entries()].sort((a, b) => a[0].localeCompare(b[0], "id"));
+  };
+  const daftarAlat = hitung((b) => b.kelas, alat);
+  const daftarPelatih = hitung((b) => b.coach, pelatih);
 
-  const tampil = alat ? baris.filter((b) => b.kelas === alat) : baris;
+  const tampil = baris.filter(
+    (b) => (!alat || b.kelas === alat) && (!pelatih || b.coach === pelatih),
+  );
 
   // BR-1.7 — sisa kredit dijumlahkan dari buku besar, tidak ada kolom saldo.
   const hidup = paket.filter((p) => p.hangus_at > sekarang && p.sisa_kredit > 0);
@@ -601,31 +409,18 @@ export default async function M1({
   // aplikasi rentang tanggal inilah satu-satunya judul halaman.
   const Judul = mode === "tamu" ? "h2" : "h1";
 
-  const strip = (
-    <StripHari
-      hari={tujuhHari}
-      // Di rupa daftar strip itu pilihan; di rupa kalender ia cuma menunjuk
-      // hari ini, karena ketujuh harinya sudah tergambar sekaligus.
-      ditandai={rupaAktif === "daftar" ? hariIdx : geser === 0 ? idxHariIni : -1}
-      tautan={(i) => url({ rupa: "daftar", hari: i })}
-      mundur={url({ minggu: geser - 1 })}
-      maju={url({ minggu: geser + 1 })}
-    />
-  );
+  const geserMinggu = (arah: -1 | 1) => ({
+    tgl: new Date(dipilih.getTime() + arah * 7 * 86_400_000),
+  });
 
-  const saringan = (
-    <Saringan daftar={daftarAlat} aktif={alat} tautan={(a) => url({ alat: a })} />
-  );
-
-  const hariDipilih = tujuhHari[hariIdx];
-  const sesiHari = perHari.get(kunciHariWib(hariDipilih)) ?? [];
+  const sesiHari = perHari.get(kunciHariWib(dipilih)) ?? [];
 
   const daftarHari = (
-    <Kartu judul={hariWib(hariDipilih)} padat>
+    <Kartu judul={hariWib(dipilih)} padat>
       {sesiHari.length === 0 ? (
         <p className="p-4 text-app-body text-muted-foreground">
-          {alat
-            ? `Tidak ada kelas ${alat} hari itu.`
+          {alat || pelatih
+            ? "Tidak ada kelas yang cocok hari itu."
             : "Tidak ada kelas terjadwal hari itu."}
         </p>
       ) : (
@@ -640,31 +435,25 @@ export default async function M1({
 
   const isi = (
     <>
-      {/* DS-51 — dua baris kendali, urutannya sama untuk keempat peran:
-          "kelas apa" di baris pertama, "hari mana" di baris kedua, dan
-          jadwalnya tepat di bawahnya. Rentang tanggal duduk di kanan sebagai
-          keterangan bagi strip — strip cuma menyebut nomor tanggal, jadi
-          bulan dan pergantiannya harus disebut di suatu tempat. */}
-      <div className="flex flex-col gap-dekat sm:flex-row sm:items-center sm:justify-between">
-        {saringan}
-        <div className="flex items-center justify-between gap-3 sm:justify-end">
-          <Judul className="text-app-section tabular-nums whitespace-nowrap">
-            {rentang}
-          </Judul>
-          {/* Tombolnya hilang saat sudah di minggu ini — tombol yang
-              mengantar ke tempat yang sedang dibuka bukan tombol. */}
-          {geser !== 0 && (
-            <Geser
-              href={url({ minggu: 0, hari: idxHariIni })}
-              anak="Minggu ini"
-              label="Kembali ke minggu ini"
-            />
-          )}
-          <SakelarRupa aktif={rupaAktif} tautan={(r) => url({ rupa: r })} />
-        </div>
-      </div>
-
-      <div className="mt-dekat">{strip}</div>
+      {/* DS-51 — semua saringan dalam satu bilah yang menempel di atas saat
+          halaman digulung. Tombol geser minggu TIDAK ada di sini: ia menyatu
+          dengan kepala kalender, karena strip tanggal berdiri sendiri di atas
+          kalender berarti ketujuh tanggal yang sama ditulis dua kali. */}
+      <BilahKendali
+        alat={alat}
+        daftarAlat={daftarAlat}
+        pelatih={pelatih}
+        daftarPelatih={daftarPelatih}
+        tgl={kunciHariWib(dipilih)}
+        hariIni={kunciHariWib(hariIni)}
+        rupa={rupaAktif}
+        buat={staf ? modeBuat : undefined}
+        tautanRupa={{
+          kalender: url({ rupa: "kalender" }),
+          daftar: url({ rupa: "daftar" }),
+        }}
+        tautanHariIni={url({ tgl: hariIni })}
+      />
 
       {mode === "member" && (
         <div className="mt-dekat">
@@ -707,18 +496,39 @@ export default async function M1({
           kalender lagi. */}
       <div className="mt-dekat grid grid-cols-12 gap-dekat">
         <div className={`col-span-12 min-w-0 ${staf ? "xl:col-span-8" : ""}`}>
+          {/* Kepala kalender cuma menyebut nomor tanggal, jadi bulan — dan
+              minggu yang menyeberang bulan — harus disebut di sini. */}
+          <Judul className="mb-dekat text-app-section tabular-nums">
+            {rentang}
+          </Judul>
+
           {rupaAktif === "daftar" ? (
-            daftarHari
+            <>
+              {/* Di rupa daftar kepala minggu jadi pemilih hari: cuma satu
+                  hari yang digambar, jadi harus ada cara memilih yang lain. */}
+              {/* Tanpa `min-w` — di sini ia harus muat di 375px, dan tujuh
+                  kolom selebar 34px masih menampung "SEN" 11px. Lebar 46rem
+                  cuma berlaku saat kepalanya menyangga kisi kalender. */}
+              <div className="mb-dekat rounded-md border border-border bg-background">
+                <KepalaMinggu
+                  hari={tujuhHari}
+                  ditandai={idxDipilih}
+                  mundur={url(geserMinggu(-1))}
+                  maju={url(geserMinggu(1))}
+                  tautan={(i) => url({ tgl: tujuhHari[i] })}
+                />
+              </div>
+              {daftarHari}
+            </>
           ) : (
             <>
-              {/* Minggu kosong tetap menggambar kalendernya. Mengganti
+              {/* Minggu kosong tetap menggambar kepala kalendernya. Mengganti
                   kalender dengan satu kalimat membuat sumbu harinya ikut
-                  hilang, dan yang justru ingin dibaca dari minggu kosong
-                  adalah bentuk kosongnya. */}
+                  hilang, berikut tombol geser minggunya. */}
               {tampil.length === 0 && (
                 <p className="mb-dekat hidden text-app-body text-muted-foreground md:block">
-                  {alat
-                    ? `Tidak ada kelas ${alat} di minggu ini.`
+                  {alat || pelatih
+                    ? "Tidak ada kelas yang cocok di minggu ini."
                     : "Tidak ada kelas terjadwal di minggu ini."}
                 </p>
               )}
@@ -726,10 +536,12 @@ export default async function M1({
               {/* Kalender mingguan butuh ruang; di bawah md selalu daftar. */}
               <div className="hidden md:block">
                 <Kalender
-                  senin={senin}
+                  hari={tujuhHari}
                   baris={tampil}
                   isi={(b) => rupa(b, k)}
-                  hariIni={kunciHariWib(sekarang)}
+                  ditandai={idxDipilih}
+                  mundur={url(geserMinggu(-1))}
+                  maju={url(geserMinggu(1))}
                 />
               </div>
               <div className="md:hidden">{daftarHari}</div>
