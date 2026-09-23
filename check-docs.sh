@@ -10,7 +10,7 @@ cek() { # nama, harapan, nyata
   else printf 'ok       %-18s %s\n' "$1" "$3"; fi
 }
 
-cek "aturan bisnis" 53 "$(grep -cE '^\| [0-9]+\.[0-9]+ \|' docs/02-rules.md)"
+cek "aturan bisnis" 54 "$(grep -cE '^\| [0-9]+\.[0-9]+ \|' docs/02-rules.md)"
 cek "use case"      50 "$(grep -cE '^\| UC-'              docs/03-use-cases.md)"
 cek "tabel inti"    12 "$(grep -cE '^\| `[a-z_]+` \|'     docs/05-data-model.md)"
 cek "alur"          12 "$(grep -c '```mermaid'            docs/04-flows.md)"

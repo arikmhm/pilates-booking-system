@@ -112,6 +112,9 @@ export type JenisKelas = {
   durasi_menit: number;
   slot_mingguan: number;
   sesi_mendatang: number;
+  /** Sudah menempel di slot, sesi, atau paket — syarat yang sama dengan
+   *  `hapusJenisKelas()`, supaya layar tidak menawarkan tombol yang gagal. */
+  dipakai: boolean;
 };
 
 export async function daftarJenisKelas(
@@ -124,9 +127,70 @@ export async function daftarJenisKelas(
              where r.class_type_id = ct.id) as slot_mingguan,
            (select count(*)::int from sessions s
              where s.class_type_id = ct.id and s.status = 'scheduled'
-               and s.mulai_at > ${ts(sekarang)}::timestamptz) as sesi_mendatang
+               and s.mulai_at > ${ts(sekarang)}::timestamptz) as sesi_mendatang,
+           (exists (select 1 from schedule_rules r where r.class_type_id = ct.id)
+            or exists (select 1 from sessions s2 where s2.class_type_id = ct.id)
+            or exists (select 1 from package_class_types p
+                        where p.class_type_id = ct.id)) as dipakai
       from class_types ct
      order by ct.nama`;
+}
+
+export const BATAS_JENIS = {
+  kapasitas_default: [1, 60],
+  durasi_menit: [15, 240],
+} as const;
+
+/**
+ * UC-O02. Menambah jenis kelas aman terhadap sesi yang sudah berjalan:
+ * BR-7.3 menyalin kapasitas ke `sessions` saat sesi dibuat, jadi baris baru
+ * di sini tidak menyentuh satu pun sesi lama. Yang tidak disediakan justru
+ * mengubah nama dan kapasitas jenis yang sudah dipakai — itu mengubah arti
+ * kartu paket yang sudah dibeli orang, dan pantas lewat percakapan.
+ *
+ * Nama unik per studio dijaga index `class_types_studio_nama_key`, bukan cek
+ * dulu baru insert: dua tab yang mengirim nama sama pada saat yang sama akan
+ * lolos pemeriksaan yang sama-sama membaca "belum ada".
+ */
+export const NAMA_JENIS_GANDA = "class_types_studio_nama_key";
+
+export async function buatJenisKelas(
+  sql: Sql,
+  args: {
+    studio_id: string;
+    nama: string;
+    kapasitas_default: number;
+    durasi_menit: number;
+  },
+) {
+  const [j] = await sql<{ id: string }[]>`
+    insert into class_types (studio_id, nama, kapasitas_default, durasi_menit)
+    values (${args.studio_id}, ${args.nama}, ${args.kapasitas_default},
+            ${args.durasi_menit})
+    returning id`;
+  return j.id;
+}
+
+/**
+ * Hapus jenis kelas yang **belum dipakai apa pun** — salah ketik yang baru
+ * saja dibuat. Begitu ia menempel di slot mingguan, sesi, atau paket, ia
+ * tidak bisa dihapus: `sessions` dan `package_class_types` menunjuk ke sini,
+ * dan kartu paket yang kehilangan jenis kelasnya berhenti bisa dipakai
+ * membooking apa pun (BR-1.4).
+ *
+ * Syaratnya diperiksa di dalam DELETE-nya, bukan sebagai SELECT terpisah:
+ * baris yang lahir di antara kedua query itu akan lolos pemeriksaan yang
+ * sudah telanjur dibaca.
+ */
+export async function hapusJenisKelas(sql: Sql, id: string): Promise<boolean> {
+  const hapus = await sql`
+    delete from class_types ct
+     where ct.id = ${id}
+       and not exists (select 1 from schedule_rules r where r.class_type_id = ct.id)
+       and not exists (select 1 from sessions s where s.class_type_id = ct.id)
+       and not exists (select 1 from package_class_types p
+                        where p.class_type_id = ct.id)`;
+  return hapus.count > 0;
 }
 
 export type BarisPaket = {
@@ -313,6 +377,9 @@ export type BarisAturan = {
   id: string;
   hari: number;
   jam_mulai: string;
+  /** Dibawa untuk penjaga BR-7.6 — layarnya sendiri memakai nama di bawah. */
+  class_type_id: string;
+  coach_id: string | null;
   kapasitas: number | null;
   /** null = ikut durasi jenis kelas; `durasi_menit` di bawah sudah dipilihkan. */
   durasi_rule: number | null;
@@ -331,6 +398,7 @@ export async function daftarAturan(
 ): Promise<BarisAturan[]> {
   return sql<BarisAturan[]>`
     select r.id, r.hari, r.jam_mulai, r.kapasitas, r.berlaku_sampai,
+           r.class_type_id, r.coach_id,
            r.durasi_menit as durasi_rule,
            ct.nama as kelas, ct.kapasitas_default,
            coalesce(r.durasi_menit, ct.durasi_menit) as durasi_menit,

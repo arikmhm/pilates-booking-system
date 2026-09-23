@@ -5,16 +5,27 @@
 // skema pertama; yang belum ada cuma layarnya, jadi selama ini harga hanya
 // bisa diubah lewat SQL.
 //
-// Jenis kelas belum bisa dibuat dari sini dengan sengaja — menambahnya
-// berarti mengubah arti kolom `kapasitas` di sesi yang sudah berjalan, dan
-// itu keputusan yang pantas lewat percakapan, bukan formulir.
+// Jenis kelas bisa DITAMBAH dari sini, tidak bisa diubah. Menambah aman:
+// BR-7.3 menyalin kapasitas ke `sessions` saat sesi dibuat, jadi baris baru
+// tidak menyentuh satu pun sesi lama. Mengubah nama atau kapasitas jenis yang
+// sudah dipakai lain soal — ia mengubah arti kartu paket yang sudah dibeli
+// orang, dan itu pantas lewat percakapan, bukan formulir.
+//
+// Menghapus hanya untuk yang belum dipakai apa pun: salah ketik yang baru
+// saja dibuat. Begitu ia menempel di slot, sesi, atau paket, tombolnya tidak
+// digambar sama sekali, bukan digambar lalu gagal.
 
 import { pg } from "@/db";
 import { daftarJenisKelas, daftarPaket } from "@/db/kelola";
 import { pastikanAdmin } from "@/lib/masuk";
 import { rupiah } from "@/lib/waktu";
 import { Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
-import { setAktifPaket, tambahPaket } from "../kelola-aksi";
+import {
+  buangJenisKelas,
+  setAktifPaket,
+  tambahJenisKelas,
+  tambahPaket,
+} from "../kelola-aksi";
 
 export const dynamic = "force-dynamic";
 
@@ -54,9 +65,12 @@ export default async function A6({
 
       <div className="mt-dekat grid gap-dekat lg:grid-cols-[minmax(0,1fr)_26rem]">
         <div className="space-y-dekat">
+          {/* Daftar ini tiga hal sekaligus: yang dijadwalkan di A7, yang
+              dicentang sebagai "kelas yang tercakup" di paket (BR-1.4), dan
+              yang jadi saringan di layar jadwal. Satu sumber, tiga tempat. */}
           <Kartu
             judul="Jenis kelas"
-            catatan="Kapasitas di sini cuma nilai bawaan — sesi menyalinnya saat dibuat (BR-7.3)."
+            catatan="Dipakai tiga tempat: jadwal mingguan, cakupan paket, dan saringan layar jadwal. Kapasitas di sini cuma nilai bawaan — sesi menyalinnya saat dibuat (BR-7.3)."
             padat
           >
             <ul className="divide-y divide-border">
@@ -72,6 +86,16 @@ export default async function A6({
                     <p className="tabular-nums">{j.slot_mingguan} slot / minggu</p>
                     <p className="tabular-nums">{j.sesi_mendatang} sesi mendatang</p>
                   </div>
+                  {/* Tombolnya cuma ada selama jenis kelasnya belum menempel
+                      di mana-mana — tombol yang pasti gagal lebih buruk
+                      daripada tombol yang tidak ada. */}
+                  {owner && !j.dipakai && (
+                    <form action={buangJenisKelas} className="shrink-0">
+                      <input type="hidden" name="id" value={j.id} />
+                      <input type="hidden" name="nama" value={j.nama} />
+                      <Tombol gaya="halus" kecil anak="Hapus" />
+                    </form>
+                  )}
                 </li>
               ))}
             </ul>
@@ -128,6 +152,72 @@ export default async function A6({
             </ul>
           </Kartu>
         </div>
+
+        <div className="space-y-dekat">
+        {owner && (
+          <Kartu
+            judul="Jenis kelas baru"
+            catatan="Yang ditambah di sini langsung jadi pilihan di formulir paket bawah, di Aturan Jadwal, dan di saringan layar jadwal."
+          >
+            <form action={tambahJenisKelas} className="space-y-4">
+              <div>
+                <label className={LABEL} htmlFor="jenis_nama">
+                  Nama
+                </label>
+                <input
+                  id="jenis_nama"
+                  name="nama"
+                  required
+                  minLength={2}
+                  maxLength={40}
+                  placeholder="Barre"
+                  className={INPUT}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={LABEL} htmlFor="kapasitas_default">
+                    Kursi bawaan
+                  </label>
+                  <input
+                    id="kapasitas_default"
+                    name="kapasitas_default"
+                    type="number"
+                    required
+                    min={1}
+                    max={60}
+                    defaultValue={8}
+                    className={INPUT}
+                  />
+                </div>
+                <div>
+                  <label className={LABEL} htmlFor="jenis_durasi">
+                    Durasi (menit)
+                  </label>
+                  <input
+                    id="jenis_durasi"
+                    name="durasi_menit"
+                    type="number"
+                    required
+                    min={15}
+                    max={240}
+                    step={5}
+                    defaultValue={70}
+                    className={INPUT}
+                  />
+                </div>
+              </div>
+
+              <p className="text-app-body-sm text-muted-foreground">
+                Keduanya cuma nilai bawaan — tiap slot mingguan dan tiap sesi
+                boleh menimpanya (BR-7.2).
+              </p>
+
+              <Tombol penuh anak="Tambah jenis kelas" />
+            </form>
+          </Kartu>
+        )}
 
 {owner ? (
         <Kartu
@@ -226,14 +316,16 @@ export default async function A6({
           </form>
         </Kartu>
         ) : (
-          <Kartu judul="Paket baru">
+          <Kartu judul="Katalog">
             <p className="text-app-body-sm text-muted-foreground">
-              Membuat paket dan menentukan harganya adalah kewenangan pemilik
-              studio. Kamu tetap bisa melihat katalognya, dan memberikan paket
-              ke member lewat layar detail member.
+              Menambah jenis kelas, membuat paket, dan menentukan harganya
+              adalah kewenangan pemilik studio. Kamu tetap bisa melihat
+              katalognya, dan memberikan paket ke member lewat layar detail
+              member.
             </p>
           </Kartu>
         )}
+        </div>
       </div>
     </Kerangka>
   );

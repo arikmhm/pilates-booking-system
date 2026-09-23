@@ -58,8 +58,8 @@ function Pilih({
 }
 
 export function BilahKendali({
-  alat,
-  daftarAlat,
+  kelas,
+  daftarKelas,
   pelatih,
   daftarPelatih,
   tgl,
@@ -70,8 +70,8 @@ export function BilahKendali({
   tautanHariIni,
   children,
 }: {
-  alat: string;
-  daftarAlat: [string, number][];
+  kelas: string;
+  daftarKelas: [string, number][];
   pelatih: string;
   daftarPelatih: [string, number][];
   /** Tanggal terpilih, "YYYY-MM-DD" — nilai mentah `<input type="date">`. */
@@ -99,7 +99,7 @@ export function BilahKendali({
         method="get"
         action="/jadwal"
         // Nilai kosong tidak ditulis ke URL, jadi "Semua kelas" mengembalikan
-        // `/jadwal` yang bersih — bukan `/jadwal?alat=&pelatih=`.
+        // `/jadwal` yang bersih — bukan `/jadwal?kelas=&pelatih=`.
         onChange={(e) => {
           const q = new URLSearchParams();
           for (const [k, v] of new FormData(e.currentTarget)) {
@@ -115,7 +115,7 @@ export function BilahKendali({
         {buat === "berulang" && <input type="hidden" name="buat" value="berulang" />}
 
         <div className="flex items-center gap-2">
-          <Pilih nama="alat" nilai={alat} semua="Semua kelas" daftar={daftarAlat} />
+          <Pilih nama="kelas" nilai={kelas} semua="Semua kelas" daftar={daftarKelas} />
           <Pilih
             nama="pelatih"
             nilai={pelatih}

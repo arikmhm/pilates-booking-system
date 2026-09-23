@@ -305,6 +305,14 @@ karena halamannya lambat. Yang menjaganya index `sessions_rule_mulai_key`, sama 
 saat ia masih cron. Menurunkan jangka terbit tidak menghapus sesi yang terlanjur terbit
 di luar jangka baru — sebagian mungkin sudah ada pesertanya.
 
+**Penjaganya ada di hulu, bukan di sini.** Job ini menerbitkan apa pun yang tertulis di
+`schedule_rules`; ia tidak bertanya apakah dua slot saling menabrak. Yang bertanya
+`slotBentrok()` (BR-7.6) saat slotnya dibuat di A7. Alasannya: jadwal ini di-assign
+berdasarkan **jenis kelas**, bukan alat — `schedule_rules` tidak mengenal ruang maupun
+mesin — jadi dua slot Reformer di jam yang sama akan menjual 8 + 8 kursi untuk 8
+reformer, dan yang menemukannya delapan orang yang sudah datang. Menolaknya saat
+booking berarti menghukum member atas kesalahan studio.
+
 ### 7.4 Tutup waitlist — tiap jam · `UC-S04`
 
 ```mermaid

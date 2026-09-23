@@ -13,6 +13,7 @@ import {
   hasilPenghangusan,
   naikkanWaitlist,
   pilihPaket,
+  slotBentrok,
   type Antre,
   type PaketMember,
   type Sesi,
@@ -425,5 +426,80 @@ describe("titik 8 · bolehTerimaPembayaran (BR-8.1, BR-8.2)", () => {
         bolehTerimaPembayaran({ status, hold_sampai: jam(1) }, SEKARANG).proses,
       ).toBe(false);
     }
+  });
+});
+
+/* ── BR-7.6 · slot mingguan yang saling menabrak ─────────────────────────── */
+
+describe("slotBentrok()", () => {
+  const REFORMER = "ct-reformer";
+  const MAT = "ct-mat";
+  const RANI = "u-rani";
+  const DIMAS = "u-dimas";
+
+  /** Senin 08.00, Reformer, Rani, 70 menit. */
+  const dasar = {
+    hari: 1,
+    jam_mulai: "08:00",
+    durasi_menit: 70,
+    class_type_id: REFORMER,
+    coach_id: RANI as string | null,
+  };
+
+  test("jenis kelas sama di jam yang tumpang tindih → ditolak", () => {
+    // Dua slot Reformer jam 08.00 dan 08.30 berarti 16 kursi dijual untuk
+    // 8 reformer. Inilah lubang yang BR-7.6 tutup.
+    expect(
+      slotBentrok({ ...dasar, jam_mulai: "08:30", coach_id: DIMAS }, [dasar]),
+    ).toEqual({ ada: true, sebab: "kelas", lawan: dasar });
+  });
+
+  test("pelatih sama di jam yang tumpang tindih → ditolak", () => {
+    expect(
+      slotBentrok({ ...dasar, jam_mulai: "08:30", class_type_id: MAT }, [dasar])
+        .ada,
+    ).toBe(true);
+  });
+
+  test("jenis kelas DAN pelatih berbeda boleh berbarengan", () => {
+    // Studio yang punya dua ruang: Mat di atas, Reformer di bawah.
+    expect(
+      slotBentrok(
+        { ...dasar, jam_mulai: "08:30", class_type_id: MAT, coach_id: DIMAS },
+        [dasar],
+      ),
+    ).toEqual({ ada: false });
+  });
+
+  test("sentuhan ujung ke ujung bukan bentrok", () => {
+    // 08.00 + 70 menit selesai 09.10; slot 09.10 sah.
+    expect(slotBentrok({ ...dasar, jam_mulai: "09:10" }, [dasar]).ada).toBe(false);
+    expect(slotBentrok({ ...dasar, jam_mulai: "09:09" }, [dasar]).ada).toBe(true);
+  });
+
+  test("hari berbeda tidak pernah bentrok", () => {
+    expect(slotBentrok({ ...dasar, hari: 2 }, [dasar]).ada).toBe(false);
+  });
+
+  test("slot tanpa pelatih tidak menabrak slot tanpa pelatih", () => {
+    // coach_id null artinya "belum ditentukan", bukan "orang yang sama".
+    const tanpa = { ...dasar, coach_id: null };
+    expect(
+      slotBentrok({ ...tanpa, jam_mulai: "08:30", class_type_id: MAT }, [tanpa])
+        .ada,
+    ).toBe(false);
+  });
+
+  test("lewat tengah malam Minggu menabrak Senin pagi", () => {
+    // Garis waktu minggu itu melingkar. Tanpa ini slot Minggu 23.30 dan slot
+    // Senin 00.00 tampak tidak berhubungan.
+    const minggu = { ...dasar, hari: 7, jam_mulai: "23:30", durasi_menit: 60 };
+    const senin = { ...dasar, hari: 1, jam_mulai: "00:00", durasi_menit: 60 };
+    expect(slotBentrok(senin, [minggu]).ada).toBe(true);
+    expect(slotBentrok(minggu, [senin]).ada).toBe(true);
+  });
+
+  test("daftar kosong selalu lolos", () => {
+    expect(slotBentrok(dasar, [])).toEqual({ ada: false });
   });
 });

@@ -147,7 +147,7 @@ export async function BuatKelas({
     <>
       <div>
         <label className={LABEL} htmlFor="class_type_id">
-          Alat / jenis kelas
+          Jenis kelas
         </label>
         <select
           id="class_type_id"

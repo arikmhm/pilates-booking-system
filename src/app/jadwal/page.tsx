@@ -89,7 +89,7 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
   if (b.booking_saya)
     return {
       warna: "border-ok-foreground/30 bg-ok-surface text-ok-foreground",
-      catatan: `Alat ${b.booking_saya.nomor_alat}`,
+      catatan: `Tempat ${b.booking_saya.nomor_alat}`,
     };
 
   if (b.antre_saya)
@@ -186,7 +186,7 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
     };
 
   // Bloknya tidak lagi memesan langsung: ia membuka panel konfirmasi M2, dan
-  // di sanalah nomor alat dipilih serta aturan batal dibaca (BR-2.6).
+  // di sanalah nomor tempat dipilih serta aturan batal dibaca (BR-2.6).
   if (putusan.boleh)
     return {
       warna:
@@ -256,7 +256,7 @@ export default async function M1({
     kabar?: string;
     tgl?: string;
     rupa?: string;
-    alat?: string;
+    kelas?: string;
     pelatih?: string;
     buat?: string;
     pilih?: string;
@@ -270,12 +270,12 @@ export default async function M1({
     kabar,
     tgl: tglParam,
     rupa: rupaParam,
-    alat: alatParam,
+    kelas: kelasParam,
     pelatih: pelatihParam,
     buat,
     pilih,
   } = await searchParams;
-  const alat = (alatParam ?? "").trim();
+  const kelas = (kelasParam ?? "").trim();
   const pelatih = (pelatihParam ?? "").trim();
   const modeBuat: ModeBuat = buat === "berulang" ? "berulang" : "sekali";
   const rupaAktif: Rupa = rupaParam === "daftar" ? "daftar" : "kalender";
@@ -334,20 +334,20 @@ export default async function M1({
   const url = (ubah: {
     tgl?: Date;
     rupa?: Rupa;
-    alat?: string;
+    kelas?: string;
     pelatih?: string;
     buat?: ModeBuat;
     pilih?: string;
   }) => {
     const q = new URLSearchParams();
     const t = ubah.tgl ?? dipilih;
-    const a = ubah.alat ?? alat;
+    const a = ubah.kelas ?? kelas;
     const c = ubah.pelatih ?? pelatih;
     const b = ubah.buat ?? modeBuat;
     const r = ubah.rupa ?? rupaAktif;
     // Hari ini tidak perlu disebut — `/jadwal` polos sudah berarti itu.
     if (t.getTime() !== hariIni.getTime()) q.set("tgl", kunciHariWib(t));
-    if (a) q.set("alat", a);
+    if (a) q.set("kelas", a);
     if (c) q.set("pelatih", c);
     if (b === "berulang") q.set("buat", b);
     if (r === "daftar") q.set("rupa", r);
@@ -382,11 +382,11 @@ export default async function M1({
     if (terpilih && !n.has(terpilih)) n.set(terpilih, 0);
     return [...n.entries()].sort((a, b) => a[0].localeCompare(b[0], "id"));
   };
-  const daftarAlat = hitung((b) => b.kelas, alat);
+  const daftarKelas = hitung((b) => b.kelas, kelas);
   const daftarPelatih = hitung((b) => b.coach, pelatih);
 
   const tampil = baris.filter(
-    (b) => (!alat || b.kelas === alat) && (!pelatih || b.coach === pelatih),
+    (b) => (!kelas || b.kelas === kelas) && (!pelatih || b.coach === pelatih),
   );
 
   // BR-1.7 — sisa kredit dijumlahkan dari buku besar, tidak ada kolom saldo.
@@ -456,7 +456,7 @@ export default async function M1({
     <Kartu judul={hariWib(dipilih)} padat>
       {sesiHari.length === 0 ? (
         <p className="p-4 text-app-body text-muted-foreground">
-          {alat || pelatih
+          {kelas || pelatih
             ? "Tidak ada kelas yang cocok hari itu."
             : "Tidak ada kelas terjadwal hari itu."}
         </p>
@@ -483,8 +483,8 @@ export default async function M1({
           dengan kepala kalender, karena strip tanggal berdiri sendiri di atas
           kalender berarti ketujuh tanggal yang sama ditulis dua kali. */}
       <BilahKendali
-        alat={alat}
-        daftarAlat={daftarAlat}
+        kelas={kelas}
+        daftarKelas={daftarKelas}
         pelatih={pelatih}
         daftarPelatih={daftarPelatih}
         tgl={kunciHariWib(dipilih)}
@@ -572,7 +572,7 @@ export default async function M1({
                   hilang, berikut tombol geser minggunya. */}
               {tampil.length === 0 && (
                 <p className="mb-dekat hidden text-app-body text-muted-foreground md:block">
-                  {alat || pelatih
+                  {kelas || pelatih
                     ? "Tidak ada kelas yang cocok di minggu ini."
                     : "Tidak ada kelas terjadwal di minggu ini."}
                 </p>

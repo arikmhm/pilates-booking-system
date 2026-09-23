@@ -58,6 +58,85 @@ export function bentrok(
   return aMulai.getTime() < bSelesai && bMulai.getTime() < aSelesai;
 }
 
+/* ── Slot mingguan yang saling menabrak — BR-7.6 ──────────────────────────
+
+   Jadwal ini di-assign berdasarkan JENIS KELAS, bukan alat: `schedule_rules`
+   tidak mengenal ruang maupun mesin. Konsekuensinya satu studio bisa
+   menjadwalkan dua kelas Reformer di jam yang sama, dan sistem dengan senang
+   hati menjual 8 + 8 kursi padahal reformernya cuma 8. Yang menemukan
+   masalahnya delapan orang yang sudah datang.
+
+   Penjaganya di sini, bukan di booking: yang salah jadwalnya, bukan pesanan
+   membernya — dan menolak booking untuk kesalahan studio berarti menghukum
+   orang yang tidak membuatnya.                                             */
+
+export type SlotMingguan = {
+  /** 1 = Senin … 7 = Minggu. */
+  hari: number;
+  /** Jam dinding WIB "HH:MM". */
+  jam_mulai: string;
+  durasi_menit: number;
+  class_type_id: string;
+  coach_id: string | null;
+};
+
+export type BenturanSlot =
+  | { ada: false }
+  | { ada: true; sebab: "kelas" | "coach"; lawan: SlotMingguan };
+
+const MENIT_MINGGU = 7 * 24 * 60;
+
+/** Menit sejak Senin 00.00 WIB. */
+function menitMinggu(s: SlotMingguan): number {
+  const [jam, menit] = s.jam_mulai.split(":").map(Number);
+  return (s.hari - 1) * 1440 + jam * 60 + menit;
+}
+
+/**
+ * Dua slot mingguan tumpang tindih. Sentuhan ujung ke ujung bukan bentrok,
+ * sama seperti `bentrok()` pada booking.
+ *
+ * Dibandingkan pada garis waktu satu minggu yang melingkar: slot Minggu 23.30
+ * berdurasi 60 menit menabrak slot Senin 00.00, dan garis lurus tidak melihat
+ * itu. Menggeser lawannya satu minggu ke kiri dan ke kanan menangkap kedua
+ * arah lipatannya tanpa cabang khusus.
+ */
+function tumpangTindih(a: SlotMingguan, b: SlotMingguan): boolean {
+  const aMulai = menitMinggu(a);
+  const aSelesai = aMulai + a.durasi_menit;
+  const bMulai = menitMinggu(b);
+  const bSelesai = bMulai + b.durasi_menit;
+  return [-MENIT_MINGGU, 0, MENIT_MINGGU].some(
+    (geser) => aMulai < bSelesai + geser && bMulai + geser < aSelesai,
+  );
+}
+
+/**
+ * BR-7.6 — slot mingguan baru tidak boleh menabrak slot yang sudah berjalan
+ * bila **jenis kelasnya sama** (alatnya dipakai dua kali) atau **pelatihnya
+ * sama** (orangnya dipakai dua kali).
+ *
+ * Jenis kelas yang berbeda dengan pelatih yang berbeda boleh berbarengan —
+ * itu studio yang menjalankan dua ruang sekaligus, dan tidak ada yang rusak.
+ *
+ * `yangAda` harus sudah disaring ke slot yang masih berlaku. Slot yang sudah
+ * dihentikan tidak menerbitkan sesi apa pun, jadi menolak karenanya berarti
+ * memblokir jam yang sebenarnya kosong.
+ */
+export function slotBentrok(
+  baru: SlotMingguan,
+  yangAda: SlotMingguan[],
+): BenturanSlot {
+  for (const lawan of yangAda) {
+    if (!tumpangTindih(baru, lawan)) continue;
+    if (lawan.class_type_id === baru.class_type_id)
+      return { ada: true, sebab: "kelas", lawan };
+    if (baru.coach_id && lawan.coach_id === baru.coach_id)
+      return { ada: true, sebab: "coach", lawan };
+  }
+  return { ada: false };
+}
+
 /* ── Titik rawan 2 · pilih kredit yang paling cepat hangus ────────────────
    BR-1.4, BR-1.5, BR-1.7 · Alur 2                                          */
 

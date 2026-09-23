@@ -16,7 +16,7 @@ import { userSaatIni } from "@/lib/masuk";
 /**
  * Kembali ke layar jadwal membawa satu kalimat — halaman yang menampilkannya.
  *
- * `ke` membawa minggu dan saringan alat yang sedang dibuka. Tanpa itu, booking
+ * `ke` membawa minggu dan saringan jenis kelas yang sedang dibuka. Tanpa itu, booking
  * kelas minggu depan melemparkan orang kembali ke minggu ini dan blok yang
  * baru saja dipesannya tidak kelihatan. Nilainya datang dari formulir, jadi
  * ia disaring: hanya path layar ini, tanpa host, tanpa `//` pembuka —

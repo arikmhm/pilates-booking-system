@@ -71,16 +71,24 @@ export const users = pgTable(
 );
 
 /* ── 3. class_types ─ template kelas ─────────────────────────────────────── */
-export const class_types = pgTable("class_types", {
-  id: id(),
-  studio_id: uuid()
-    .notNull()
-    .references(() => studios.id),
-  nama: text().notNull(), // Reformer · Tower · Chair · Mat
-  kapasitas_default: integer().notNull(), // BR-7.2
-  durasi_menit: integer().notNull().default(60),
-  warna: text(),
-});
+// Satu daftar untuk tiga hal sekaligus: apa yang dijadwalkan (schedule_rules),
+// apa yang tercakup sebuah paket (package_class_types, BR-1.4), dan apa yang
+// disaring di layar jadwal. Karena itu namanya dipakai apa adanya di layar dan
+// wajib unik per studio — dua "Reformer" membuat kartu paket menyebut dua hal
+// yang tidak bisa dibedakan pembacanya.
+export const class_types = pgTable(
+  "class_types",
+  {
+    id: id(),
+    studio_id: uuid()
+      .notNull()
+      .references(() => studios.id),
+    nama: text().notNull(), // Reformer · Tower · Chair · Mat
+    kapasitas_default: integer().notNull(), // BR-7.2
+    durasi_menit: integer().notNull().default(60),
+  },
+  (t) => [uniqueIndex("class_types_studio_nama_key").on(t.studio_id, t.nama)],
+);
 
 /* ── 4. schedule_rules ─ pola mingguan, BUKAN sesi nyata ─────────────────── */
 export const LEVEL = ["beginner", "intermediate"] as const;

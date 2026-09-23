@@ -155,6 +155,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | 7.3 | Ubah aturan berulang **hanya** memengaruhi sesi yang belum ada booking-nya; sesi yang sudah ada booking ditangani manual lewat BR-5 | R |
 | 7.4 | Hari libur / blackout → sesi tidak dibuat, atau dibatalkan lewat BR-5 | R |
 | 7.5 | Semua waktu disimpan UTC, ditampilkan WIB | D |
+| 7.6 | Slot mingguan **tidak boleh menabrak slot yang masih berjalan** bila jenis kelasnya sama atau pelatihnya sama; jenis kelas berbeda dengan pelatih berbeda boleh berbarengan | D |
 
 ### BR-8 · Uang
 
@@ -186,7 +187,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 |---|:--:|:--:|---|
 | **Inti — dibangun sekali, dipakai dua-duanya** | | | |
 | Jadwal kelas (tampilan HP) | ✅ | ✅ | |
-| Booking + pilih nomor alat | ✅ | ✅ | BR-2 |
+| Booking + pilih nomor tempat | ✅ | ✅ | BR-2. Kolomnya `nomor_alat`; yang dibaca orang "Tempat 3", karena di kelas Mat nomor itu matras, bukan alat |
 | Waitlist + naik otomatis | ✅ | ✅ | BR-4 |
 | Dompet kredit + buku besar | ✅ | ✅ | BR-1 |
 | Masa berlaku + hitung mundur | ✅ | ✅ | BR-1.2 |
@@ -205,8 +206,10 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | Beli paket sendiri | ◐ | ✅ | Demo: kredit dari seed / ditambah admin |
 | **Hanya di real** | | | |
 | Kelola jadwal berulang | ✅ | ✅ | **Slot mingguan = owner**, kelas sekali jalan = admin (A7). Mengubah slot yang sudah jalan: hentikan lalu buat baru |
+| Kelola jenis kelas | ✅ | ✅ | **Kewenangan owner.** Tambah jenis baru dan hapus yang belum dipakai (A6). Daftar yang sama jadi cakupan paket (BR-1.4), pilihan di A7, dan saringan layar jadwal. **Mengubah** nama atau kapasitas jenis yang sudah dipakai sengaja tidak ada — itu mengubah arti kartu paket yang sudah dibeli orang |
 | Kelola paket & harga | ✅ | ✅ | **Kewenangan owner.** Buat paket baru, sembunyikan yang lama (A6); admin hanya melihat katalog. Harga paket lama tidak diubah — yang sudah beli memegang kreditnya |
-| Kelola coach, ruang, alat | ◐ | ✅ | Demo: daftar pelatih & staf terlihat beserta bebannya (A5). Menambah orang butuh undangan email, satu paket dengan magic link |
+| Kelola coach & staf | ◐ | ✅ | Demo: daftar pelatih & staf terlihat beserta bebannya (A5). Menambah orang butuh undangan email, satu paket dengan magic link |
+| Ruang dan alat sebagai sumber daya | ⬜ | ⬜ | Jadwal di-assign per **jenis kelas**, bukan per alat: `schedule_rules` tidak mengenal ruang maupun mesin, dan `nomor_alat` cuma nomor kursi di dalam satu sesi. Yang menutup risikonya BR-7.6, bukan tabel `rooms`. Tabel itu baru berbayar kalau alat punya identitas sendiri — jadwal servis, kode aset |
 | Hari libur / blackout | ⬜ | ✅ | BR-7.4 |
 | Laporan pendapatan & okupansi | ✅ | ✅ | Pendapatan per bulan, okupansi, kehadiran, nilai kredit hangus (O1). Belum ada ekspor dan biaya operasional |
 | Audit log | ⬜ | ✅ | BR-9.5 |

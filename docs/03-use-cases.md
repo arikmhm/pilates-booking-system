@@ -240,8 +240,8 @@ flowchart LR
 | UC-S05 | **Naikkan waitlist saat ada kursi kosong** | Saat ada pembatalan | BR-4.3–4.4 | ✅ |
 | UC-S06 | Kirim notifikasi | Saat peristiwa | BR-4.3, 5.3 | ✅ |
 | UC-S07 | Ingatkan member kredit segera hangus | Harian | — | ✅ |
-| UC-O01 | Kelola jadwal berulang | — | BR-7.1, 7.3 | ✅ |
-| UC-O02 | Kelola jenis kelas & kapasitas | — | BR-7.2 | ◐ |
+| UC-O01 | Kelola jadwal berulang · slot yang bentrok ditolak | — | BR-7.1, 7.3, **7.6** | ✅ |
+| UC-O02 | Kelola jenis kelas & kapasitas · **tambah dan hapus yang belum dipakai** di A6 | — | BR-7.2 | ✅ |
 | UC-O03 | Kelola paket & harga | — | BR-1.4 | ✅ |
 | UC-O04 | Kelola coach & staf | — | BR-9.3 | ◐ |
 | UC-O05 | Atur hari libur / blackout | — | BR-7.4 | ⬜ |
@@ -391,9 +391,9 @@ sequenceDiagram
 | Member | 14 | 11 | 2 | 1 |
 | Admin | 17 | 17 | — | — |
 | Sistem | 7 | 7 | — | — |
-| Owner | 9 | 4 | 2 | 3 |
+| Owner | 9 | 5 | 1 | 3 |
 | Coach | 3 | 3 | — | — |
-| **Total** | **50** | **42** | **4** | **4** |
+| **Total** | **50** | **43** | **3** | **4** |
 
-Demo menjalankan **42 dari 50 use case secara nyata** — 84%. Yang tersisa hampir
+Demo menjalankan **43 dari 50 use case secara nyata** — 86%. Yang tersisa hampir
 seluruhnya modul pengelolaan master data dan laporan, bukan logika bisnis baru.

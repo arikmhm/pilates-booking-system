@@ -110,10 +110,10 @@ function hariWib(offsetHari: number): number {
 /* ── Data dasar ─────────────────────────────────────────────────────────── */
 
 const JENIS = [
-  { nama: "Reformer", kapasitas: 8, warna: "#BCFF88" },
-  { nama: "Tower", kapasitas: 6, warna: "#CBBEA3" },
-  { nama: "Chair", kapasitas: 6, warna: "#C8C0B2" },
-  { nama: "Mat", kapasitas: 12, warna: "#E5E7EB" },
+  { nama: "Reformer", kapasitas: 8 },
+  { nama: "Tower", kapasitas: 6 },
+  { nama: "Chair", kapasitas: 6 },
+  { nama: "Mat", kapasitas: 12 },
 ];
 
 // Slot jam dinding WIB. Senin–Jumat 7 slot, Sabtu 5 → 40 kelas per minggu,
@@ -184,9 +184,8 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
         nama: j.nama,
         kapasitas_default: j.kapasitas,
         durasi_menit: DURASI,
-        warna: j.warna,
       })),
-      "studio_id", "nama", "kapasitas_default", "durasi_menit", "warna",
+      "studio_id", "nama", "kapasitas_default", "durasi_menit",
     )} returning id, nama, kapasitas_default`;
   const jenisId = Object.fromEntries(jenis.map((j) => [j.nama, j]));
 

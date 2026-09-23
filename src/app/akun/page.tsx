@@ -203,7 +203,7 @@ export default async function M3({
                   <div className="flex shrink-0 flex-col items-end gap-2">
                     <Chip
                       warna="bg-ok-surface text-ok-foreground"
-                      anak={`Alat ${b.nomor_alat}`}
+                      anak={`Tempat ${b.nomor_alat}`}
                     />
                     <form action={batalBooking}>
                       <input type="hidden" name="booking_id" value={b.id} />

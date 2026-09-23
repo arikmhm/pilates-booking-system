@@ -360,7 +360,7 @@ pintu yang ditutup persis di depan calon member (UC-M01).
 
 Tamu memakai kerangka publik `src/app/jadwal/publik.tsx`, bukan sidebar aplikasi:
 sidebar member yang separuh butirnya melempar ke layar masuk itu janji kosong.
-Yang dilihat tamu sama persis — rentang minggu, geser minggu, saringan alat,
+Yang dilihat tamu sama persis — rentang minggu, geser minggu, saringan jenis kelas,
 kalender yang sama — hanya rupa bloknya yang berbeda:
 
 | Blok | Tamu melihat | Member melihat |
@@ -376,7 +376,7 @@ melihat kalender ini, dan DS-14 cuma menjamin tiap blok berteks, bukan bahwa tig
 rupa itu langsung terbaca maknanya.
 
 Tata letaknya dibaca dari atas ke bawah tanpa belokan: hero pendek (`DS-46`) →
-**saringan alat** → kalender → keterangan warna. Saringan naik ke atas karena
+**saringan jenis kelas** → kalender → keterangan warna. Saringan naik ke atas karena
 pertanyaan pertama tamu adalah "ada kelas apa saja", bukan "minggu yang mana";
 kendali minggu duduk di ujung kanan baris yang sama (turun ke bawahnya di HP).
 Keterangan warna justru dipasang **di bawah** kalender: ia penjelasan, bukan
@@ -719,6 +719,26 @@ Semua batas nilai di formulir **diulang di server action**, bukan cuma `min`/`ma
 input. Atribut HTML itu kenyamanan pengguna; server action bisa dipanggil tanpa
 browser sama sekali.
 
+`DS-53` — **Jenis kelas boleh ditambah dari layar, tidak boleh diubah.**
+
+Satu daftar `class_types` melayani tiga tempat sekaligus: yang dijadwalkan di A7, yang
+dicentang sebagai "kelas yang tercakup" di kartu paket (BR-1.4), dan yang jadi saringan
+di layar jadwal. Karena itu menambahnya aman tapi mengubahnya tidak:
+
+- **Menambah** tidak menyentuh apa pun yang sudah jalan — BR-7.3 menyalin kapasitas ke
+  `sessions` saat sesi dibuat, jadi baris baru tidak mengubah satu pun sesi lama.
+  Formulirnya duduk di kanan daftarnya (`DS-34`), dan apa yang baru dibuat langsung
+  muncul sebagai pilihan di formulir paket tepat di bawahnya.
+- **Mengubah** nama atau kapasitas jenis yang sudah dipakai mengubah arti kartu paket
+  yang sudah dibeli orang. Itu percakapan, bukan formulir — dan sengaja tidak ada.
+- **Menghapus** hanya untuk yang belum menempel di slot, sesi, maupun paket: salah
+  ketik yang baru saja dibuat. Tombolnya **tidak digambar** begitu jenisnya terpakai,
+  bukan digambar lalu gagal — syarat di layar sama persis dengan syarat di `DELETE`-nya.
+
+Nama unik per studio dijaga index, bukan cek-dulu-baru-insert: dua tab yang mengirim
+nama yang sama pada saat yang sama sama-sama membaca "belum ada". Pola yang sama dengan
+kapasitas (BR-2.3).
+
 `DS-40` — **Kalender jadwal: satu bilah kendali di kiri atas, dan kalender yang
 menggulung sendiri.**
 
@@ -730,14 +750,23 @@ baris di atas lipatan. Nama halamannya sudah disebut remah roti (`DS-38`); yang 
 `<h1>` `sr-only` untuk pembaca layar, karena halaman tanpa `h1` tetap salah walau
 layarnya tidak membutuhkannya.
 
-**Saringan jenis kelas dan pelatih.** Satu studio bisa punya beberapa ruang dengan satu
-alat di masing-masing — Reformer di bawah, Mat di atas — jadi dua sesi berjalan di jam
-yang sama dan kalender menumpuknya di petak yang sama. Memilih satu jenis kelas
-mengembalikan petaknya jadi satu kartu. Nilainya nama jenis kelas dan nama pelatih di
-URL (`?alat=Reformer&pelatih=Rani%20Wulandari`), ikut terbawa saat pindah minggu, dan
-angka di tiap pilihan adalah jumlah sesi minggu yang sedang dibuka. Nilai yang sedang
-dipilih tetap ditampilkan walau nol — kalau tidak, pindah ke minggu yang kosong membuat
-pilihannya tidak bisa dilepas lagi.
+**Saringan jenis kelas dan pelatih.** Alasannya sederhana dan bukan soal tata letak:
+orang datang ke jadwal dengan satu kelas di kepala ("Reformer kapan?") atau satu
+pelatih ("Rani ngajar kapan?"), dan jadwal empat puluh kelas seminggu menuntut mereka
+membacanya semua untuk menjawabnya.
+
+Versi sebelumnya membenarkannya dengan cerita yang tidak terjadi — "studio punya
+beberapa ruang, dua sesi berjalan di jam yang sama, saringan merapikan kolomnya". Di
+data studio ini **nol** pasang sesi tumpang tindih, dan sejak BR-7.6 dua kelas serentak
+dengan jenis atau pelatih yang sama memang ditolak saat slotnya dibuat. Yang tersisa
+dari cerita itu cuma pembenaran yang enak dibaca.
+
+Nilainya nama jenis kelas dan nama pelatih di URL
+(`?kelas=Reformer&pelatih=Rani%20Wulandari`) — `kelas`, bukan `alat`: yang disaring
+`class_types.nama`, dan jadwal ini memang di-assign per jenis kelas, bukan per alat.
+Keduanya ikut terbawa saat pindah minggu, dan angka di tiap pilihan adalah jumlah sesi
+minggu yang sedang dibuka. Nilai yang sedang dipilih tetap ditampilkan walau nol —
+kalau tidak, pindah ke minggu yang kosong membuat pilihannya tidak bisa dilepas lagi.
 
 **Kisi 12 kolom, 8 untuk kalender dan 4 untuk panel buat-kelas, pisah di 1280px** —
 sama seperti `DS-36`. Formulir itu dulu tinggal di layar Aturan Jadwal, padahal

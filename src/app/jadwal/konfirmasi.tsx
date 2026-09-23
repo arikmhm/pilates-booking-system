@@ -4,7 +4,7 @@
 // sebuah blok di kalender, dan kalendernya harus tetap terlihat di belakang.
 //
 // Komponen server murni. Terbuka-tutupnya lewat `?pilih=<session_id>` di URL —
-// sama seperti minggu, saringan alat, dan panel buat-kelas di layar ini.
+// sama seperti minggu, saringan jenis kelas, dan panel buat-kelas di layar ini.
 // Tanpa state klien berarti tombol kembali browser bekerja, panelnya bisa
 // ditautkan, dan tidak ada JavaScript yang harus dimuat dulu sebelum seseorang
 // bisa merebut kursi terakhir.
@@ -37,7 +37,7 @@ export function Konfirmasi({
   tutup,
 }: {
   sesi: BarisJadwal;
-  /** Nomor alat yang sudah terisi — tampil tercoret, tidak bisa dipilih. */
+  /** Nomor tempat yang sudah terisi — tampil mati, tidak bisa dipilih. */
   terpakai: number[];
   setelan: Setelan;
   /** Sisa kredit member sebelum booking ini. */
@@ -84,10 +84,14 @@ export function Konfirmasi({
 
             <fieldset className="py-4">
               <legend className="text-app-label uppercase text-muted-foreground">
-                Pilih nomor alat
+                Pilih tempat
               </legend>
+              {/* "Tempat", bukan "alat": nomor ini reformer nomor 3 di kelas
+                  Reformer, tapi matras nomor 3 di kelas Mat — yang memang
+                  dijual sebagai kelas tanpa alat. Kolomnya masih bernama
+                  `nomor_alat`; yang dibaca orang tidak harus ikut. */}
               <p className="mt-1 text-app-body-sm text-muted-foreground">
-                {sesi.kapasitas - sesi.terisi} dari {sesi.kapasitas} alat masih
+                {sesi.kapasitas - sesi.terisi} dari {sesi.kapasitas} tempat masih
                 kosong. Tidak memilih pun boleh — yang tercentang sudah siap.
               </p>
               {/* Kisi chip: radio disembunyikan, labelnya yang digambar.

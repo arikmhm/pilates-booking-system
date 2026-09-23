@@ -75,7 +75,6 @@ erDiagram
         text nama "Reformer|Tower|Chair|Mat"
         int kapasitas_default "8"
         int durasi_menit "60"
-        text warna
     }
 
     schedule_rules {
@@ -268,6 +267,11 @@ CREATE UNIQUE INDEX ON credit_ledger (member_package_id) WHERE alasan = 'hangus'
 CREATE UNIQUE INDEX ON sessions (schedule_rule_id, mulai_at)
   WHERE schedule_rule_id IS NOT NULL;
 
+-- Nama jenis kelas tampil apa adanya di kartu paket, di saringan jadwal, dan
+-- di pilihan A7. Dua "Reformer" membuat ketiganya menyebut hal yang tidak bisa
+-- dibedakan pembacanya.
+CREATE UNIQUE INDEX ON class_types (studio_id, nama);
+
 CHECK (bookings.nomor_alat >= 1);
 CHECK (credit_ledger.delta <> 0);
 CHECK (member_packages.hangus_at > member_packages.dibeli_at);
@@ -395,7 +399,8 @@ bersamaan, lalu dua-duanya menulis.
 
 | Tidak ada | Alasan | Tambahkan kalau |
 |---|---|---|
-| Tabel `rooms` / `equipment` | Nomor alat cukup jadi integer `1..kapasitas` di `bookings` | Studio punya alat dengan identitas sendiri (jadwal servis, kode aset) |
+| Tabel `rooms` / `equipment` | Jadwal di-assign per **jenis kelas**, bukan per alat. Nomor alat cukup jadi integer `1..kapasitas` di `bookings` — ia nomor kursi di dalam satu sesi, bukan identitas mesin. Risiko yang ditinggalkannya (dua kelas Reformer serentak menjual 16 kursi untuk 8 reformer) ditutup BR-7.6 di hulu, saat slotnya dibuat | Studio punya alat dengan identitas sendiri: jadwal servis, kode aset, atau ruang yang bisa dipesan terpisah dari kelasnya |
+| Kolom `class_types.warna` | Ada di skema pertama, tidak pernah dipakai satu layar pun — kalender mewarnai per **status** (`ok` · `neutral` · `muted`), bukan per jenis kelas, dan DS-14 melarang warna jadi penanda tunggal. Dibuang di migrasi 0004 | Jenis kelas perlu penanda visual yang lolos kontras DAN tetap punya pasangan teks |
 | Tabel `coaches` terpisah | Coach adalah `users` dengan `peran='coach'` | Butuh data khusus coach: sertifikasi, tarif, komisi |
 | Kolom saldo kredit | Jumlahkan `credit_ledger` — selalu benar, tidak bisa melenceng | Terbukti lambat di atas ~100rb baris ledger; baru buat materialized view |
 | Kolom status di `member_packages` | Bisa diturunkan dari `hangus_at` + jumlah ledger | Query jadi berat |

@@ -11,21 +11,28 @@ import { redirect } from "next/navigation";
 import { pg } from "@/db";
 import { setelanLengkap } from "@/db/admin";
 import {
+  BATAS_JENIS,
   BATAS_PAKET,
   BATAS_TERBIT,
   bersihkanSesiKosong,
   buatAturan,
+  buatJenisKelas,
   buatPaket,
   buatSesiManual,
+  daftarAturan,
+  hapusJenisKelas,
+  HARI,
   hentikanAturan,
   jalankanAturan,
+  NAMA_JENIS_GANDA,
   simpanJangkaTerbit,
   ubahAktifPaket,
 } from "@/db/kelola";
 import { generateSesi } from "@/db/job";
 import { pastikanAdmin, pastikanOwner } from "@/lib/masuk";
 import { saat } from "@/db/booking";
-import { hariWib, jamWib } from "@/lib/waktu";
+import { slotBentrok, type SlotMingguan } from "@/rules";
+import { hariWib, jamWib, kunciHariWib } from "@/lib/waktu";
 
 function keLayanan(pesan: string): never {
   redirect(`/admin/layanan?kabar=${encodeURIComponent(pesan)}`);
@@ -99,6 +106,64 @@ export async function tambahPaket(formData: FormData) {
   keLayanan(`Paket "${nama}" dibuat — ${kredit} kredit, berlaku ${masa} hari.`);
 }
 
+/* ── Jenis kelas — UC-O02 ──────────────────────────────────────────────────
+   Kewenangan OWNER, sekelompok dengan paket: jenis kelas adalah katalog yang
+   sama. Daftar inilah yang muncul sebagai "berlaku untuk" di kartu paket
+   (BR-1.4) dan sebagai saringan di layar jadwal — satu sumber, tiga tempat. */
+
+export async function tambahJenisKelas(formData: FormData) {
+  await pastikanOwner();
+
+  const nama = String(formData.get("nama") ?? "").trim();
+  if (nama.length < 2 || nama.length > 40)
+    keLayanan("Nama jenis kelas harus 2–40 karakter.");
+
+  const kapasitas = angka(formData, "kapasitas_default", BATAS_JENIS.kapasitas_default);
+  const durasi = angka(formData, "durasi_menit", BATAS_JENIS.durasi_menit);
+  if (kapasitas === null) keLayanan("Kapasitas bawaan harus 1–60.");
+  if (durasi === null) keLayanan("Durasi harus 15–240 menit.");
+
+  const studio = await setelanLengkap(pg);
+  try {
+    await buatJenisKelas(pg, {
+      studio_id: studio.id,
+      nama,
+      kapasitas_default: kapasitas,
+      durasi_menit: durasi,
+    });
+  } catch (e) {
+    // Nama ganda ditangkap dari index, bukan dari cek-dulu-baru-insert.
+    const galat = e as { constraint_name?: string };
+    if (galat.constraint_name !== NAMA_JENIS_GANDA) throw e;
+    keLayanan(`Jenis kelas "${nama}" sudah ada.`);
+  }
+
+  revalidatePath("/admin/layanan");
+  revalidatePath("/admin/jadwal");
+  revalidatePath("/jadwal");
+  keLayanan(
+    `Jenis kelas "${nama}" dibuat — ${kapasitas} kursi, ${durasi} menit. ` +
+      "Tinggal dijadwalkan di Aturan Jadwal dan dimasukkan ke paket.",
+  );
+}
+
+export async function buangJenisKelas(formData: FormData) {
+  await pastikanOwner();
+
+  const id = String(formData.get("id"));
+  const nama = String(formData.get("nama") ?? "jenis kelas");
+  const terhapus = await hapusJenisKelas(pg, id);
+  if (!terhapus)
+    keLayanan(
+      `"${nama}" sudah dipakai slot mingguan, sesi, atau paket — jadi tidak bisa dihapus. ` +
+        "Hentikan slotnya dulu kalau memang mau berhenti menjualnya.",
+    );
+
+  revalidatePath("/admin/layanan");
+  revalidatePath("/jadwal");
+  keLayanan(`Jenis kelas "${nama}" dihapus.`);
+}
+
 export async function setAktifPaket(formData: FormData) {
   await pastikanOwner();
 
@@ -144,6 +209,39 @@ export async function tambahAturan(formData: FormData) {
   const minggu = angka(formData, "minggu", BATAS_TERBIT);
   if (minggu === null)
     keJadwal(`Jangka terbit harus ${BATAS_TERBIT[0]}–${BATAS_TERBIT[1]} minggu.`, dari);
+
+  // BR-7.6 — slot baru tidak boleh menabrak slot yang masih berjalan kalau
+  // jenis kelasnya sama (alatnya dipakai dua kali) atau pelatihnya sama.
+  // Dijaga di sini, bukan saat booking: yang salah jadwalnya, bukan pesanan
+  // membernya. Slot yang sudah dihentikan dilewati — ia tidak menerbitkan
+  // sesi apa pun, jadi menolak karenanya berarti memblokir jam yang kosong.
+  const hariIni = kunciHariWib(new Date());
+  const berjalan: SlotMingguan[] = (await daftarAturan(pg, new Date()))
+    .filter((a) => a.berlaku_sampai === null || a.berlaku_sampai >= hariIni)
+    .map((a) => ({
+      hari: a.hari,
+      jam_mulai: a.jam_mulai,
+      durasi_menit: a.durasi_menit,
+      class_type_id: a.class_type_id,
+      coach_id: a.coach_id,
+    }));
+
+  const benturan = slotBentrok(
+    { hari, jam_mulai: jam, durasi_menit: durasi, class_type_id, coach_id },
+    berjalan,
+  );
+  if (benturan.ada) {
+    const l = benturan.lawan;
+    // "06:00:00" dari kolom `time` jadi "06.00" — titik, seperti jam di
+    // seluruh layar lain (DS-28).
+    const kapan = `${HARI[l.hari - 1]} ${l.jam_mulai.slice(0, 5).replace(":", ".")}`;
+    keJadwal(
+      benturan.sebab === "kelas"
+        ? `Bentrok dengan slot ${kapan} yang jenis kelasnya sama. Dua kelas serentak berarti alatnya dipakai dua kali, dan kursinya terjual dua kali lipat.`
+        : `Bentrok dengan slot ${kapan} yang pelatihnya sama. Satu orang tidak bisa mengajar dua kelas sekaligus.`,
+      dari,
+    );
+  }
 
   const studio = await setelanLengkap(pg);
   await simpanJangkaTerbit(pg, studio.id, minggu);

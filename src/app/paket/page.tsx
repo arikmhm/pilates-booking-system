@@ -32,10 +32,10 @@ const TELEPON = "0811550002";
 export default async function KatalogPaket({
   searchParams,
 }: {
-  searchParams: Promise<{ alat?: string }>;
+  searchParams: Promise<{ kelas?: string }>;
 }) {
-  const { alat: alatParam } = await searchParams;
-  const alat = (alatParam ?? "").trim();
+  const { kelas: kelasParam } = await searchParams;
+  const kelas = (kelasParam ?? "").trim();
 
   const [paket, setelan] = await Promise.all([
     paketDijual(pg),
@@ -48,12 +48,12 @@ export default async function KatalogPaket({
   const jumlah = new Map<string, number>();
   for (const p of paket)
     for (const k of p.kelas) jumlah.set(k, (jumlah.get(k) ?? 0) + 1);
-  const daftarAlat = [...jumlah.entries()].sort((a, b) =>
+  const daftarKelas = [...jumlah.entries()].sort((a, b) =>
     a[0].localeCompare(b[0], "id"),
   );
 
-  const tampil = alat ? paket.filter((p) => p.kelas.includes(alat)) : paket;
-  const tautan = (a: string) => (a ? `/paket?alat=${encodeURIComponent(a)}` : "/paket");
+  const tampil = kelas ? paket.filter((p) => p.kelas.includes(kelas)) : paket;
+  const tautan = (a: string) => (a ? `/paket?kelas=${encodeURIComponent(a)}` : "/paket");
 
   return (
     <RangkaPublik judul="Paket Kredit" aktif="/paket">
@@ -80,12 +80,12 @@ export default async function KatalogPaket({
         </a>
       </div>
 
-      {daftarAlat.length > 0 && (
+      {daftarKelas.length > 0 && (
         <div className="mt-dekat flex w-full items-center gap-0.5 overflow-x-auto rounded-sm border border-border p-1 sm:w-auto sm:gap-1">
           {([["", "Semua", paket.length]] as [string, string, number][])
-            .concat(daftarAlat.map(([nama, n]) => [nama, nama, n]))
+            .concat(daftarKelas.map(([nama, n]) => [nama, nama, n]))
             .map(([nilai, label, n]) => {
-              const dipilih = nilai === alat;
+              const dipilih = nilai === kelas;
               return (
                 <Link
                   key={nilai || "semua"}
@@ -109,8 +109,8 @@ export default async function KatalogPaket({
 
       {tampil.length === 0 ? (
         <p className="mt-sedang text-app-body text-muted-foreground">
-          {alat
-            ? `Belum ada paket yang mencakup kelas ${alat}.`
+          {kelas
+            ? `Belum ada paket yang mencakup kelas ${kelas}.`
             : "Katalog paket sedang kosong."}
         </p>
       ) : (

@@ -88,7 +88,7 @@ berapa pun fiturnya.
 
 | | Rilis | Isi | Target |
 |---|---|---|---|
-| **R0** | Demo | 42 dari 50 use case, 12 tabel, seed relatif, tombol reset | ~5 Okt 2026 |
+| **R0** | Demo | 43 dari 50 use case, 12 tabel, seed relatif, tombol reset | ~5 Okt 2026 |
 | **R1** | Produksi klien pertama | R0 + login + pembayaran + email + CRUD master data + audit log | 2–3 minggu setelah deal |
 | **R2** | Fase 2 | Kelas private, paket unlimited, laporan lanjutan, multi-cabang | Dijual terpisah |
 
