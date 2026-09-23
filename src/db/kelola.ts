@@ -112,6 +112,8 @@ export type JenisKelas = {
   durasi_menit: number;
   slot_mingguan: number;
   sesi_mendatang: number;
+  /** Berapa paket yang mencakup jenis ini — pertanyaan khas layar katalog. */
+  dipakai_paket: number;
   /** Sudah menempel di slot, sesi, atau paket — syarat yang sama dengan
    *  `hapusJenisKelas()`, supaya layar tidak menawarkan tombol yang gagal. */
   dipakai: boolean;
@@ -128,6 +130,8 @@ export async function daftarJenisKelas(
            (select count(*)::int from sessions s
              where s.class_type_id = ct.id and s.status = 'scheduled'
                and s.mulai_at > ${ts(sekarang)}::timestamptz) as sesi_mendatang,
+           (select count(*)::int from package_class_types pct
+             where pct.class_type_id = ct.id) as dipakai_paket,
            (exists (select 1 from schedule_rules r where r.class_type_id = ct.id)
             or exists (select 1 from sessions s2 where s2.class_type_id = ct.id)
             or exists (select 1 from package_class_types p

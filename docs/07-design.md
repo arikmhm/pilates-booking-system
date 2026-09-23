@@ -586,7 +586,7 @@ menolak pemiliknya sendiri saat diklik lebih buruk daripada menu yang pendek.
 | Admin | — | Dashboard |
 | | Jadwal | Jadwal Kelas · Aturan Jadwal |
 | | Member | Direktori Member · Pesan Terkirim |
-| | Studio | Pelatih & Staf · Layanan & Paket |
+| | Studio | Pelatih & Staf · Kelas & Paket |
 | | Bisnis | Transaksi |
 | Owner | | semua milik admin, **+ Laporan di kelompok Bisnis** |
 
@@ -738,6 +738,41 @@ di layar jadwal. Karena itu menambahnya aman tapi mengubahnya tidak:
 Nama unik per studio dijaga index, bukan cek-dulu-baru-insert: dua tab yang mengirim
 nama yang sama pada saat yang sama sama-sama membaca "belum ada". Pola yang sama dengan
 kapasitas (BR-2.3).
+
+`DS-54` — **Layar yang memuat dua hal yang gampang tertukar wajib mengatakan bedanya
+di kalimat pertama.**
+
+A6 memuat *jenis kelas* dan *paket*. Keduanya daftar bernama mirip — dan paketnya
+memang bernama "10 Sesi Reformer" sementara jenis kelasnya "Reformer", jadi tertukar
+itu bukan kecerobohan pembacanya. Layar ini satu-satunya tempat model bisnis studio
+terlihat utuh, jadi ia yang harus menjelaskannya:
+
+> Studio ini menjual **kredit**, bukan kelas satuan. **Jenis kelas** adalah apa yang
+> diajarkan — itu yang masuk jadwal. **Paket** adalah apa yang dibayar: sejumlah
+> kredit, masa berlakunya, dan daftar jenis kelas tempat kredit itu bisa dipakai.
+> Satu kredit menukar satu kursi.
+
+Empat hal yang mengikat:
+
+1. **Judul kartu membawa perannya, bukan cuma namanya** — "Jenis kelas — apa yang
+   diajarkan", "Paket — apa yang dibeli". Judul satu kata memaksa pembacanya menebak.
+2. **Urutannya mengikuti arah uang**: yang diajarkan dulu, yang dijual sesudahnya.
+   Paket menunjuk ke jenis kelas, bukan sebaliknya.
+3. **Satu pasang daftar+formulir per baris kisi**, bukan dua kolom berisi dua daftar
+   lalu dua formulir. Disusun per kolom, "Jenis kelas baru" mendarat sejajar daftar
+   paket dan terbaca sebagai formulir untuk daftar yang salah. Di dalam tiap baris
+   tetap `DS-34`: daftar kiri, formulir kanan.
+4. **Kode `BR-x.y` tidak pernah muncul di teks yang dibaca pengguna.** "BR-1.4 — kredit
+   hanya bisa dipakai untuk kelas yang dicentang" diganti akibatnya: "Yang tidak
+   dicentang akan ditolak saat member mencoba memesan." Kodenya tetap hidup di komentar
+   kode dan di dokumen — di sana ia memang alamat.
+
+**Angka di tiap baris menjawab pertanyaan layar ini, bukan pertanyaan layar sebelah.**
+Jenis kelas dulu menampilkan "5 slot / minggu · 15 sesi mendatang"; yang kedua itu
+kabar jadwal. Sekarang "Masuk 3 paket · 5 slot / minggu", dan keduanya berbunyi negatif
+kalau nol — "Belum masuk paket", "Belum dijadwalkan". Jenis kelas yang kosong di
+keduanya tidak bisa dibeli dan tidak pernah berjalan, dan itulah satu-satunya keadaan
+yang menuntut tindakan dari layar ini.
 
 `DS-40` — **Kalender jadwal: satu bilah kendali di kiri atas, dan kalender yang
 menggulung sendiri.**

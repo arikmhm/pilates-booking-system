@@ -110,7 +110,7 @@ const STAF: Grup[] = [
     judul: "Studio",
     butir: [
       { href: "/admin/tim", label: "Pelatih & Staf", ikon: UserCog },
-      { href: "/admin/layanan", label: "Layanan & Paket", ikon: Package },
+      { href: "/admin/layanan", label: "Kelas & Paket", ikon: Package },
     ],
   },
 ];

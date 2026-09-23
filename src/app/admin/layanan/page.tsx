@@ -56,21 +56,36 @@ export default async function A6({
       kabar={kabar}
     >
       <div>
-        <h1 className="text-app-title">Layanan & paket</h1>
-        <p className="text-app-body-sm text-muted-foreground">
-          {jenis.length} jenis kelas · {paket.filter((p) => p.aktif).length} paket
-          aktif
+        <h1 className="text-app-title">Kelas & paket</h1>
+        {/* DS-54 — layar ini memperkenalkan model bisnisnya, jadi ia harus
+            mengatakannya. Tanpa kalimat ini yang tampil cuma dua daftar
+            bernama mirip, dan "10 Sesi Reformer" (paket) memang gampang
+            tertukar dengan "Reformer" (jenis kelas). */}
+        <p className="mt-1 max-w-[70ch] text-app-body text-muted-foreground">
+          Studio ini menjual <strong className="text-foreground">kredit</strong>,
+          bukan kelas satuan.{" "}
+          <strong className="text-foreground">Jenis kelas</strong> adalah apa
+          yang diajarkan — itu yang masuk jadwal.{" "}
+          <strong className="text-foreground">Paket</strong> adalah apa yang
+          dibayar: sejumlah kredit, masa berlakunya, dan daftar jenis kelas
+          tempat kredit itu bisa dipakai. Satu kredit menukar satu kursi.
         </p>
       </div>
 
-      <div className="mt-dekat grid gap-dekat lg:grid-cols-[minmax(0,1fr)_26rem]">
-        <div className="space-y-dekat">
+      {/* DS-54 — dua pasang daftar+formulir, satu pasang per baris:
+          jenis kelas dulu (yang diajarkan), baru paket (yang dijual).
+          Disusun per kolom, "Jenis kelas baru" mendarat di sebelah
+          daftar paket dan terbaca seperti formulir untuk daftar yang
+          salah. Di dalam tiap baris tetap DS-34: daftar kiri, formulir
+          kanan. */}
+      <div className="mt-dekat space-y-dekat">
+        <div className="grid items-start gap-dekat lg:grid-cols-[minmax(0,1fr)_26rem]">
           {/* Daftar ini tiga hal sekaligus: yang dijadwalkan di A7, yang
               dicentang sebagai "kelas yang tercakup" di paket (BR-1.4), dan
               yang jadi saringan di layar jadwal. Satu sumber, tiga tempat. */}
           <Kartu
-            judul="Jenis kelas"
-            catatan="Dipakai tiga tempat: jadwal mingguan, cakupan paket, dan saringan layar jadwal. Kapasitas di sini cuma nilai bawaan — sesi menyalinnya saat dibuat (BR-7.3)."
+            judul="Jenis kelas — apa yang diajarkan"
+            catatan="Tidak punya harga. Yang dijual paket di bawah; jenis kelas cuma menentukan kelas apa yang dijadwalkan, dan di kelas mana sebuah paket berlaku."
             padat
           >
             <ul className="divide-y divide-border">
@@ -82,9 +97,22 @@ export default async function A6({
                       {j.durasi_menit} menit · kapasitas bawaan {j.kapasitas_default}
                     </p>
                   </div>
+                  {/* Dua angka yang menjawab pertanyaan layar INI: sudah
+                      masuk paket mana pun belum, dan sudah dijadwalkan belum.
+                      Jenis kelas yang kosong di keduanya tidak bisa dibeli
+                      dan tidak pernah berjalan — dan itu yang harus ketahuan
+                      dari sini, bukan jumlah sesi mendatangnya. */}
                   <div className="shrink-0 text-right text-app-body-sm text-muted-foreground">
-                    <p className="tabular-nums">{j.slot_mingguan} slot / minggu</p>
-                    <p className="tabular-nums">{j.sesi_mendatang} sesi mendatang</p>
+                    <p>
+                      {j.dipakai_paket
+                        ? `Masuk ${j.dipakai_paket} paket`
+                        : "Belum masuk paket"}
+                    </p>
+                    <p>
+                      {j.slot_mingguan
+                        ? `${j.slot_mingguan} slot / minggu`
+                        : "Belum dijadwalkan"}
+                    </p>
                   </div>
                   {/* Tombolnya cuma ada selama jenis kelasnya belum menempel
                       di mana-mana — tombol yang pasti gagal lebih buruk
@@ -100,8 +128,90 @@ export default async function A6({
               ))}
             </ul>
           </Kartu>
+          {!owner && (
+            <Kartu judul="Katalog">
+              <p className="text-app-body-sm text-muted-foreground">
+                Menambah jenis kelas, membuat paket, dan menentukan harganya
+                adalah kewenangan pemilik studio. Kamu tetap bisa melihat
+                katalognya, dan memberikan paket ke member lewat layar detail
+                member.
+              </p>
+            </Kartu>
+          )}
 
-          <Kartu judul="Paket kredit" catatan="Yang tampil di halaman publik." padat>
+          {owner && (
+            <Kartu
+              judul="Jenis kelas baru"
+              catatan="Belum bisa dibeli sampai dicentang di sebuah paket, dan belum berjalan sampai dijadwalkan di Aturan Jadwal."
+            >
+              <form action={tambahJenisKelas} className="space-y-4">
+                <div>
+                  <label className={LABEL} htmlFor="jenis_nama">
+                    Nama
+                  </label>
+                  <input
+                    id="jenis_nama"
+                    name="nama"
+                    required
+                    minLength={2}
+                    maxLength={40}
+                    placeholder="Barre"
+                    className={INPUT}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={LABEL} htmlFor="kapasitas_default">
+                      Kursi bawaan
+                    </label>
+                    <input
+                      id="kapasitas_default"
+                      name="kapasitas_default"
+                      type="number"
+                      required
+                      min={1}
+                      max={60}
+                      defaultValue={8}
+                      className={INPUT}
+                    />
+                  </div>
+                  <div>
+                    <label className={LABEL} htmlFor="jenis_durasi">
+                      Durasi (menit)
+                    </label>
+                    <input
+                      id="jenis_durasi"
+                      name="durasi_menit"
+                      type="number"
+                      required
+                      min={15}
+                      max={240}
+                      step={5}
+                      defaultValue={70}
+                      className={INPUT}
+                    />
+                  </div>
+                </div>
+
+                <p className="text-app-body-sm text-muted-foreground">
+                  Keduanya cuma nilai bawaan. Tiap slot mingguan dan tiap sesi
+                  boleh memakai angka lain — Sabtu boleh 45 menit walau
+                  bawaannya 70.
+                </p>
+
+                <Tombol penuh anak="Tambah jenis kelas" />
+              </form>
+            </Kartu>
+          )}
+        </div>
+
+        <div className="grid items-start gap-dekat lg:grid-cols-[minmax(0,1fr)_26rem]">
+          <Kartu
+            judul="Paket — apa yang dibeli"
+            catatan="Inilah yang dibayar member, dan yang tampil di halaman publik. Tiap paket menyebut jumlah kreditnya, masa berlakunya, dan jenis kelas mana saja yang boleh dipakai."
+            padat
+          >
             <ul className="divide-y divide-border">
               {paket.map((p) => (
                 <li key={p.id} className="flex flex-wrap items-center gap-4 px-4 py-3">
@@ -151,180 +261,104 @@ export default async function A6({
               ))}
             </ul>
           </Kartu>
-        </div>
-
-        <div className="space-y-dekat">
-        {owner && (
+          {owner && (
           <Kartu
-            judul="Jenis kelas baru"
-            catatan="Yang ditambah di sini langsung jadi pilihan di formulir paket bawah, di Aturan Jadwal, dan di saringan layar jadwal."
+            judul="Paket baru"
+            catatan="Paket lama tidak pernah dihapus — member yang sudah beli tetap memegang kreditnya."
           >
-            <form action={tambahJenisKelas} className="space-y-4">
+            <form action={tambahPaket} className="space-y-4">
               <div>
-                <label className={LABEL} htmlFor="jenis_nama">
-                  Nama
+                <label className={LABEL} htmlFor="nama">
+                  Nama paket
                 </label>
                 <input
-                  id="jenis_nama"
+                  id="nama"
                   name="nama"
                   required
-                  minLength={2}
-                  maxLength={40}
-                  placeholder="Barre"
+                  minLength={3}
+                  maxLength={60}
+                  placeholder="8 Sesi Reformer"
                   className={INPUT}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={LABEL} htmlFor="kapasitas_default">
-                    Kursi bawaan
+                  <label className={LABEL} htmlFor="jumlah_kredit">
+                    Jumlah kredit
                   </label>
                   <input
-                    id="kapasitas_default"
-                    name="kapasitas_default"
+                    id="jumlah_kredit"
+                    name="jumlah_kredit"
                     type="number"
                     required
                     min={1}
-                    max={60}
+                    max={200}
                     defaultValue={8}
                     className={INPUT}
                   />
                 </div>
                 <div>
-                  <label className={LABEL} htmlFor="jenis_durasi">
-                    Durasi (menit)
+                  <label className={LABEL} htmlFor="masa_berlaku_hari">
+                    Berlaku (hari)
                   </label>
                   <input
-                    id="jenis_durasi"
-                    name="durasi_menit"
+                    id="masa_berlaku_hari"
+                    name="masa_berlaku_hari"
                     type="number"
                     required
-                    min={15}
-                    max={240}
-                    step={5}
-                    defaultValue={70}
+                    min={1}
+                    max={730}
+                    defaultValue={60}
                     className={INPUT}
                   />
                 </div>
               </div>
 
-              <p className="text-app-body-sm text-muted-foreground">
-                Keduanya cuma nilai bawaan — tiap slot mingguan dan tiap sesi
-                boleh menimpanya (BR-7.2).
-              </p>
+              <div>
+                <label className={LABEL} htmlFor="harga_rupiah">
+                  Harga (Rupiah, tanpa titik)
+                </label>
+                <input
+                  id="harga_rupiah"
+                  name="harga_rupiah"
+                  type="number"
+                  required
+                  min={0}
+                  step={1000}
+                  defaultValue={1200000}
+                  className={INPUT}
+                />
+              </div>
 
-              <Tombol penuh anak="Tambah jenis kelas" />
+              <fieldset>
+                <legend className={LABEL}>Kelas yang tercakup</legend>
+                <p className="mb-2 text-app-body-sm text-muted-foreground">
+                  Kredit paket ini hanya bisa dipakai di kelas yang dicentang.
+                  Yang tidak dicentang akan ditolak saat member mencoba memesan.
+                </p>
+                <div className="space-y-1">
+                  {jenis.map((j) => (
+                    <label
+                      key={j.id}
+                      className="flex min-h-11 items-center gap-3 rounded-sm px-2 text-app-body hover:bg-muted"
+                    >
+                      <input
+                        type="checkbox"
+                        name="class_type_ids"
+                        value={j.id}
+                        className="size-4"
+                      />
+                      {j.nama}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              <Tombol penuh anak="Buat paket" />
             </form>
           </Kartu>
-        )}
-
-{owner ? (
-        <Kartu
-          judul="Paket baru"
-          catatan="Paket lama tidak pernah dihapus — member yang sudah beli tetap memegang kreditnya."
-        >
-          <form action={tambahPaket} className="space-y-4">
-            <div>
-              <label className={LABEL} htmlFor="nama">
-                Nama paket
-              </label>
-              <input
-                id="nama"
-                name="nama"
-                required
-                minLength={3}
-                maxLength={60}
-                placeholder="8 Sesi Reformer"
-                className={INPUT}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className={LABEL} htmlFor="jumlah_kredit">
-                  Jumlah kredit
-                </label>
-                <input
-                  id="jumlah_kredit"
-                  name="jumlah_kredit"
-                  type="number"
-                  required
-                  min={1}
-                  max={200}
-                  defaultValue={8}
-                  className={INPUT}
-                />
-              </div>
-              <div>
-                <label className={LABEL} htmlFor="masa_berlaku_hari">
-                  Berlaku (hari)
-                </label>
-                <input
-                  id="masa_berlaku_hari"
-                  name="masa_berlaku_hari"
-                  type="number"
-                  required
-                  min={1}
-                  max={730}
-                  defaultValue={60}
-                  className={INPUT}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className={LABEL} htmlFor="harga_rupiah">
-                Harga (Rupiah, tanpa titik)
-              </label>
-              <input
-                id="harga_rupiah"
-                name="harga_rupiah"
-                type="number"
-                required
-                min={0}
-                step={1000}
-                defaultValue={1200000}
-                className={INPUT}
-              />
-            </div>
-
-            <fieldset>
-              <legend className={LABEL}>Kelas yang tercakup</legend>
-              <p className="mb-2 text-app-body-sm text-muted-foreground">
-                BR-1.4 — kredit hanya bisa dipakai untuk kelas yang dicentang.
-              </p>
-              <div className="space-y-1">
-                {jenis.map((j) => (
-                  <label
-                    key={j.id}
-                    className="flex min-h-11 items-center gap-3 rounded-sm px-2 text-app-body hover:bg-muted"
-                  >
-                    <input
-                      type="checkbox"
-                      name="class_type_ids"
-                      value={j.id}
-                      className="size-4"
-                    />
-                    {j.nama}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-
-            <Tombol penuh anak="Buat paket" />
-          </form>
-        </Kartu>
-        ) : (
-          <Kartu judul="Katalog">
-            <p className="text-app-body-sm text-muted-foreground">
-              Menambah jenis kelas, membuat paket, dan menentukan harganya
-              adalah kewenangan pemilik studio. Kamu tetap bisa melihat
-              katalognya, dan memberikan paket ke member lewat layar detail
-              member.
-            </p>
-          </Kartu>
-        )}
+          )}
         </div>
       </div>
     </Kerangka>
