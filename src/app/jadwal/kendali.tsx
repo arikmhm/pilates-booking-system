@@ -108,7 +108,7 @@ export function BilahKendali({
     // sendiri, bukan memasangnya di kartu yang membungkus keduanya.
     <div
       className={`sticky top-0 z-30 border-b border-border bg-background ${
-        menyatu ? "rounded-t-md px-4" : "-mx-gutter px-gutter"
+        menyatu ? "rounded-t-md px-4 py-2" : "-mx-gutter px-gutter py-2"
       }`}
     >
       <form
@@ -127,11 +127,20 @@ export function BilahKendali({
       >
         {/* `pilih` sengaja tidak ikut: mengganti saringan berarti orang sedang
             melihat-lihat lagi, dan panel konfirmasinya harus ikut tertutup. */}
-        {rupa === "daftar" && <input type="hidden" name="rupa" value="daftar" />}
-        {buat === "berulang" && <input type="hidden" name="buat" value="berulang" />}
+        {rupa === "daftar" && (
+          <input type="hidden" name="rupa" value="daftar" />
+        )}
+        {buat === "berulang" && (
+          <input type="hidden" name="buat" value="berulang" />
+        )}
 
         <div className="flex items-center gap-2">
-          <Pilih nama="kelas" nilai={kelas} semua="Semua kelas" daftar={daftarKelas} />
+          <Pilih
+            nama="kelas"
+            nilai={kelas}
+            semua="Semua kelas"
+            daftar={daftarKelas}
+          />
           <Pilih
             nama="pelatih"
             nilai={pelatih}
