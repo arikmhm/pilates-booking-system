@@ -713,7 +713,13 @@ render, bukan sebagai status.
 (`grid lg:grid-cols-[minmax(0,1fr)_30rem]`), menumpuk jadi satu kolom di bawah 1024px.
 Formulir yang bersembunyi di balik tombol "Tambah" memaksa orang menghafal isi daftar
 sebelum mengisinya; diletakkan bersebelahan, daftar itu jadi contoh hidup untuk
-formulirnya. Berlaku di A6 dan A7.
+formulirnya. Berlaku di **A7**.
+
+**A6 keluar dari pola ini dan itu disengaja** (`DS-56`). Alasan DS-34 berlaku selama
+layar punya SATU daftar: formulir di sebelahnya jelas milik daftar itu. A6 punya dua —
+kelas dan paket — dan dua formulir terbuka di kolom kanan berarti separuhnya selalu
+sejajar dengan daftar yang salah. Di sana formulirnya jadi dialog dari URL, dan kolom
+kanan dipakai daftar kedua.
 
 Semua batas nilai di formulir **diulang di server action**, bukan cuma `min`/`max` di
 input. Atribut HTML itu kenyamanan pengguna; server action bisa dipanggil tanpa
@@ -819,13 +825,47 @@ angka.
 
 `DS-56` — **Baris adalah tabel, aksinya di menu "⋯", formulirnya dialog dari URL.**
 
+**Susunannya dari atas ke bawah: angka ringkas, peringatan kalau ada, lalu dua tabel
+bersebelahan.** Tiga kartu angka — kelas, paket, paket terjual — menjawab "katalognya
+seberapa besar" sebelum mata turun ke barisnya. Tabelnya berbagi kisi 12 kolom: **paket
+8, kelas 4**, karena paket punya lima kolom angka dan kelas cuma dua. Pisahnya di
+1280px seperti `DS-34`; di 1024 kolom kanan tinggal 227px dan tabelnya menggulir sejak
+kolom pertama.
+
+Di layar ini `class_types` disebut **"Kelas"**, bukan "Jenis kelas": judul dua kata di
+kartu selebar 4 kolom memakan ruang yang dibutuhkan tombol tambahnya, dan tidak ada hal
+lain bernama "kelas" di layar yang sama. Skemanya tetap `class_types`.
+
+**Tiap tabel punya cari dan halamannya sendiri**, pola yang sama dengan direktori
+member (`DS-36`): `?qp=`/`?halp=` untuk paket, `?qk=`/`?halk=` untuk kelas, semuanya di
+URL supaya hasilnya bisa ditautkan dan di-refresh. Dua hal yang mengikat karena
+tabelnya dua:
+
+1. **Formulir cari membawa parameter tabel sebelah sebagai `<input type="hidden">`.**
+   Formulir GET cuma mengirim kolomnya sendiri; tanpa itu mencari paket menghapus
+   pencarian kelas yang sedang berjalan di kartu di sebelahnya.
+2. **Tautan tutup dialog dan tombol halaman memakai pembangun URL yang sama**, yang
+   mempertahankan parameter lain dan mengganti satu. Menutup dialog tidak boleh
+   menghapus filter yang sedang dipakai.
+
+Pencariannya disaring di server component, bukan di query: katalog studio puluhan
+baris, bukan puluhan ribu. Menambah `where` di dua query untuk itu cuma memindahkan
+kerja yang sama ke tempat yang lebih sulit diubah.
+
+Kepala tiap kartu memuat **nama tabelnya beserta jumlah barisnya, tanpa kalimat
+penjelasan** — lalu tombol tambah, lalu baris cari. Semuanya di dalam kartu yang sama,
+jadi tidak ada judul yang mengambang lepas dari tabel yang dinamainya.
+
 Layar kelola katalog menampung banyak baris pendek yang dibandingkan satu sama lain —
 harga lawan harga, kursi lawan kursi. Itu tabel, bukan daftar kartu: angka yang rata
 kanan dan `tabular-nums` bisa dibaca menurun tanpa membaca labelnya lagi. Kolom yang
 nol ditulis **"—"**, bukan "0" — yang nol di layar ini bukan hitungan yang kebetulan
 kosong, tapi keadaan yang perlu diperbaiki ("belum masuk paket", "belum dijadwalkan").
 Tabelnya menggulung mendatar di dalam kotaknya sendiri, tidak pernah menggulungkan
-halaman.
+halaman. Keterangan yang panjang pindah jadi **baris kedua di dalam kolom nama**, bukan
+kolom sendiri: "Chair · Mat · Reformer · Tower" tidak muat di kolom yang harus berbagi
+ruang dengan lima angka. Yang naik ke baris kedua cuma yang menuntut tindakan —
+kelas yang sudah masuk paket dan sudah dijadwalkan tidak punya baris kedua sama sekali.
 
 **Aksi per baris masuk menu "⋯" di ujung kanan**, bukan dua tombol yang berjajar di
 tiap baris. Empat baris × dua tombol adalah delapan tombol yang bersaing dengan
