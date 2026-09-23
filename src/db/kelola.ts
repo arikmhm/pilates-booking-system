@@ -207,12 +207,28 @@ export async function ubahAktifPaket(sql: Sql, id: string, aktif: boolean) {
 /* ── Berikan paket ke member — UC-A13 ────────────────────────────────────── */
 
 /** Paket yang masih dijual, untuk daftar pilihan di layar detail member. */
-export async function paketDijual(sql: Sql) {
-  return sql<
-    { id: string; nama: string; jumlah_kredit: number; masa_berlaku_hari: number;
-      harga_rupiah: number }[]
-  >`select id, nama, jumlah_kredit, masa_berlaku_hari, harga_rupiah
-      from packages where aktif order by harga_rupiah`;
+export type PaketDijual = {
+  id: string;
+  nama: string;
+  jumlah_kredit: number;
+  masa_berlaku_hari: number;
+  harga_rupiah: number;
+  /** Jenis kelas yang boleh diikuti — BR-1.4, bagian dari barangnya. */
+  kelas: string[];
+};
+
+/** Katalog yang sedang dijual. Dipakai layar publik /paket dan A3. */
+export async function paketDijual(sql: Sql): Promise<PaketDijual[]> {
+  const baris = await sql<(Omit<PaketDijual, "kelas"> & { kelas: string[] | null })[]>`
+    select p.id, p.nama, p.jumlah_kredit, p.masa_berlaku_hari, p.harga_rupiah,
+           (select array_agg(ct.nama order by ct.nama)
+              from package_class_types pct
+              join class_types ct on ct.id = pct.class_type_id
+             where pct.package_id = p.id) as kelas
+      from packages p
+     where p.aktif
+     order by p.harga_rupiah`;
+  return baris.map((b) => ({ ...b, kelas: b.kelas ?? [] }));
 }
 
 /**

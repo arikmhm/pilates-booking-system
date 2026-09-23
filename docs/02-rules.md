@@ -259,6 +259,17 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | C1 | Kelas saya | Jadwal mengajar sendiri · daftar peserta tiap kelas + status kehadiran — `src/app/pelatih/` |
 | C2 | Transaksi | Kredit member yang terpakai di kelas yang ia ajar — kursi dan kredit, **tanpa angka rupiah** (BR-9.3, BR-9.4) — `src/app/transaksi/` |
 
+**Publik (tanpa akun)** — bisa dibuka siapa saja, tidak ada satu pun aksi di dalamnya
+
+| ID | Layar | Isi |
+|---|---|---|
+| P1 | Profil studio | Sepuluh pita pemasaran, statis dan prerender · tiga kartu paket pilihan sebagai teaser — `src/app/page.tsx` |
+| P2 | Jadwal publik | Kalender mingguan yang sama dengan M1, tanpa tombol booking (DS-45) — `src/app/jadwal/` |
+| P3 | Katalog paket | **Seluruh** paket yang sedang dijual, dibaca dari `packages` — harga, isi kredit, masa berlaku, dan jenis kelas yang tercakup (BR-1.4) · saringan per jenis kelas · tombolnya WhatsApp meja depan karena pembelian mandiri baru ada di versi real (UC-M11) — `src/app/paket/` |
+
+P1 brosur, P3 katalog: yang pertama sengaja statis dan dipilih tangan, yang kedua
+ikut apa pun yang dibuat owner di A6 tanpa menyentuh kode.
+
 M3 adalah jantung skenario A. Panel kredit hangus di A1 = daftar orang yang harus di-chat hari ini.
 
 ### 6.2 Seed data

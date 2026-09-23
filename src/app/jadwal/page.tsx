@@ -36,7 +36,8 @@ import {
   tanggalWib,
 } from "@/lib/waktu";
 import { Angka, Chip, Kartu, Kerangka } from "@/components/kerangka";
-import { Keterangan, RangkaPublik } from "./publik";
+import { RangkaPublik } from "@/components/rangka-publik";
+import { Keterangan } from "./publik";
 import { Kalender, type IsiBlok } from "./kalender";
 import { BuatKelas, type ModeBuat } from "./buat-kelas";
 import { Konfirmasi } from "./konfirmasi";
@@ -603,7 +604,7 @@ export default async function M1({
 
   if (!saya)
     return (
-      <RangkaPublik judul="Jadwal Kelas" kabar={kabar}>
+      <RangkaPublik judul="Jadwal Kelas" aktif="/jadwal" kabar={kabar}>
         {isi}
       </RangkaPublik>
     );

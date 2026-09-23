@@ -6,10 +6,10 @@
 // pada perubahan pertama, dan menu yang berubah saat orang pindah halaman
 // membuat situsnya terasa seperti dua situs.
 //
-// Tautannya selalu mutlak (`/#paket`, bukan `#paket`) justru supaya bisa
-// dipakai dari kedua halaman: dari `/jadwal` ia pindah halaman lalu turun ke
-// pitanya, dari `/` ia cuma turun ke pitanya. Penjaganya `rute.test.ts` —
-// tiap `/#jangkar` wajib punya `id`-nya di halaman profil.
+// Tautan ke pita halaman profil ditulis mutlak (`/#kelas`, bukan `#kelas`)
+// supaya bentuk yang sama jalan dari halaman mana pun: dari `/jadwal` ia
+// pindah halaman lalu turun ke pitanya, dari `/` ia cuma turun. Penjaganya
+// `rute.test.ts` — tiap `/#jangkar` wajib punya `id`-nya di halaman profil.
 
 import Link from "next/link";
 
@@ -23,7 +23,7 @@ export const FOTO =
 
 const NAV: [string, string][] = [
   ["Kelas", "/#kelas"],
-  ["Paket", "/#paket"],
+  ["Paket", "/paket"],
   ["Jadwal", "/jadwal"],
 ];
 
@@ -73,11 +73,11 @@ export function BilahPublik({
           >
             Masuk
           </Link>
-          {/* Turun ke pita "Kelas pertama gratis" — penawarannya ada di halaman
-              profil, jadi tidak ada gunanya mengirim orang ke tempat lain
-              untuk membacanya. */}
+          {/* Penawaran kelas pertama gratis diulang di kepala katalog paket,
+              jadi tombol ini mengantar ke tempat orang bisa langsung melihat
+              harganya — bukan turun ke pita di halaman profil. */}
           <Link
-            href="/#paket"
+            href="/paket"
             className="min-h-11 inline-flex items-center rounded-sm bg-primary px-4 text-app-label font-medium uppercase text-primary-foreground"
           >
             Coba Kelas Pertama

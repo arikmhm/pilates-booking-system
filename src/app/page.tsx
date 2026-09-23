@@ -80,7 +80,7 @@ const FOOTER: [string, [string, string][]][] = [
     [
       ["Tentang Kami", "#tentang"],
       ["Instruktur", "#instruktur"],
-      ["Paket", "#paket"],
+      ["Paket", "/paket"],
       ["Tanya lewat WhatsApp", WA_TANYA],
     ],
   ],
@@ -315,8 +315,15 @@ export default function Profil() {
 
         {/* Satu-satunya jalan mendaftar di demo ini adalah bicara dengan meja
             depan: pendaftaran member mandiri baru ada di versi real (UC-M13). */}
-        <div className="mt-sedang text-center">
-          <Tombol anak="Ambil Kelas Gratis" href={WA_COBA} penuh />
+        <div className="mt-sedang flex flex-wrap items-center justify-center gap-4">
+          <Tombol anak="Ambil Kelas Gratis" href={WA_COBA} />
+          {/* Tiga kartu di atas ringkasan; katalog lengkapnya — termasuk paket
+              yang baru dibuat owner lewat A6 — ada di halamannya sendiri. */}
+          <Tautan
+            href="/paket"
+            anak="Lihat Semua Paket"
+            kelas="inline-flex h-12 items-center justify-center rounded-sm border border-foreground px-9 text-app-label font-medium uppercase"
+          />
         </div>
       </Pita>
 

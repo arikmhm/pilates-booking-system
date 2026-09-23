@@ -470,6 +470,25 @@ di sana pertanyaannya bukan tentang satu pembayaran melainkan tentang orangnya,
 dan meja depan memang perlu melihat keduanya berdampingan — daftar transaksi di
 atas, buku besar kredit di bawah.
 
+`DS-49` — **Brosur dan katalog dipisah, dan keduanya dibutuhkan.** Pita harga di
+halaman profil memuat tiga paket pilihan, ditulis tangan, statis, prerender —
+itu yang dibaca orang yang belum tahu apa-apa. Halaman `/paket` membaca tabel
+`packages` apa adanya, jadi paket yang baru dibuat owner lewat A6 terbit tanpa
+menyentuh kode. Menyeragamkan keduanya berarti memilih antara halaman jualan
+yang lambat atau katalog yang selalu basi.
+
+Yang memimpin tata letak katalog adalah **BR-1.4**: jenis kelas yang tercakup
+naik jadi label di kepala tiap kartu, bukan baris kecil di bawah harga, dan
+saringannya memakai jenis kelas — "saya mau ikut Mat, paket mana yang bisa?".
+Itu satu-satunya syarat paket yang baru terasa **sesudah** bayar, saat booking
+ditolak dengan kode X7.
+
+`DS-50` — **Slot yang isinya belum ada diberi keterangan, bukan disamarkan.**
+Kartu paket memakai blok `photo-warm` berasio terkunci (DS-25) dengan label
+"Foto menyusul" di sudutnya. Blok gradien tanpa keterangan terbaca sebagai
+desain yang memang begitu; yang melihat demo harus bisa membedakan mana yang
+sudah jadi dan mana yang menunggu bahan dari klien.
+
 `DS-43` — **Tidak ada tautan mati, di halaman publik maupun di dalam aplikasi.**
 
 Tiap butir menu menuju salah satu dari tiga tempat saja:
