@@ -452,8 +452,15 @@ export default async function M1({
 
   const sesiHari = perHari.get(kunciHariWib(dipilih)) ?? [];
 
+  /**
+   * Daftar satu hari tanpa kotak sendiri — kotaknya milik pembungkusnya
+   * (DS-57), supaya bilah kendali dan jadwalnya duduk di dalam satu tepi.
+   */
   const daftarHari = (
-    <Kartu judul={hariWib(dipilih)} padat>
+    <>
+      <div className="border-b border-border px-4 py-3">
+        <h2 className="text-app-section">{hariWib(dipilih)}</h2>
+      </div>
       {sesiHari.length === 0 ? (
         <p className="p-4 text-app-body text-muted-foreground">
           {kelas || pelatih
@@ -467,7 +474,50 @@ export default async function M1({
           ))}
         </ul>
       )}
-    </Kartu>
+    </>
+  );
+
+  const bilah = (
+    <BilahKendali
+      kelas={kelas}
+      daftarKelas={daftarKelas}
+      pelatih={pelatih}
+      daftarPelatih={daftarPelatih}
+      tgl={kunciHariWib(dipilih)}
+      hariIni={kunciHariWib(hariIni)}
+      rupa={rupaAktif}
+      buat={staf ? modeBuat : undefined}
+      tautanRupa={{
+        kalender: url({ rupa: "kalender" }),
+        daftar: url({ rupa: "daftar" }),
+      }}
+      tautanHariIni={url({ tgl: hariIni })}
+      menyatu={mode !== "tamu"}
+    >
+      {/* Di rupa daftar kepala minggu jadi pemilih hari — cuma satu hari
+          yang digambar — jadi ia ikut menempel: memilih hari lain tidak
+          boleh menuntut menggulung ke atas dulu. Tanpa `min-w` di sini; ia
+          harus muat di 375px, dan tujuh kolom selebar 34px masih menampung
+          "SEN" 11px. Lebar 46rem cuma berlaku saat kepalanya menyangga kisi
+          kalender. */}
+      {/* Di bawah 768px yang digambar SELALU daftar satu hari, apa pun
+          `?rupa=`-nya — jadi pemilih harinya harus ada di sana juga. Di
+          atas 768px rupa kalender sudah punya kepala minggunya sendiri di
+          dalam kotak kalender, dan dua deret tanggal yang bersisian memaksa
+          pembacanya menebak mana yang berlaku. */}
+      <div className={rupaAktif === "daftar" ? "" : "md:hidden"}>
+        <div className="border-t border-border">
+          <KepalaMinggu
+            hari={tujuhHari}
+            ditandai={idxDipilih}
+            hariIni={hariIniDiMinggu}
+            mundur={url(geserMinggu(-1))}
+            maju={url(geserMinggu(1))}
+            tautan={(i) => url({ tgl: tujuhHari[i] })}
+          />
+        </div>
+      </div>
+    </BilahKendali>
   );
 
   const isi = (
@@ -478,49 +528,11 @@ export default async function M1({
           judul untuk pembaca layar: tamu sudah punya <h1> dari hero. */}
       {mode !== "tamu" && <h1 className="sr-only">Jadwal Kelas</h1>}
 
-      {/* DS-51 — semua saringan dalam satu bilah yang menempel di atas saat
-          halaman digulung. Tombol geser minggu TIDAK ada di sini: ia menyatu
-          dengan kepala kalender, karena strip tanggal berdiri sendiri di atas
-          kalender berarti ketujuh tanggal yang sama ditulis dua kali. */}
-      <BilahKendali
-        kelas={kelas}
-        daftarKelas={daftarKelas}
-        pelatih={pelatih}
-        daftarPelatih={daftarPelatih}
-        tgl={kunciHariWib(dipilih)}
-        hariIni={kunciHariWib(hariIni)}
-        rupa={rupaAktif}
-        buat={staf ? modeBuat : undefined}
-        tautanRupa={{
-          kalender: url({ rupa: "kalender" }),
-          daftar: url({ rupa: "daftar" }),
-        }}
-        tautanHariIni={url({ tgl: hariIni })}
-      >
-        {/* Di rupa daftar kepala minggu jadi pemilih hari — cuma satu hari
-            yang digambar — jadi ia ikut menempel: memilih hari lain tidak
-            boleh menuntut menggulung ke atas dulu. Tanpa `min-w` di sini; ia
-            harus muat di 375px, dan tujuh kolom selebar 34px masih menampung
-            "SEN" 11px. Lebar 46rem cuma berlaku saat kepalanya menyangga kisi
-            kalender. */}
-        {/* Di bawah 768px yang digambar SELALU daftar satu hari, apa pun
-            `?rupa=`-nya — jadi pemilih harinya harus ada di sana juga. Di
-            atas 768px rupa kalender sudah punya kepala minggunya sendiri di
-            dalam kotak kalender, dan dua deret tanggal yang bersisian memaksa
-            pembacanya menebak mana yang berlaku. */}
-        <div className={rupaAktif === "daftar" ? "" : "md:hidden"}>
-          <div className="border-t border-border">
-            <KepalaMinggu
-              hari={tujuhHari}
-              ditandai={idxDipilih}
-              hariIni={hariIniDiMinggu}
-              mundur={url(geserMinggu(-1))}
-              maju={url(geserMinggu(1))}
-              tautan={(i) => url({ tgl: tujuhHari[i] })}
-            />
-          </div>
-        </div>
-      </BilahKendali>
+      {/* DS-57 — di dalam aplikasi bilah ini duduk DI DALAM kotak jadwal,
+          jadi satu tepi membungkus kendali dan isinya. Tamu memakainya
+          berdiri sendiri selebar halaman: di halaman publik tidak ada kartu
+          untuk ditempeli. */}
+      {mode === "tamu" && bilah}
 
       {mode === "member" && (
         <div className="mt-dekat">
@@ -557,53 +569,74 @@ export default async function M1({
         </div>
       )}
 
-      {/* DS-40 — 12 kolom: kalender 8, panel buat-kelas 4. Di bawah xl
+      {/* DS-40 — 12 kolom: jadwal 8, panel buat-kelas 4. Di bawah xl
           keduanya menumpuk; 8/12 dari 1024px menyisakan kalender 480px, dan
           kalender yang harus digulung mendatar sejak kolom pertama bukan
           kalender lagi. */}
+      {/* TANPA `items-start`: kolom yang menciut setinggi isinya tidak
+          menyisakan ruang bagi panel menempel di dalamnya untuk bergerak —
+          `sticky` butuh induk yang lebih tinggi daripada dirinya. */}
       <div className="mt-dekat grid grid-cols-12 gap-dekat">
         <div className={`col-span-12 min-w-0 ${staf ? "xl:col-span-8" : ""}`}>
-          {rupaAktif === "daftar" ? (
-            daftarHari
-          ) : (
-            <>
-              {/* Minggu kosong tetap menggambar kepala kalendernya. Mengganti
-                  kalender dengan satu kalimat membuat sumbu harinya ikut
-                  hilang, berikut tombol geser minggunya. */}
-              {tampil.length === 0 && (
-                <p className="mb-dekat hidden text-app-body text-muted-foreground md:block">
-                  {kelas || pelatih
-                    ? "Tidak ada kelas yang cocok di minggu ini."
-                    : "Tidak ada kelas terjadwal di minggu ini."}
-                </p>
-              )}
+          {/* DS-57 — SATU kotak untuk bilah kendali dan jadwalnya. Kotak ini
+              sengaja tidak punya `overflow`: leluhur ber-overflow membuat
+              bilah di dalamnya berhenti menempel, dan gulung mendatar kalender
+              memang sudah punya lapisannya sendiri. */}
+          <div className="rounded-md border border-border bg-background">
+            {mode !== "tamu" && bilah}
 
-              {/* Kalender mingguan butuh ruang; di bawah md selalu daftar. */}
-              <div className="hidden md:block">
-                <Kalender
-                  hari={tujuhHari}
-                  baris={tampil}
-                  isi={(b) => rupa(b, k)}
-                  ditandai={idxDipilih}
-                  hariIni={hariIniDiMinggu}
-                  mundur={url(geserMinggu(-1))}
-                  maju={url(geserMinggu(1))}
-                />
-              </div>
-              <div className="md:hidden">{daftarHari}</div>
-            </>
-          )}
+            {rupaAktif === "daftar" ? (
+              daftarHari
+            ) : (
+              <>
+                {/* Minggu kosong tetap menggambar kepala kalendernya.
+                    Mengganti kalender dengan satu kalimat membuat sumbu
+                    harinya ikut hilang, berikut tombol geser minggunya. */}
+                {tampil.length === 0 && (
+                  <p className="hidden px-4 pt-4 text-app-body text-muted-foreground md:block">
+                    {kelas || pelatih
+                      ? "Tidak ada kelas yang cocok di minggu ini."
+                      : "Tidak ada kelas terjadwal di minggu ini."}
+                  </p>
+                )}
+
+                {/* Kalender mingguan butuh ruang; di bawah md selalu daftar. */}
+                <div className="hidden md:block">
+                  <Kalender
+                    polos
+                    hari={tujuhHari}
+                    baris={tampil}
+                    isi={(b) => rupa(b, k)}
+                    ditandai={idxDipilih}
+                    hariIni={hariIniDiMinggu}
+                    mundur={url(geserMinggu(-1))}
+                    maju={url(geserMinggu(1))}
+                  />
+                </div>
+                <div className="md:hidden">{daftarHari}</div>
+              </>
+            )}
+          </div>
         </div>
 
         {staf && (
           <div className="col-span-12 min-w-0 xl:col-span-4">
-            <BuatKelas
-              owner={saya?.peran === "owner"}
-              mode={modeBuat}
-              tautan={(m) => url({ buat: m })}
-              kembali="/jadwal"
-              sekarang={sekarang}
-            />
+            {/* DS-57 — panel buat-kelas ikut menempel, tapi hanya saat ia
+                memang berdampingan dengan jadwalnya (≥ 1280px). Di bawah itu
+                keduanya menumpuk, dan kartu yang menempel di tumpukan cuma
+                menutupi isi yang sedang dibaca.
+                `max-h` + gulung sendiri wajib: panel berulang lebih tinggi
+                dari layar 800px, dan kartu menempel yang ujungnya tidak bisa
+                dicapai berarti tombol simpannya tidak bisa ditekan. */}
+            <div className="xl:sticky xl:top-0 xl:max-h-svh xl:overflow-y-auto">
+              <BuatKelas
+                owner={saya?.peran === "owner"}
+                mode={modeBuat}
+                tautan={(m) => url({ buat: m })}
+                kembali="/jadwal"
+                sekarang={sekarang}
+              />
+            </div>
           </div>
         )}
       </div>

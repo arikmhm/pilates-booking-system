@@ -199,6 +199,7 @@ export function Kalender({
   hariIni,
   mundur,
   maju,
+  polos,
 }: {
   /** Tujuh hari minggu yang sedang dibuka, Senin lebih dulu. */
   hari: Date[];
@@ -208,6 +209,13 @@ export function Kalender({
   hariIni: number;
   mundur: string;
   maju: string;
+  /**
+   * Tanpa tepi sendiri — dipakai saat kalender duduk di dalam kotak jadwal
+   * bersama bilah kendali (DS-57). `overflow-x-auto` tetap di sini, BUKAN
+   * naik ke kotak pembungkusnya: leluhur ber-overflow membuat bilah di
+   * atasnya berhenti menempel.
+   */
+  polos?: boolean;
 }) {
   // Petak jam × hari. Jam yang tidak punya satu pun kelas tidak pernah jadi
   // baris — jeda siang 11.00–15.00 di studio ini lima baris kosong yang
@@ -223,7 +231,11 @@ export function Kalender({
   const jam = [...jamAda].sort((a, b) => a - b);
 
   return (
-    <div className="overflow-x-auto rounded-md border border-border bg-background">
+    <div
+      className={`overflow-x-auto ${
+        polos ? "" : "rounded-md border border-border bg-background"
+      }`}
+    >
       {/* 46rem = 7 kolom hari @ ~85px + dua lajur tepi. Di bawah itu barulah
           muncul gulung mendatar, dan ia berhenti di tepi kotak ini (DS-40). */}
       <div className="min-w-[46rem]">

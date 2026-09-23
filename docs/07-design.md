@@ -1063,6 +1063,38 @@ jadi penanda tunggal. Menambah satu warna per jenis kelas berarti mengarang dela
 warna baru yang harus lolos kontras dan tetap dibedakan pembaca buta warna — untuk
 keterangan yang sudah tertulis sebagai nama kelas di tiap kartu.
 
+`DS-57` — **Di dalam aplikasi, bilah kendali dan jadwalnya satu kotak — dan panel
+buat-kelas ikut menempel.**
+
+Jadwal seminggu lebih tinggi dari layar. Begitu digulung, dua hal yang paling sering
+dipakai justru yang pertama hilang: saringan di atas dan formulir buat-kelas di
+sebelah. Keduanya sekarang tinggal.
+
+**Satu tepi untuk kendali dan isinya.** Bilah kendali (`DS-51`) pindah ke DALAM kotak
+jadwal, jadi tidak ada lagi dua kotak bertumpuk yang tampak seperti dua hal yang tidak
+berhubungan. Kotak itu **sengaja tidak punya `overflow`**: `position: sticky` mati
+begitu salah satu leluhurnya jadi wadah gulung, jadi gulung mendatar kalender tetap
+tinggal di lapisannya sendiri, satu tingkat di bawah. Aturan ini gampang dilanggar
+tanpa sadar — `overflow-hidden` yang ditambahkan cuma untuk merapikan sudut membulat
+akan mematikan bilahnya tanpa satu pun galat.
+
+**Tamu tetap memakai bilah yang berdiri sendiri** selebar halaman. Di halaman publik
+tidak ada kartu untuk ditempeli, dan hero di atasnya sudah memberi bilah itu tepi
+sendiri.
+
+**Panel buat-kelas menempel hanya di ≥ 1280px** — hanya di sana ia memang berdampingan
+dengan jadwalnya. Di bawah itu keduanya menumpuk, dan kartu menempel di tumpukan cuma
+menutupi isi yang sedang dibaca.
+
+Dua hal yang gampang meleset saat memasangnya:
+
+1. **Kisinya tidak boleh `items-start`.** Kolom yang menciut setinggi isinya tidak
+   menyisakan ruang bagi panel di dalamnya untuk bergerak — `sticky` butuh induk yang
+   lebih tinggi daripada dirinya, dan tanpa itu ia diam saja tanpa galat apa pun.
+2. **Panelnya butuh `max-h` dan gulung sendiri.** Tab "tiap minggu" lebih tinggi
+   daripada layar 800px, dan kartu menempel yang ujungnya tidak bisa dicapai berarti
+   tombol simpannya tidak bisa ditekan.
+
 `DS-52` — **Tinggi baris jam mengikuti isinya, bukan durasinya.**
 
 Versi sebelumnya menggambar tiap blok `position:absolute` setinggi durasinya di atas

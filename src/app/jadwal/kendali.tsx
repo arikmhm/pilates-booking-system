@@ -68,6 +68,7 @@ export function BilahKendali({
   buat,
   tautanRupa,
   tautanHariIni,
+  menyatu,
   children,
 }: {
   kelas: string;
@@ -83,6 +84,13 @@ export function BilahKendali({
   /** URL kedua rupa, sudah jadi — fungsi tidak bisa melintasi batas server. */
   tautanRupa: Record<Rupa, string>;
   tautanHariIni: string;
+  /**
+   * Menyatu dengan kotak jadwal di bawahnya (DS-57) — dipakai di dalam
+   * aplikasi. Tamu memakai bilah yang berdiri sendiri selebar halaman: di
+   * halaman publik tidak ada kartu untuk ditempeli, dan hero di atasnya
+   * sudah memberi bilah itu tepi sendiri.
+   */
+  menyatu?: boolean;
   /** Kepala minggu di rupa daftar — ikut menempel, bukan menggulung pergi. */
   children?: React.ReactNode;
 }) {
@@ -94,7 +102,15 @@ export function BilahKendali({
   ] as const;
 
   return (
-    <div className="sticky top-0 z-30 -mx-gutter border-b border-border bg-background px-gutter">
+    // Bilah ini WAJIB tidak punya leluhur ber-`overflow`, kalau tidak
+    // `sticky` menempel pada kotak yang tidak pernah bergulir. Karena itu
+    // kotak jadwal di bawahnya memisahkan `overflow-x-auto`-nya ke lapisan
+    // sendiri, bukan memasangnya di kartu yang membungkus keduanya.
+    <div
+      className={`sticky top-0 z-30 border-b border-border bg-background ${
+        menyatu ? "rounded-t-md px-4" : "-mx-gutter px-gutter"
+      }`}
+    >
       <form
         method="get"
         action="/jadwal"
