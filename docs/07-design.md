@@ -739,6 +739,24 @@ Nama unik per studio dijaga index, bukan cek-dulu-baru-insert: dua tab yang meng
 nama yang sama pada saat yang sama sama-sama membaca "belum ada". Pola yang sama dengan
 kapasitas (BR-2.3).
 
+**Aturan yang sama berlaku untuk cakupan paket, dengan batas yang berbeda: sampai ada
+yang membelinya.** "Kelas yang tercakup" adalah satu-satunya bagian paket yang boleh
+diperbaiki dari layar, dan hanya selama `terjual = 0`. Sesudah ada pemegangnya,
+mempersempitnya membuat kredit yang sudah dibayar tiba-tiba ditolak di kelas yang
+kemarin masih boleh (BR-1.4), dan memperluasnya memberi orang sesuatu yang tidak dia
+beli — jadi jalannya tetap yang lama: sembunyikan paketnya, terbitkan yang baru.
+
+Yang ditutup celah nyata, bukan kenyamanan: paket bernama "Private" yang ikut
+mencentang Reformer, Mat, Chair, dan Tower **bukan paket privat** — pembelinya bayar
+harga privat lalu boleh membelanjakan kreditnya di kelas rombongan. Sebelum ini salah
+centang seperti itu tidak bisa dibetulkan sama sekali; satu-satunya jalan menyembunyikan
+paketnya dan membuat kembarannya.
+
+Formulirnya sembunyi di balik `<details>` pada barisnya sendiri — tanpa JS, dan baris
+yang tidak sedang diperbaiki tetap satu baris. Barisnya tidak digambar sama sekali untuk
+paket yang sudah laku: tombol yang pasti ditolak lebih buruk daripada tombol yang tidak
+ada, aturan yang sama dengan tombol hapus jenis kelas di atas.
+
 `DS-54` — **Layar yang memuat dua hal yang gampang tertukar wajib mengatakan bedanya
 di kalimat pertama.**
 

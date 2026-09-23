@@ -262,10 +262,17 @@ export type BarisPaket = {
   aktif: boolean;
   terjual: number;
   kelas: string[];
+  /** Id-nya, untuk mencentang ulang formulir ubah cakupan. */
+  kelas_ids: string[];
 };
 
 export async function daftarPaket(sql: Sql): Promise<BarisPaket[]> {
-  const baris = await sql<(Omit<BarisPaket, "kelas"> & { kelas: string[] | null })[]>`
+  const baris = await sql<
+    (Omit<BarisPaket, "kelas" | "kelas_ids"> & {
+      kelas: string[] | null;
+      kelas_ids: string[] | null;
+    })[]
+  >`
     select p.id, p.nama, p.jumlah_kredit, p.masa_berlaku_hari, p.harga_rupiah,
            p.aktif,
            (select count(*)::int from member_packages mp
@@ -273,10 +280,61 @@ export async function daftarPaket(sql: Sql): Promise<BarisPaket[]> {
            (select array_agg(ct.nama order by ct.nama)
               from package_class_types pct
               join class_types ct on ct.id = pct.class_type_id
-             where pct.package_id = p.id) as kelas
+             where pct.package_id = p.id) as kelas,
+           (select array_agg(ct.id order by ct.nama)
+              from package_class_types pct
+              join class_types ct on ct.id = pct.class_type_id
+             where pct.package_id = p.id) as kelas_ids
       from packages p
      order by p.aktif desc, p.harga_rupiah`;
-  return baris.map((b) => ({ ...b, kelas: b.kelas ?? [] }));
+  return baris.map((b) => ({
+    ...b,
+    kelas: b.kelas ?? [],
+    kelas_ids: b.kelas_ids ?? [],
+  }));
+}
+
+/**
+ * Ganti daftar jenis kelas yang tercakup sebuah paket — **hanya selama belum
+ * ada yang membelinya.**
+ *
+ * Paket yang sudah dipegang orang tidak boleh berubah artinya: mempersempit
+ * cakupannya membuat kredit yang sudah dibayar tiba-tiba ditolak di kelas yang
+ * kemarin masih boleh (BR-1.4), dan memperluasnya memberi orang sesuatu yang
+ * tidak dia beli. Untuk itu jalannya tetap yang lama — sembunyikan paketnya,
+ * terbitkan yang baru. Yang ditutup di sini cuma salah centang pada paket yang
+ * belum sempat dijual.
+ *
+ * Syaratnya diperiksa di dalam transaksinya. Ia belum kebal balapan sempurna —
+ * pembelian menulis ke `member_packages` tanpa menyentuh baris `packages`, jadi
+ * pemberian paket yang terjadi pada milidetik yang sama masih bisa lolos.
+ * Akibat terburuknya pembeli itu mendapat cakupan versi baru, yang memang yang
+ * dimaui pemiliknya; menutupnya rapat menuntut kunci yang dipegang jalur beli
+ * juga, dan itu harga yang tidak sepadan.
+ */
+export async function ubahCakupanPaket(
+  sql: postgres.Sql,
+  id: string,
+  class_type_ids: string[],
+): Promise<boolean> {
+  return sql.begin(async (tx) => {
+    const [paket] = await tx<{ id: string }[]>`
+      select p.id from packages p
+       where p.id = ${id}
+         and not exists (select 1 from member_packages mp
+                          where mp.package_id = p.id)
+       for update`;
+    if (!paket) return false;
+
+    await tx`delete from package_class_types where package_id = ${id}`;
+    await tx`
+      insert into package_class_types ${tx(
+        class_type_ids.map((c) => ({ package_id: id, class_type_id: c })),
+        "package_id",
+        "class_type_id",
+      )}`;
+    return true;
+  });
 }
 
 /* ── Kursi vs kredit — UC-O02, UC-O06 ─────────────────────────────────────

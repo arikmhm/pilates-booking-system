@@ -9,10 +9,13 @@
 // Dua jebakan lain ikut dijaga: kursi yang terbit SESUDAH kredit hangus tidak
 // boleh ikut dihitung — ia tidak akan pernah bisa dipakai — dan kursi yang
 // sudah dipesan bukan kursi kosong.
+//
+// Di ujung berkas, penjaga yang menentukan siapa yang boleh memperbaiki salah
+// centang cakupan paket: hanya paket yang belum sempat dibeli siapa pun.
 
 import { afterAll, beforeAll, expect, test } from "vitest";
 import postgres from "postgres";
-import { kursiVsKredit } from "./kelola";
+import { kursiVsKredit, ubahCakupanPaket } from "./kelola";
 import { bersihkan as kosongkan, dbUji } from "./uji-db";
 
 const sql = postgres(dbUji(), { max: 4 });
@@ -21,13 +24,17 @@ const SEKARANG = new Date("2026-09-22T05:00:00Z"); // Selasa, 12.00 WIB
 const jam = (n: number) => new Date(SEKARANG.getTime() + n * 3_600_000);
 const hari = (n: number) => jam(n * 24);
 
+let jenisId: Record<string, string>;
+let paketBelumLaku: string;
+
 beforeAll(async () => {
   await kosongkan(sql);
 
   const [{ id: studio }] = await sql<{ id: string }[]>`
     insert into studios (nama) values ('Studio Uji') returning id`;
 
-  const jenis: Record<string, string> = {};
+  jenisId = {};
+  const jenis = jenisId;
   for (const [nama, kursi] of [
     ["Private", 1],
     ["Reformer", 8],
@@ -89,6 +96,16 @@ beforeAll(async () => {
       returning id`;
     return s.id;
   }
+
+  // Paket yang belum pernah dibeli — bahan uji penjaga ubah-cakupan.
+  const [belum] = await sql<{ id: string }[]>`
+    insert into packages (studio_id, nama, jumlah_kredit, masa_berlaku_hari,
+                          harga_rupiah)
+    values (${studio}, 'Belum Laku', 3, 30, 900000) returning id`;
+  paketBelumLaku = belum.id;
+  await sql`
+    insert into package_class_types (package_id, class_type_id)
+    values (${belum.id}, ${jenis.Reformer})`;
 
   await sesi(hari(3)); // kosong → terhitung
   await sesi(hari(10)); // kosong → terhitung
@@ -153,4 +170,35 @@ test("tanggal hangus terdekat ikut dilaporkan", async () => {
   // member dinilai orang, dan tanggal inilah bahannya.
   const { terkunci } = await kursiVsKredit(sql, SEKARANG);
   expect(terkunci[0].hangus_terdekat.getTime()).toBe(hari(30).getTime());
+});
+
+/* ── Penjaga ubah-cakupan paket ──────────────────────────────────────────── */
+
+test("cakupan paket yang belum pernah dibeli boleh diperbaiki", async () => {
+  // Salah centang saat membuat paket harus bisa dibetulkan, bukan menyisakan
+  // paket rusak yang cuma bisa disembunyikan.
+  const berhasil = await ubahCakupanPaket(sql, paketBelumLaku, [jenisId.Private]);
+  expect(berhasil).toBe(true);
+
+  const cakupan = await sql<{ nama: string }[]>`
+    select ct.nama from package_class_types pct
+      join class_types ct on ct.id = pct.class_type_id
+     where pct.package_id = ${paketBelumLaku}`;
+  expect(cakupan.map((c) => c.nama)).toEqual(["Private"]);
+});
+
+test("paket yang sudah dibeli DITOLAK, cakupannya tidak tersentuh", async () => {
+  // Mempersempit cakupan paket yang sudah dipegang orang membuat kredit yang
+  // sudah dibayar tiba-tiba ditolak di kelas yang kemarin masih boleh (BR-1.4).
+  const [laku] = await sql<{ id: string }[]>`
+    select id from packages where nama = 'Bebas 4 Sesi'`;
+
+  const berhasil = await ubahCakupanPaket(sql, laku.id, [jenisId.Private]);
+  expect(berhasil).toBe(false);
+
+  const cakupan = await sql<{ nama: string }[]>`
+    select ct.nama from package_class_types pct
+      join class_types ct on ct.id = pct.class_type_id
+     where pct.package_id = ${laku.id} order by ct.nama`;
+  expect(cakupan.map((c) => c.nama)).toEqual(["Private", "Reformer"]);
 });

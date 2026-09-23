@@ -29,6 +29,7 @@ import {
   NAMA_JENIS_GANDA,
   simpanJangkaTerbit,
   ubahAktifPaket,
+  ubahCakupanPaket,
 } from "@/db/kelola";
 import { generateSesi } from "@/db/job";
 import { pastikanAdmin, pastikanOwner } from "@/lib/masuk";
@@ -183,6 +184,36 @@ export async function buangJenisKelas(formData: FormData) {
   revalidatePath("/admin/layanan");
   revalidatePath("/jadwal");
   keLayanan(`Jenis kelas "${nama}" dihapus.`);
+}
+
+/**
+ * Perbaiki salah centang "kelas yang tercakup" — hanya untuk paket yang belum
+ * pernah dibeli siapa pun. Begitu ada yang memegangnya, jalannya tetap yang
+ * lama: sembunyikan, lalu terbitkan paket baru yang benar.
+ */
+export async function setCakupanPaket(formData: FormData) {
+  await pastikanOwner();
+
+  const id = String(formData.get("id"));
+  const nama = String(formData.get("nama") ?? "paket ini");
+
+  // BR-1.4 — paket tanpa jenis kelas tidak bisa dipakai membooking apa pun.
+  const kelas = formData.getAll("class_type_ids").map(String).filter(Boolean);
+  if (kelas.length === 0)
+    keLayanan("Pilih minimal satu jenis kelas, kalau tidak paketnya tidak bisa dipakai.");
+
+  const berhasil = await ubahCakupanPaket(pg, id, kelas);
+  if (!berhasil)
+    keLayanan(
+      `"${nama}" sudah ada yang membeli, jadi cakupannya tidak bisa diubah — ` +
+        "kredit yang sudah dibayar akan berubah artinya. Sembunyikan paket ini " +
+        "lalu buat paket baru yang benar.",
+    );
+
+  revalidatePath("/admin/layanan");
+  revalidatePath("/"); // cakupan tampil di kartu paket halaman publik
+  revalidatePath("/paket");
+  keLayanan(`Cakupan "${nama}" diperbarui — sekarang berlaku di ${kelas.length} jenis kelas.`);
 }
 
 export async function setAktifPaket(formData: FormData) {

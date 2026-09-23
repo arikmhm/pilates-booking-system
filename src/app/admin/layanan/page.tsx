@@ -24,6 +24,7 @@ import { Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
 import {
   buangJenisKelas,
   setAktifPaket,
+  setCakupanPaket,
   tambahJenisKelas,
   tambahPaket,
 } from "../kelola-aksi";
@@ -260,6 +261,51 @@ export default async function A6({
                         anak={p.aktif ? "Sembunyikan" : "Jual lagi"}
                       />
                     </form>
+                  )}
+
+                  {/* DS-53 — cakupan boleh diperbaiki selama belum ada yang
+                      membeli. Sesudah itu mengubahnya berarti mengubah arti
+                      kredit yang sudah dibayar, dan jalannya tetap yang lama:
+                      sembunyikan, lalu terbitkan paket baru. Disembunyikan di
+                      balik <details> supaya baris yang tidak sedang diperbaiki
+                      tetap satu baris. */}
+                  {owner && p.terjual === 0 && (
+                    <details className="w-full">
+                      <summary className="inline-flex min-h-11 cursor-pointer items-center text-app-body-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">
+                        Ubah kelas yang tercakup
+                      </summary>
+                      <form
+                        action={setCakupanPaket}
+                        className="mt-2 rounded-sm border border-border p-3"
+                      >
+                        <input type="hidden" name="id" value={p.id} />
+                        <input type="hidden" name="nama" value={p.nama} />
+                        <p className="mb-2 text-app-body-sm text-muted-foreground">
+                          Kredit paket ini hanya bisa dipakai di kelas yang
+                          dicentang. Paket &ldquo;privat&rdquo; yang ikut
+                          mencentang kelas rombongan bukan paket privat —
+                          pembelinya boleh membelanjakannya di sana.
+                        </p>
+                        <div className="flex flex-wrap gap-x-4">
+                          {jenis.map((j) => (
+                            <label
+                              key={j.id}
+                              className="flex min-h-11 items-center gap-2 text-app-body"
+                            >
+                              <input
+                                type="checkbox"
+                                name="class_type_ids"
+                                value={j.id}
+                                defaultChecked={p.kelas_ids.includes(j.id)}
+                                className="size-4"
+                              />
+                              {j.nama}
+                            </label>
+                          ))}
+                        </div>
+                        <Tombol gaya="halus" kecil anak="Simpan cakupan" />
+                      </form>
+                    </details>
                   )}
                 </li>
               ))}
