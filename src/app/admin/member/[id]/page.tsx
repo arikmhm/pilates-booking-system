@@ -1,10 +1,5 @@
-// Layar A3 Detail member — 02-rules.md bagian 6.1. Tampilan laptop (DS-16).
-// "Profil + dompet kredit · berikan paket · koreksi manual · buku besar"
-//
-// Ini layar yang dibuka saat member protes: "kredit saya kok berkurang?"
-// Jawabannya harus ada di sini, baris per baris (BR-1.7). Karena itu
-// urutannya dari ringkas ke rinci: siapa orangnya, apa yang bisa dilakukan
-// padanya, lalu bukti lengkapnya paling bawah.
+// Layar A3 Detail member — 02-rules.md bagian 6.1. Layar sengketa kredit:
+// urutannya ringkas ke rinci, buku besar lengkap paling bawah (BR-1.7).
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -33,7 +28,6 @@ const INPUT =
   "h-12 w-full rounded-sm border border-border bg-background px-3 text-app-body";
 const LABEL = "text-app-label uppercase text-muted-foreground";
 
-/** Satu fakta: label kecil di atas, nilai di bawah. Dipakai di kartu profil. */
 function Fakta({
   label,
   nilai,
@@ -125,7 +119,6 @@ export default async function A3({
     >
       <Kembali cadangan="/admin/member" />
 
-      {/* ── Satu kartu profil: siapa orangnya dan berapa kreditnya ───────── */}
       <div className="mt-2">
         <Kartu>
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -173,9 +166,7 @@ export default async function A3({
             />
           </div>
 
-          {/* BR-1.1 — kredit tidak pernah pindah antar paket, jadi paket yang
-              masih hidup disebut satu per satu. Yang sudah hangus tidak
-              diulang di sini; jejaknya lengkap di buku besar. */}
+          {/* BR-1.1 — kredit tidak pernah pindah antar paket. */}
           <div className="mt-dekat border-t border-border pt-dekat">
             <p className={LABEL}>Paket aktif</p>
             {hidup.length === 0 ? (
@@ -203,8 +194,7 @@ export default async function A3({
                       }
                       anak={tanggalRingkasWib(p.hangus_at)}
                     />
-                    {/* BR-5.2 — jejak perpanjangan disimpan supaya bisa
-                        dijelaskan kalau member bertanya. */}
+                    {/* BR-5.2 — jejak perpanjangan. */}
                     {p.diperpanjang_at && (
                       <span className="text-app-label text-muted-foreground">
                         diperpanjang
@@ -218,11 +208,8 @@ export default async function A3({
         </Kartu>
       </div>
 
-      {/* ── Dua aksi, berdampingan ───────────────────────────────────────── */}
       <div className="mt-dekat grid gap-dekat lg:grid-cols-2">
-        {/* UC-A13 — di demo ini pengganti pembayaran; di versi nyata yang
-            memanggilnya webhook QRIS, bukan tombol. Masa berlaku dihitung
-            dari hari ini + masa_berlaku_hari paketnya (BR-1.2). */}
+        {/* UC-A13 — masa berlaku = hari ini + masa_berlaku_hari (BR-1.2). */}
         <Kartu
           judul="Berikan paket"
           catatan="Dipakai saat member bayar di tempat. Tercatat sebagai pembelian di buku besar."
@@ -244,8 +231,7 @@ export default async function A3({
           </form>
         </Kartu>
 
-        {/* BR-1.8 — alasan wajib; itu yang membuat buku besar bisa
-            dipertanggungjawabkan saat member protes bulan depan. */}
+        {/* BR-1.8 — alasan wajib. */}
         <Kartu
           judul="Koreksi manual"
           catatan="Alasan wajib — baris ini ikut tampil di layar member."
@@ -308,7 +294,6 @@ export default async function A3({
         </Kartu>
       </div>
 
-      {/* ── Bukti lengkap, paling bawah ──────────────────────────────────── */}
       <div className="mt-dekat">
         <Kartu
           judul={`Transaksi · ${transaksi.length} pembelian`}

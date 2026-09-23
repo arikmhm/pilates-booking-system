@@ -1,22 +1,9 @@
 // Layar Transaksi — satu rute, empat peran (UC-M14, UC-A17, UC-O09, UC-C03).
-//
-// Demo belum punya tabel `payments` (BR-8.1–8.2 bertanda R), jadi "transaksi"
-// di sini berarti dua hal yang memang tercatat: pembelian paket dan tiap gerak
-// kredit di buku besar. Querynya di `src/db/transaksi.ts`.
-//
-// Yang membedakan keempat tampilan bukan hiasannya, tapi pertanyaannya:
-//
-// | Peran  | Pertanyaan yang dijawab                                  |
-// |--------|----------------------------------------------------------|
-// | Member | "Uang saya jadi apa?" — tiap paket, tiap kreditnya        |
-// | Coach  | "Kelas saya memakan berapa kredit?" — tanpa rupiah        |
-// | Admin  | "Kapan Bu Sari beli, dan siapa mengoreksi kreditnya?"     |
-// | Owner  | semua milik admin, **+ angka uangnya** (BR-9.3)          |
-//
-// BR-9.3 dijaga di sini dengan cara yang paling sulit dilanggar: `ringkasUang()`
-// hanya dipanggil di dalam cabang pemilik. Kolom rupiah per baris tetap terlihat
-// admin — meja depan harus bisa menjawab "paketnya berapa" — yang dikunci adalah
-// penjumlahannya: omzet, rata-rata, dan nilai kredit yang hangus.
+// Demo belum punya `payments` (BR-8.1-8.2 bertanda R), jadi "transaksi" =
+// pembelian paket + tiap gerak kredit; querynya di `src/db/transaksi.ts`.
+// BR-9.3 dijaga dengan cara yang sulit dilanggar: `ringkasUang()` hanya
+// dipanggil di dalam cabang pemilik. Kolom rupiah per baris tetap terlihat
+// admin; yang dikunci penjumlahannya.
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -46,10 +33,9 @@ const TH =
   "px-3 py-2 text-left text-app-label uppercase tracking-[0.08em] text-muted-foreground font-medium";
 const TD = "px-3 py-2 align-middle";
 
-/** Buku transaksi dipotong per halaman di database, bukan di memori. */
 const PER_HALAMAN = 25;
 
-/** Pilihan periode. 30 hari jadi baku: sebulan penuh, tapi masih satu layar. */
+/** 30 hari jadi baku: sebulan penuh, masih satu layar. */
 const PERIODE: [number, string][] = [
   [7, "7 hari"],
   [30, "30 hari"],
@@ -77,11 +63,8 @@ function Periode({ hari, dasar }: { hari: number; dasar: string }) {
   );
 }
 
-/**
- * Nasib sebuah paket — satu chip, tiga kemungkinan. Urutannya penting:
- * paket yang kreditnya habis sebelum tanggalnya lewat bukan "kedaluwarsa",
- * dan member yang bertanya ingin tahu yang mana dari keduanya.
- */
+/** Urutannya penting: paket yang kreditnya habis sebelum tanggalnya lewat bukan
+ *  "kedaluwarsa". */
 function status(p: Pembelian, sekarang: Date): [string, string] {
   if (p.sisa > 0 && p.hangus_at > sekarang)
     return ["bg-ok-surface text-ok-foreground", `${p.sisa} kredit tersisa`];
@@ -337,8 +320,7 @@ export default async function Transaksi({
     owner ? ringkasUang(pg, { sejak }) : null,
   ]);
 
-  // Dua angka ini milik halaman yang sedang dibuka, bukan seluruh periode —
-  // dan labelnya menyebutkannya, supaya tidak terbaca sebagai total studio.
+  // Dua angka ini milik halaman yang sedang dibuka, bukan seluruh periode.
   const kreditTerjual = baris.reduce((t, b) => t + b.kredit_awal, 0);
   const aktif = baris.filter((b) => b.sisa > 0 && b.hangus_at > sekarang).length;
 
@@ -436,9 +418,6 @@ export default async function Transaksi({
                         className="border-b border-border last:border-0 transition-colors hover:bg-muted"
                       >
                         <td className={`${TD} tabular-nums`}>
-                          {/* Satu baris = satu transaksi, jadi tautannya ke
-                              transaksi itu. Profil membernya satu klik lagi
-                              dari sana — bukan sebaliknya. */}
                           <Link
                             href={`/transaksi/${b.id}`}
                             className="underline underline-offset-4"
@@ -479,8 +458,7 @@ export default async function Transaksi({
         </Kartu>
       </div>
 
-      {/* BR-1.8 — kredit yang berpindah tanpa kelas. Baris beginilah yang
-          ditanyakan saat angka seorang member terasa aneh. */}
+      {/* BR-1.8 — kredit yang berpindah tanpa kelas. */}
       <div className="mt-dekat">
         <Kartu
           judul="Kredit yang dipindah tangan"

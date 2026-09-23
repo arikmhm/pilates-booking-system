@@ -1,12 +1,6 @@
 // Query layar pengelolaan studio — direktori member, tim, layanan, aturan
-// jadwal, dan laporan pemilik.
-//
-// Dipisah dari admin.ts karena iramanya berbeda: admin.ts dipakai tiap hari
-// (dashboard, absensi, pembatalan), berkas ini dipakai sesekali — saat menata
-// katalog, menambah kelas, atau melihat angka bulan lalu.
-//
-// Tidak ada tabel baru. Semua layar di sini membaca 12 tabel yang sudah ada;
-// yang selama ini hilang cuma pintunya.
+// jadwal, laporan pemilik. Dipisah dari admin.ts karena iramanya sesekali,
+// bukan harian. Tidak ada tabel baru: semuanya membaca 12 tabel yang sudah ada.
 
 import type postgres from "postgres";
 import { saat, ts, type Sql } from "./booking";
@@ -23,13 +17,8 @@ export type BarisMember = {
   terakhir_hadir: Date | null;
 };
 
-/**
- * Satu baris per member dengan angka yang menentukan tindakan: sisa kredit,
- * kapan hangus, berapa kelas sudah dipesan, kapan terakhir datang.
- *
- * Sisa kredit dijumlahkan dari buku besar dan hanya dari paket yang masih
- * hidup (BR-1.7 + BR-1.6). Kolom saldo tetap tidak ada.
- */
+/** Satu baris per member dengan angka yang menentukan tindakan. Sisa kredit
+ *  dijumlahkan dari buku besar dan hanya paket hidup (BR-1.7 + BR-1.6). */
 export async function daftarMember(
   sql: Sql,
   args: { q?: string; sekarang: Date },
@@ -145,17 +134,9 @@ export const BATAS_JENIS = {
   durasi_menit: [15, 240],
 } as const;
 
-/**
- * UC-O02. Menambah jenis kelas aman terhadap sesi yang sudah berjalan:
- * BR-7.3 menyalin kapasitas ke `sessions` saat sesi dibuat, jadi baris baru
- * di sini tidak menyentuh satu pun sesi lama. Yang tidak disediakan justru
- * mengubah nama dan kapasitas jenis yang sudah dipakai — itu mengubah arti
- * kartu paket yang sudah dibeli orang, dan pantas lewat percakapan.
- *
- * Nama unik per studio dijaga index `class_types_studio_nama_key`, bukan cek
- * dulu baru insert: dua tab yang mengirim nama sama pada saat yang sama akan
- * lolos pemeriksaan yang sama-sama membaca "belum ada".
- */
+/** UC-O02. Aman terhadap sesi berjalan: BR-7.3 menyalin kapasitas ke `sessions`
+ *  saat sesi dibuat. Nama unik dijaga index `class_types_studio_nama_key`,
+ *  bukan cek-dulu-baru-insert. */
 export const NAMA_JENIS_GANDA = "class_types_studio_nama_key";
 
 export async function buatJenisKelas(
@@ -175,15 +156,8 @@ export async function buatJenisKelas(
   return j.id;
 }
 
-/**
- * Ubah jenis kelas. Aman untuk yang sudah dipakai, dan itu bukan kelonggaran:
- * BR-7.3 menyalin kapasitas dan durasi ke `sessions` saat sesi dibuat, jadi
- * sesi yang sudah terbit — beserta bookingnya — tidak ikut berubah. Yang
- * berubah cuma sesi yang terbit sesudah ini, dan itu memang maksudnya.
- *
- * Namanya pun aman diganti: paket menunjuk jenis kelas lewat id, bukan nama,
- * jadi cakupan paket yang sudah dibeli orang tetap menunjuk hal yang sama.
- */
+/** Ubah jenis kelas. Sesi yang sudah terbit tidak ikut berubah (BR-7.3 sudah
+ *  menyalin kapasitas/durasi). Nama aman diganti: paket menunjuk lewat id. */
 export async function ubahJenisKelas(
   sql: Sql,
   id: string,
@@ -197,17 +171,9 @@ export async function ubahJenisKelas(
      where id = ${id}`;
 }
 
-/**
- * Hapus jenis kelas yang **belum dipakai apa pun** — salah ketik yang baru
- * saja dibuat. Begitu ia menempel di slot mingguan, sesi, atau paket, ia
- * tidak bisa dihapus: `sessions` dan `package_class_types` menunjuk ke sini,
- * dan kartu paket yang kehilangan jenis kelasnya berhenti bisa dipakai
- * membooking apa pun (BR-1.4).
- *
- * Syaratnya diperiksa di dalam DELETE-nya, bukan sebagai SELECT terpisah:
- * baris yang lahir di antara kedua query itu akan lolos pemeriksaan yang
- * sudah telanjur dibaca.
- */
+/** Hapus jenis kelas yang belum dipakai apa pun. Begitu menempel di slot,
+ *  sesi, atau paket ia tidak bisa dihapus (BR-1.4). Syaratnya diperiksa di
+ *  dalam DELETE-nya, bukan SELECT terpisah — baris baru bisa menyelinap. */
 export async function hapusJenisKelas(sql: Sql, id: string): Promise<boolean> {
   const hapus = await sql`
     delete from class_types ct
@@ -219,11 +185,8 @@ export async function hapusJenisKelas(sql: Sql, id: string): Promise<boolean> {
   return hapus.count > 0;
 }
 
-/**
- * Kapasitas dan durasi bawaan satu jenis kelas — dipakai saat formulir
- * jadwal dikosongkan (BR-7.2). Dibaca di server, bukan disalin ke formulir:
- * angka yang dititipkan ke klien bisa diganti sebelum dikirim balik.
- */
+/** Kapasitas dan durasi bawaan satu jenis kelas (BR-7.2). Dibaca di server,
+ *  bukan disalin ke formulir: angka di klien bisa diganti. */
 export async function jenisKelasById(sql: Sql, id: string) {
   const [j] = await sql<
     { nama: string; kapasitas_default: number; durasi_menit: number }[]
@@ -233,15 +196,8 @@ export async function jenisKelasById(sql: Sql, id: string) {
   return j ?? null;
 }
 
-/**
- * Sesi terjadwal di sekitar satu jam, untuk penjaga BR-7.6 kelas sekali
- * jalan. Jendelanya dilebarkan 4 jam ke belakang — durasi terpanjang yang
- * boleh disimpan 240 menit, jadi sesi yang MULAI sebelum itu tidak mungkin
- * masih berjalan saat kelas baru dimulai.
- *
- * Sesi dari slot mingguan dan sesi sekali jalan sama-sama di tabel ini, jadi
- * satu query menutup keduanya.
- */
+/** Sesi di sekitar satu jam, untuk penjaga BR-7.6 kelas sekali jalan. Jendela
+ *  dilebarkan 4 jam ke belakang = durasi maksimum yang boleh disimpan. */
 export async function sesiSekitar(
   sql: Sql,
   mulai: Date,
@@ -316,19 +272,10 @@ export async function daftarPaket(sql: Sql): Promise<BarisPaket[]> {
   }));
 }
 
-/**
- * Ubah paket — **hanya selama belum ada yang membelinya.**
- *
- * Sesudah ada pemegangnya, tidak ada satu pun bagian paket yang aman diubah.
- * Kredit dan masa berlaku memang disalin ke `member_packages` saat dibeli,
- * tapi **harga dan nama dibaca hidup-hidup** oleh buku transaksi dan laporan
- * (`src/db/transaksi.ts`): mengubahnya menulis ulang riwayat penjualan yang
- * sudah terjadi. Cakupannya lebih keras lagi — mempersempitnya membuat kredit
- * yang sudah dibayar ditolak di kelas yang kemarin masih boleh (BR-1.4).
- *
- * Jadi jalannya tetap yang lama dan sudah tertulis di 02-rules bagian 5:
- * sembunyikan paketnya, terbitkan yang baru.
- */
+/** Ubah paket — hanya selama belum ada yang membeli. Sesudah ada pemegangnya
+ *  tidak ada bagian yang aman: harga dan nama dibaca hidup-hidup oleh buku
+ *  transaksi, dan mempersempit cakupan menolak kredit yang sudah dibayar
+ *  (BR-1.4). Jalan keluarnya: sembunyikan paketnya, terbitkan yang baru. */
 export async function ubahPaket(
   sql: postgres.Sql,
   id: string,
@@ -368,25 +315,16 @@ export async function ubahPaket(
 }
 
 /* ── Kursi vs kredit — UC-O02, UC-O06 ─────────────────────────────────────
-
-   Pertanyaan yang tidak bisa dijawab layar mana pun sebelum ini: "kredit yang
-   sudah saya jual, ada kursinya belum?" Studio yang menjual 5 kredit Private
-   berkursi satu berutang lima sesi sebelum kredit itu hangus — dan kalau
-   tidak dijadwalkan, kreditnya tetap hangus (BR-1.6). Uangnya di studio,
-   kreditnya hilang di member. Itu mesin sengketa.
-
-   **Hitungannya syarat perlu, bukan syarat cukup.** Ia membandingkan jumlah
-   di dalam satu jendela, bukan mencocokkan tiap member ke tiap kursi: kalau
-   kursinya kurang, pasti ada yang tidak kebagian; kalau cukup, masih mungkin
-   ada member yang kreditnya hangus duluan karena kursinya baru tersedia
-   sesudah tanggal hangusnya. Karena itu tanggal hangus terdekat ikut
-   disebut — sisanya penilaian orang, bukan penilaian query.                */
+   "Kredit yang sudah dijual, ada kursinya belum?" Kalau tidak dijadwalkan,
+   kreditnya tetap hangus (BR-1.6) sementara uangnya di studio.
+   Syarat PERLU, bukan cukup: membandingkan jumlah dalam satu jendela, bukan
+   mencocokkan tiap member ke tiap kursi — karena itu tanggal hangus terdekat
+   ikut disebut.                                                            */
 
 export type KursiVsKredit = {
   /**
-   * Jenis kelas yang punya kredit TERKUNCI — kredit dari paket yang cuma
-   * mencakup jenis ini, jadi pemiliknya tidak punya kelas lain untuk
-   * memakainya. Di sinilah kewajiban studio paling keras.
+   * Jenis kelas yang punya kredit TERKUNCI — dari paket yang cuma mencakup
+   * jenis ini, jadi pemiliknya tidak punya kelas lain untuk memakainya.
    */
   terkunci: {
     id: string;
@@ -397,9 +335,8 @@ export type KursiVsKredit = {
     hangus_terakhir: Date;
   }[];
   /**
-   * Kredit dari paket yang mencakup lebih dari satu jenis kelas. Pemiliknya
-   * punya pilihan, jadi tidak bisa dibebankan ke satu jenis kelas mana pun —
-   * yang masih berarti cuma totalnya lawan total kursi kosong.
+   * Kredit dari paket multi-jenis. Pemiliknya punya pilihan, jadi tidak bisa
+   * dibebankan ke satu jenis kelas mana pun.
    */
   bebas: { kredit: number; kursi: number; hangus_terakhir: Date | null };
 };
@@ -503,15 +440,12 @@ export const BATAS_PAKET = {
   harga_rupiah: [0, 100_000_000],
 } as const;
 
-/**
- * BR-1.4 — paket TANPA jenis kelas sama sekali tidak bisa dipakai membooking
- * apa pun: `pilihPaket()` mencocokkan `class_type_ids`, dan daftar kosong
- * tidak pernah cocok. Karena itu minimal satu jenis wajib dipilih, dan itu
- * dijaga di sini, bukan hanya oleh `required` di form.
- */
+/** BR-1.4 — paket tanpa jenis kelas tidak bisa dipakai membooking apa pun:
+ *  `pilihPaket()` mencocokkan `class_type_ids` dan daftar kosong tak pernah
+ *  cocok. Dijaga di sini, bukan hanya `required` di form. */
 export async function buatPaket(
-  // Bukan Sql: fungsi ini membuka transaksinya sendiri, dan TransactionSql
-  // tidak punya .begin — paket dan jenis kelasnya harus masuk bersamaan.
+  // Bukan Sql: fungsi ini membuka transaksinya sendiri (TransactionSql tidak
+  // punya .begin) — paket dan jenis kelasnya harus masuk bersamaan.
   sql: postgres.Sql,
   args: {
     studio_id: string;
@@ -573,14 +507,9 @@ export async function paketDijual(sql: Sql): Promise<PaketDijual[]> {
   return baris.map((b) => ({ ...b, kelas: b.kelas ?? [] }));
 }
 
-/**
- * Satu transaksi, dua baris: `member_packages` yang menyimpan masa berlaku,
- * dan baris ledger `beli` sebesar kreditnya. BR-1.7 menghitung sisa dari buku
- * besar, jadi paket tanpa baris ledger adalah paket berisi nol kredit.
- *
- * `hangus_at` dihitung di Postgres (`+ masa_berlaku_hari * interval '1 day'`),
- * bukan di JavaScript — aritmetika tanggal milik lapisan database (BR-7.5).
- */
+/** Satu transaksi, dua baris: `member_packages` (masa berlaku) dan ledger
+ *  `beli` sebesar kreditnya — BR-1.7 menghitung sisa dari buku besar.
+ *  `hangus_at` dihitung di Postgres, bukan JavaScript (BR-7.5). */
 export async function berikanPaket(
   sql: postgres.Sql,
   args: { user_id: string; package_id: string; pelaku_id: string },
@@ -608,14 +537,8 @@ export async function berikanPaket(
   });
 }
 
-/**
- * Calon peserta untuk booking atas nama (UC-A05): member yang masih punya
- * kredit hidup dan belum terdaftar di sesi ini.
- *
- * Yang disaring di sini cuma daftar pilihannya. Kelayakan sesungguhnya tetap
- * diputuskan `bolehBooking()` saat tombolnya ditekan — BR-1.4 (jenis kelas)
- * dan BR-2.5 (bentrok jam) tidak bisa dijawab tanpa tahu sesi mana.
- */
+/** Calon peserta booking atas nama (UC-A05). Ini cuma menyaring daftar
+ *  pilihan; kelayakan sesungguhnya tetap `bolehBooking()` saat tombol ditekan. */
 export async function calonPeserta(
   sql: Sql,
   args: { session_id: string; sekarang: Date },
@@ -690,14 +613,9 @@ export async function daftarAturan(
      order by r.hari, r.jam_mulai`;
 }
 
-/**
- * `berlaku_dari` dan `berlaku_sampai` adalah tanggal DINDING WIB, bukan UTC —
- * `current_date` di Postgres UTC salah sehari antara 00.00 dan 07.00 WIB, dan
- * generateSesi() membandingkannya dengan tanggal yang sudah dikonversi ke
- * Asia/Jakarta. Selisihnya memang cuma melonggarkan, tidak pernah menghilangkan
- * sesi, tapi barisnya jadi berbunyi "berlaku sejak kemarin" untuk aturan yang
- * baru diketik — dan itu yang dibaca orang saat menelusuri sengketa (BR-7.5).
- */
+/** `berlaku_dari`/`berlaku_sampai` tanggal DINDING WIB, bukan UTC:
+ *  `current_date` Postgres UTC salah sehari antara 00.00-07.00 WIB dan baris
+ *  jadi berbunyi "berlaku sejak kemarin" untuk aturan baru (BR-7.5). */
 export async function buatAturan(
   sql: Sql,
   args: {
@@ -721,22 +639,15 @@ export async function buatAturan(
   return r.id;
 }
 
-/**
- * Berhentikan aturan tanpa menghapusnya: `berlaku_sampai` kemarin membuat job
- * generate berhenti menerbitkan sesi baru, sementara sesi yang sudah ada —
- * beserta bookingnya — tetap utuh. Menghapus barisnya akan memutus
- * `sessions.schedule_rule_id`.
- */
-/**
- * Kebalikan `hentikanAturan()`. Tanpa ini, menekan "Hentikan" sekali adalah
- * jalan satu arah: satu-satunya cara mengembalikannya Reset Demo, yang
- * membuang seluruh data lain sekalian. Menjalankan lagi tidak mengembalikan
- * sesi yang terlanjur dibersihkan — itu dikerjakan penerbitan berikutnya.
- */
+/** Kebalikan `hentikanAturan()` — tanpa ini "Hentikan" jadi jalan satu arah.
+ *  Sesi yang terlanjur dibersihkan tidak kembali; itu urusan terbit berikutnya. */
 export async function jalankanAturan(sql: Sql, id: string) {
   await sql`update schedule_rules set berlaku_sampai = null where id = ${id}`;
 }
 
+/** Berhentikan tanpa menghapus: `berlaku_sampai` kemarin menghentikan job
+ *  generate, sesi yang sudah ada tetap utuh. Menghapus barisnya akan memutus
+ *  `sessions.schedule_rule_id`. */
 export async function hentikanAturan(sql: Sql, id: string) {
   await sql`
     update schedule_rules
@@ -746,14 +657,8 @@ export async function hentikanAturan(sql: Sql, id: string) {
 
 /* ── Penerbitan sesi dari aturan — BR-7.1 ────────────────────────────────── */
 
-/**
- * Jangka terbit: berapa minggu ke depan sesi dibangkitkan dari aturan.
- *
- * Batas atasnya bukan hiasan. Satu studio dengan 12 slot mingguan menerbitkan
- * ~12 sesi per minggu; 26 minggu berarti ~312 baris sekali tekan, dan tiap
- * baris itu kursi yang bisa dibooking orang. Menerbitkan setahun ke depan
- * berarti menjanjikan jadwal yang belum tentu ada coach-nya.
- */
+/** Jangka terbit: berapa minggu ke depan sesi dibangkitkan. Batas atasnya
+ *  nyata — 12 slot × 26 minggu ≈ 312 kursi yang bisa dibooking orang. */
 export const BATAS_TERBIT = [1, 26] as const;
 
 export type StatusTerbit = {
@@ -764,8 +669,7 @@ export type StatusTerbit = {
   minggu: number;
   /**
    * Slot mingguan yang masih berjalan. Nol berarti "Terbitkan sekarang" tidak
-   * akan menghasilkan apa pun — bukan karena jadwalnya sudah lengkap, tapi
-   * karena tidak ada polanya. Dua sebab itu harus dibedakan di layar.
+   * menghasilkan apa pun karena tidak ada polanya — bukan karena sudah lengkap.
    */
   aturan_aktif: number;
 };
@@ -798,12 +702,8 @@ export async function statusTerbit(
   return { ...r, sampai: r.sampai ? saat(r.sampai) : null };
 }
 
-/**
- * Menurunkan jangka terbit TIDAK menghapus sesi yang terlanjur terbit di luar
- * jangka baru — sebagian mungkin sudah ada pesertanya, dan menghapusnya
- * membatalkan booking orang tanpa lewat Alur 5. Yang berubah cuma sampai mana
- * penerbitan berikutnya berjalan.
- */
+/** Menurunkan jangka terbit TIDAK menghapus sesi yang terlanjur terbit —
+ *  sebagian sudah ada pesertanya, dan itu jalur Alur 5. */
 export async function simpanJangkaTerbit(
   sql: Sql,
   studio_id: string,
@@ -825,11 +725,8 @@ export async function bersihkanSesiKosong(sql: Sql, schedule_rule_id: string) {
   return baris.length;
 }
 
-/**
- * Sesi sekali jalan — kelas tambahan, workshop, jam pengganti.
- * `schedule_rule_id` dibiarkan NULL; itu yang membuatnya luput dari job
- * generate maupun dari index idempotensinya (BR-7.1).
- */
+/** Sesi sekali jalan. `schedule_rule_id` NULL; itu yang membuatnya luput dari
+ *  job generate maupun index idempotensinya (BR-7.1). */
 export async function buatSesiManual(
   sql: Sql,
   args: {
@@ -843,9 +740,8 @@ export async function buatSesiManual(
     kapasitas: number;
   },
 ): Promise<Date> {
-  // Perubahan jam dinding → timestamptz dikerjakan Postgres, bukan
-  // JavaScript menebak offset (BR-7.5). Hasilnya dibaca balik lewat saat()
-  // karena di runtime Next timestamptz kembali sebagai string mentah.
+  // Jam dinding → timestamptz dikerjakan Postgres (BR-7.5), dibaca balik lewat
+  // saat() karena di runtime Next timestamptz kembali sebagai string mentah.
   const [s] = await sql<{ mulai_at: string | Date }[]>`
     insert into sessions
       (studio_id, class_type_id, coach_id, mulai_at, durasi_menit, kapasitas)
@@ -868,18 +764,9 @@ export type Pesan = {
   mulai_at: Date | null;
 };
 
-/**
- * Jejak notifikasi, terbaru di atas.
- *
- * Tabel `notifications` sudah ditulis dari empat tempat sejak awal — booking,
- * pembatalan, promosi antrean, penutupan antrean — dan sampai sekarang tidak
- * pernah dibaca satu layar pun. Di demo kanalnya `layar`, jadi panel inilah
- * satu-satunya tempat pesan itu benar-benar sampai ke manusia.
- *
- * BR-4.3 dan BR-5.3 — dua template mendesak (`waitlist_naik`, `kelas_batal`)
- * dapat tombol kirim-WA, karena kursi terbuang kalau tidak terbaca dalam
- * hitungan jam.
- */
+/** Jejak notifikasi, terbaru di atas. `notifications` ditulis dari empat
+ *  tempat tapi belum pernah dibaca layar mana pun; di demo kanalnya `layar`.
+ *  BR-4.3 dan BR-5.3 — dua template mendesak dapat tombol kirim-WA. */
 export async function pesanTerkirim(sql: Sql, batas = 60): Promise<Pesan[]> {
   const baris = await sql<Pesan[]>`
     select n.id, n.template, n.isi, n.terkirim_at as created_at,
@@ -907,15 +794,9 @@ export type Laporan = {
   hangus: { kredit: number; rupiah: number };
 };
 
-/**
- * Semua angka dihitung ulang dari baris transaksi tiap kali halaman dibuka.
- * Tidak ada tabel ringkasan: satu studio menulis ~25 baris sehari, dan
- * ringkasan yang basi lebih mahal daripada query yang diulang.
- *
- * Pendapatan diakui pada `dibeli_at` — saat paket dibeli, bukan saat
- * kreditnya dipakai. Itu yang cocok dengan cara pemilik studio menghitung
- * kas masuk, dan bedanya perlu disebut kalau nanti ada akuntan yang bertanya.
- */
+/** Dihitung ulang dari baris transaksi tiap halaman dibuka; ~25 baris sehari,
+ *  ringkasan basi lebih mahal. Pendapatan diakui pada `dibeli_at` — saat paket
+ *  dibeli, bukan saat kreditnya dipakai. */
 export async function laporan(
   sql: Sql,
   args: { sekarang: Date; hari: number },
@@ -963,9 +844,8 @@ export async function laporan(
         join sessions s on s.id = b.session_id
        where s.mulai_at between ${sejak}::timestamptz and ${kini}::timestamptz`,
 
-    // Kredit hangus dinilai per paketnya: harga dibagi jumlah kredit. Itu
-    // uang yang sudah masuk kas tapi tidak pernah jadi kelas — angka yang
-    // membuat panel "kredit hangus ≤ 7 hari" di dashboard punya harga.
+    // Kredit hangus dinilai per paket: harga dibagi jumlah kredit — uang yang
+    // masuk kas tapi tidak pernah jadi kelas.
     sql<{ kredit: number; rupiah: string }[]>`
       select coalesce(sum(-cl.delta), 0)::int as kredit,
              coalesce(sum(-cl.delta * p.harga_rupiah

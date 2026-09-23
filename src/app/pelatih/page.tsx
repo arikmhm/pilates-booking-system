@@ -1,9 +1,4 @@
-// Layar C1 Kelas saya — UC-C01, UC-C02.
-//
-// Sampai sekarang coach yang masuk melihat jadwal seluruh studio dan tidak
-// punya satu pun layar yang menjawab pertanyaannya sendiri: kelas apa yang
-// saya ajar, dan siapa saja yang datang. Absensi tetap milik admin (BR-9.4) —
-// halaman ini murni baca.
+// Layar C1 Kelas saya — UC-C01, UC-C02. Murni baca; absensi milik admin (BR-9.4).
 
 import { pg } from "@/db";
 import { kelasCoach } from "@/db/kelola";
@@ -37,7 +32,7 @@ export default async function C1({
   );
   const orang = pekanIni.reduce((t, k) => t + k.peserta.length, 0);
 
-  // Dikelompokkan per hari WIB, bukan per hari UTC (BR-7.5).
+  // Dikelompokkan per hari WIB, bukan UTC (BR-7.5).
   const perHari = new Map<string, typeof kelas>();
   for (const k of kelas) {
     const kunci = kunciHariWib(k.mulai_at);
@@ -87,7 +82,6 @@ export default async function C1({
             <ul className="divide-y divide-border">
               {sesi.map((k) => (
                 <li key={k.id} className="flex flex-wrap gap-4 px-4 py-4">
-                  {/* DS-28 — jam jadi jangkar kiri, lebar tetap. */}
                   <div className="w-16 shrink-0">
                     <p className="text-app-section tabular-nums">
                       {jamWib(k.mulai_at)}

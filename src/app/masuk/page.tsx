@@ -1,5 +1,4 @@
-// Login demo — 02-rules.md bagian 5: "Demo: tombol Masuk sebagai…".
-// Bukan autentikasi. Diganti magic link saat versi real dibangun.
+// Login demo — 02-rules.md bagian 5. Bukan autentikasi; diganti magic link.
 
 import { redirect } from "next/navigation";
 import { pg } from "@/db";
@@ -27,8 +26,7 @@ export default async function Masuk() {
     "use server";
     const id = String(formData.get("user_id"));
     await masukSebagai(id);
-    // Admin dan owner mendarat di dashboard, member di jadwal. Tanpa ini
-    // presenter harus mengetik URL di tengah demo.
+    // Admin dan owner mendarat di dashboard, member di jadwal.
     const peran = orang.find((o) => o.id === id)?.peran;
     redirect(peran === "member" || peran === "coach" ? "/jadwal" : "/admin");
   }

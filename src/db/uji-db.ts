@@ -1,11 +1,6 @@
-// Penjaga database test — dipakai SEMUA test integrasi.
-//
-// Sejak `neon link` menimpa DATABASE_URL dengan branch Neon, `npm test` bisa
-// mengosongkan database sungguhan. Karena itu test memakai TEST_DATABASE_URL
-// dan MENOLAK jalan kalau host-nya bukan lokal.
-//
-// Berkas ini ada supaya penjaganya tidak pernah bercabang dua: satu salinan
-// yang lupa diperbarui sama saja dengan tidak ada penjaga.
+// Penjaga database test — dipakai SEMUA test integrasi. Test memakai
+// TEST_DATABASE_URL dan MENOLAK jalan kalau host-nya bukan lokal: sejak
+// `neon link` menimpa DATABASE_URL, `npm test` bisa mengosongkan db sungguhan.
 
 import postgres from "postgres";
 

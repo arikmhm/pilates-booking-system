@@ -98,6 +98,13 @@ Cron di demo dan `crontab` di VPS. Kode sama, beda satu baris config. Tiga terja
 `generate-sesi` sengaja **tidak** ada di `vercel.json` — pemicunya tombol "Terbitkan
 sekarang" di layar A7 (Alur 7.3), dan endpoint-nya dibiarkan hidup supaya klien yang
 mau kembali ke otomatis cukup menambah satu baris crontab.
+
+`vercel.json` cuma mendaftarkan `hanguskan-kredit` (harian). `no-show` dan
+`tutup-waitlist` aslinya juga terjadwal (tiap jam — Alur 7.1) tapi **dilepas dari
+`vercel.json` khusus untuk demo di akun Vercel Hobby**, yang cron-nya dibatasi harian
+saja — dua baris tiap jam bikin deploy ditolak. Endpoint-nya tetap hidup dan idempoten,
+tinggal dipanggil manual (lihat contoh `curl` di bawah) atau ditambahkan lagi ke
+`vercel.json`/`crontab` begitu naik ke Pro atau pindah ke VPS.
 Logikanya di `src/db/job.ts` (fungsi yang menerima klien db), route-nya cuma
 pembungkus. Panggil manual:
 

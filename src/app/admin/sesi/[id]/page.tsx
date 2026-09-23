@@ -1,8 +1,5 @@
-// Layar A2 Detail sesi — 02-rules.md bagian 6.1. Tampilan laptop (DS-16).
-// "Peserta · waitlist · centang kehadiran · tombol Batalkan Kelas"
-//
-// Di sinilah momen uang demo menit 4:15: "Coach sakit." → satu klik →
-// 8 kredit kembali, 11 pesan terkirim.
+// Layar A2 Detail sesi — 02-rules.md bagian 6.1. Peserta · waitlist · centang
+// kehadiran · Batalkan Kelas (Alur 5).
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -110,14 +107,11 @@ export default async function A2({
                     </Link>
                     <p className="truncate text-app-body-sm text-muted-foreground">
                       {p.telepon}
-                      {/* Penanda BR-3.5: orang ini baru dapat kursi dari
-                          antrean, aturan hangusnya berbeda. */}
+                      {/* Penanda BR-3.5: aturan hangusnya berbeda. */}
                       {p.sumber === "waitlist" && " · naik dari daftar tunggu"}
                     </p>
                   </div>
 
-                  {/* DS-14 — chip statusnya tetap ada; form koreksi berdiri
-                      di sebelahnya, tidak menggantikannya. */}
                   <Chip warna={warna} anak={teks} />
 
                   {/* BR-6.4 — koreksi no-show. Alasan wajib: kredit yang sudah
@@ -149,9 +143,8 @@ export default async function A2({
                     </form>
                   )}
 
-                  {/* UC-A06 — member telepon minta dibatalkan. Aturan
-                      kreditnya sama persis dengan kalau dia membatalkan
-                      sendiri: lewat batas waktu tetap hangus (BR-3.2). */}
+                  {/* UC-A06 — member telepon minta dibatalkan. Aturan kreditnya
+                      sama persis: lewat batas waktu tetap hangus (BR-3.2). */}
                   {p.status === "confirmed" && !batal && !lewat && (
                     <form action={batalkanBookingMember} className="shrink-0">
                       <input type="hidden" name="booking_id" value={p.booking_id} />
@@ -168,11 +161,9 @@ export default async function A2({
               </li>
             )}
 
-            {/* UC-A05 — member telepon, meja depan yang mendaftarkan.
-                Daftar pilihan sudah disaring ke yang punya kredit hidup, tapi
-                kelayakan sesungguhnya tetap diputuskan bolehBooking(): jenis
-                kelas yang tidak tercakup paketnya (BR-1.4) dan bentrok jam
-                (BR-2.5) baru ketahuan saat tombolnya ditekan. */}
+            {/* UC-A05 — meja depan yang mendaftarkan. Daftar pilihan sudah
+                disaring ke yang punya kredit hidup, tapi kelayakan sesungguhnya
+                tetap bolehBooking() — BR-1.4 dan BR-2.5 baru ketahuan di sana. */}
             {!batal && !lewat && aktif.length < sesi.kapasitas && (
               <li className="bg-muted px-4 py-3">
                 <form

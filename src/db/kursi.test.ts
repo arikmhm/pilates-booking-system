@@ -1,17 +1,9 @@
 // Test integrasi "kursi vs kredit" — UC-O02.
-//
-// Yang diuji satu hal yang tidak bisa dilihat typecheck maupun mata: **kredit
-// terkunci dan kredit bebas tidak boleh tertukar.** Paket yang cuma mencakup
-// satu jenis kelas membebani jenis itu; paket yang mencakup beberapa tidak
-// membebani satu pun secara khusus, dan menghitungnya di tiap jenis akan
-// melipatgandakan kewajiban studio sampai angkanya tidak berarti apa-apa.
-//
-// Dua jebakan lain ikut dijaga: kursi yang terbit SESUDAH kredit hangus tidak
-// boleh ikut dihitung — ia tidak akan pernah bisa dipakai — dan kursi yang
-// sudah dipesan bukan kursi kosong.
-//
-// Di ujung berkas, penjaga yang menentukan siapa yang boleh memperbaiki salah
-// centang cakupan paket: hanya paket yang belum sempat dibeli siapa pun.
+// Yang diuji: kredit TERKUNCI (paket satu jenis kelas) dan kredit BEBAS (paket
+// multi-jenis) tidak boleh tertukar — menghitung yang bebas di tiap jenis
+// melipatgandakan kewajiban studio. Ikut dijaga: kursi yang terbit sesudah
+// kredit hangus dan kursi yang sudah dipesan tidak dihitung kosong.
+// Di ujung berkas: penjaga ubah-cakupan paket (hanya yang belum dibeli).
 
 import { afterAll, beforeAll, expect, test } from "vitest";
 import postgres from "postgres";
@@ -151,9 +143,8 @@ test("kredit terkunci dibebankan ke jenis kelasnya, kredit bebas tidak", async (
   // Paket kedaluwarsa (9 kredit) juga tidak.
   expect(terkunci[0].kredit).toBe(5);
 
-  // Kursi kosong sampai kredit terkunci hangus: hari ke-3 dan ke-10 saja.
-  // Hari ke-40 di luar jendela, hari ke-2 sudah lewat, hari ke-5 sudah
-  // dipesan orang.
+  // Kursi kosong sampai kredit terkunci hangus: hari ke-3 dan ke-10 saja
+  // (ke-40 di luar jendela, ke-2 sudah lewat, ke-5 sudah dipesan).
   expect(terkunci[0].kursi).toBe(2);
 
   // Paket dua-jenis tidak pernah muncul di baris terkunci mana pun.
@@ -199,10 +190,8 @@ test("paket yang belum pernah dibeli boleh diubah", async () => {
 });
 
 test("paket yang sudah dibeli DITOLAK, dan tidak tersentuh sedikit pun", async () => {
-  // Harga dan nama dibaca hidup-hidup oleh buku transaksi, jadi mengubahnya
-  // menulis ulang riwayat penjualan. Mempersempit cakupan lebih keras lagi:
-  // kredit yang sudah dibayar jadi ditolak di kelas yang kemarin masih boleh
-  // (BR-1.4).
+  // Harga dan nama dibaca hidup-hidup oleh buku transaksi; mempersempit cakupan
+  // menolak kredit yang sudah dibayar di kelas yang kemarin masih boleh (BR-1.4).
   const [laku] = await sql<{ id: string; harga_rupiah: number }[]>`
     select id, harga_rupiah from packages where nama = 'Bebas 4 Sesi'`;
 

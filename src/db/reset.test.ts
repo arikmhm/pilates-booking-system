@@ -1,18 +1,8 @@
-// Test integrasi Reset Jadwal — UC-S08.
-//
-// Yang diuji bukan "apakah barisnya hilang". Yang diuji dua hal yang bisa
-// rusak diam-diam dan baru ketahuan di depan klien:
-//
-//   1. **Yang tinggal, tinggal.** Aturan mingguan dan paket member harus
-//      selamat. Kalau ikut terhapus, tombol "Terbitkan sekarang" tidak punya
-//      apa pun untuk diterbitkan dan tidak ada yang bisa membooking — reset
-//      ini justru mematikan fitur yang mau diperagakan.
-//   2. **Kredit kembali seperti saat dibeli.** BR-1.7 menghitung sisa dari
-//      SUM(credit_ledger.delta), jadi menghapus baris potongan booking harus
-//      MENGEMBALIKAN kreditnya. Kalau satu baris potongan tertinggal, member
-//      kehilangan kredit yang tidak pernah dipakainya, dan tidak ada kolom
-//      saldo yang bisa dipakai membuktikannya.
-//
+// Test integrasi Reset Jadwal — UC-S08. Dua hal yang bisa rusak diam-diam:
+//   1. Aturan mingguan dan paket member harus SELAMAT, kalau tidak reset ini
+//      justru mematikan fitur yang mau diperagakan.
+//   2. Kredit kembali seperti saat dibeli: BR-1.7 menghitung SUM(delta), jadi
+//      menghapus baris potongan booking harus MENGEMBALIKAN kreditnya.
 // Ditambah penjaganya: menolak jalan di database yang bukan demo.
 
 import { afterAll, beforeAll, expect, test } from "vitest";

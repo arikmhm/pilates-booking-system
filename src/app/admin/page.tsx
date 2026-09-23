@@ -1,21 +1,6 @@
-// Layar A1 Dashboard hari ini — 02-rules.md bagian 6.1. Tampilan laptop (DS-16).
-//
-// Satu layar, dua fokus (DS-47). Admin membuka ini untuk tahu **apa yang harus
-// dikerjakan sekarang**: kelas hari ini, siapa yang menunggu kursi, kelas mana
-// yang absennya belum dicentang. Owner membuka ini untuk tahu **bagaimana
-// studionya berjalan**: omzet bulan ini dan nilai kredit yang masih
-// menggantung — angka yang cuma boleh dilihat pemilik (BR-9.3).
-//
-// Bukan dua rute. Riset padanan produk (`docs/riset-dashboard-peran.md`)
-// menemukan pola yang sama di Vagaro, WellnessLiving, dan TeamUp: satu
-// dashboard, blok yang disaring per-permission. Mindbody memang memisahkan
-// layarnya, tapi layar stafnya sebuah kalender — bukan versi ringkas dashboard
-// pemiliknya.
-//
-// Panel kredit hangus tetap milik KEDUANYA. Itu bukan laporan; itu daftar
-// orang yang harus di-chat hari ini, lengkap dengan tombolnya — dan di produk
-// pembanding pun ia pekerjaan meja depan. Kalimat menit 2:15: "5 orang habis
-// minggu ini. Sistemnya yang cari, bukan Kakak."
+// Layar A1 Dashboard hari ini — 02-rules.md bagian 6.1. Satu layar, dua fokus
+// (DS-47): admin melihat pekerjaan hari ini, owner melihat angka uang (BR-9.3).
+// Panel kredit hangus milik KEDUANYA — itu daftar orang yang harus di-chat.
 
 import Link from "next/link";
 import { pg } from "@/db";
@@ -69,15 +54,12 @@ export default async function A1({
   const pengguna = await pastikanAdmin();
   const { kabar, hari } = await searchParams;
   const sekarang = new Date();
-  // Sesi penuh + daftar tunggu yang dipakai skenario B ada BESOK pagi
-  // (02-rules.md 6.2). Tanpa pengalih ini presenter tidak punya jalan ke A2
-  // sesi itu di tengah demo.
+  // Sesi penuh + daftar tunggu skenario B ada BESOK pagi (02-rules.md 6.2).
   const owner = pengguna.peran === "owner";
   const geser = hari === "besok" ? 1 : 0;
   const tanggal = new Date(sekarang.getTime() + geser * 86_400_000);
 
-  // Tiga query pertama milik siapa saja; dua terakhir dipilih menurut peran,
-  // dan angka uang tidak pernah diminta kalau yang membuka admin (BR-9.3).
+  // Angka uang tidak pernah diminta kalau yang membuka admin (BR-9.3).
   const awalBulan = new Date(
     Date.UTC(sekarang.getUTCFullYear(), sekarang.getUTCMonth(), 1),
   );
@@ -140,9 +122,6 @@ export default async function A1({
         </nav>
       </div>
 
-      {/* Baris angka paling atas menjawab pertanyaan yang berbeda untuk dua
-          peran, jadi isinya pun berbeda — bukan angka yang sama dengan satu
-          kolom disembunyikan. */}
       <div className="mt-dekat grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Kartu>
           <Angka nilai={sesi.length} label={geser ? "Kelas besok" : "Kelas hari ini"} />
@@ -234,9 +213,7 @@ export default async function A1({
         </Kartu>
 
         <div className="space-y-sedang">
-          {/* Dua antrean kerja meja depan. Keduanya hilang dari layar pemilik:
-              ia tidak mengurus absensi, dan daftar tugas orang lain di
-              dashboard sendiri cuma kebisingan (DS-47). */}
+          {/* Dua antrean kerja meja depan; hilang dari layar pemilik (DS-47). */}
           {!owner && antre.length > 0 && (
             <Kartu
               judul="Menunggu kursi"
@@ -300,8 +277,6 @@ export default async function A1({
             </Kartu>
           )}
 
-          {/* Satu-satunya blok berwarna di halaman — DS, supaya mata langsung
-              ke sini. Ini yang ditunjuk saat presentasi. */}
           <Kartu
             judul="Kredit hangus ≤ 7 hari"
             catatan={`${hangus.length} orang. Sistem yang mencari, bukan kamu.`}
@@ -349,10 +324,7 @@ export default async function A1({
             )}
           </Kartu>
 
-          {/* Kewenangan owner (02-rules.md bagian 5): ini syarat studio
-              untuk semua member sekaligus, bukan tugas harian meja depan.
-              Penjaga sebenarnya ada di server action — yang ini cuma
-              menghindari tombol yang pasti ditolak. */}
+          {/* Kewenangan owner — penjaga sebenarnya di server action. */}
           {owner ? (
             <Kartu
               judul="Setelan aturan"
@@ -404,18 +376,12 @@ export default async function A1({
             </Kartu>
           )}
 
-          {/* Hanya muncul di database demo. Penjaga sebenarnya ada di seed()
-              dan resetJadwal() yang menolak jalan kalau studionya bukan studio
-              demo — ini cuma supaya tombolnya tidak menggoda di instance
-              klien. */}
+          {/* Hanya di database demo. Penjaganya di seed() dan resetJadwal(). */}
           {setelan.nama === STUDIO_DEMO && (
             <Kartu
               judul="Reset"
               catatan="Dua keadaan awal yang berbeda. Kamu tetap login di keduanya."
             >
-              {/* items-stretch + mt-auto: keterangan keduanya beda jumlah
-                  baris, dan tombol yang tidak sebaris terbaca sebagai dua
-                  kartu yang tidak sengaja bersebelahan. */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <form action={resetDemo} className="flex h-full flex-col gap-2">
                   <p className="text-app-body-sm text-muted-foreground">
@@ -428,9 +394,7 @@ export default async function A1({
                 </form>
 
                 {/* Panggung kosong, bukan database kosong: aturan mingguan dan
-                    kredit member tetap, jadi "Terbitkan sekarang" di A7 punya
-                    sesuatu untuk diterbitkan dan kursinya bisa langsung
-                    dipesan di depan klien. */}
+                    kredit member tetap. */}
                 <form
                   action={resetJadwalDemo}
                   className="flex h-full flex-col gap-2"

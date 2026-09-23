@@ -1,16 +1,7 @@
-// Layar A7 Aturan jadwal — UC-O01.
-//
-// Jadwal studio disimpan sebagai aturan berulang mingguan, bukan sebagai
-// daftar tanggal (BR-7.1). Yang diketik di sini "Selasa 07.00 Reformer";
-// sesi nyatanya terbit sampai `generate_weeks_ahead` minggu ke depan saat
-// tombol "Terbitkan sekarang" ditekan — tidak lagi tiap malam sendiri.
-// Menambah aturan lewat layar ini langsung menerbitkan sesinya juga, supaya
-// slot yang baru diketik tidak menghilang sampai ada yang ingat menekan
-// tombolnya.
-//
-// Menghentikan aturan TIDAK menghapus barisnya: `sessions.schedule_rule_id`
-// menunjuk ke sana, dan sesi yang sudah punya peserta tidak boleh hilang
-// diam-diam. Yang dihapus hanya sesi mendatang yang benar-benar kosong.
+// Layar A7 Aturan jadwal — UC-O01. Jadwal disimpan sebagai aturan mingguan
+// (BR-7.1); menambah aturan lewat layar ini langsung menerbitkan sesinya.
+// Menghentikan aturan tidak menghapus barisnya — `sessions.schedule_rule_id`
+// menunjuk ke sana; yang dihapus hanya sesi mendatang yang kosong.
 
 import Link from "next/link";
 import { pg } from "@/db";
@@ -28,22 +19,16 @@ export default async function A7({
   searchParams: Promise<{ kabar?: string; buat?: string; hari?: string }>;
 }) {
   const pengguna = await pastikanAdmin();
-  // Slot mingguan permanen = beban tiap minggu, kewenangan owner. Kelas
-  // sekali jalan tetap milik admin — operasional dan sering mendesak.
   const owner = pengguna.peran === "owner";
   const { kabar, buat, hari } = await searchParams;
-  // Di layar INI yang dicari orang adalah slot mingguan, jadi itu tab bawaan.
-  // Di sebelah kalender sebaliknya — yang dicari di sana lubang satu minggu.
+  // Di layar INI yang dicari slot mingguan, jadi itu tab bawaan.
   const modeBuat: ModeBuat = buat === "sekali" ? "sekali" : "berulang";
   const sekarang = new Date();
 
   const aturan = await daftarAturan(pg, sekarang);
   const aktif = aturan.filter((a) => !a.berlaku_sampai);
 
-  // Tab hari — DS-41. Empat puluh baris dalam satu daftar berarti menggulir
-  // untuk menjawab "Selasa isinya apa?", padahal jadwal studio selalu dibaca
-  // per hari. Nol = semua hari, dan itu tetap bawaannya: yang baru membuka
-  // layar ini ingin melihat seluruhnya dulu.
+  // Tab hari — DS-41. Nol = semua hari, dan itu bawaannya.
   const hariAktif = HARI[Number(hari) - 1] ? Number(hari) : 0;
   const tampil = hariAktif ? aturan.filter((a) => a.hari === hariAktif) : aturan;
   const tautanHari = (h: number) => {
@@ -69,9 +54,6 @@ export default async function A7({
         </p>
       </div>
 
-      {/* min-w-0 di kedua sisi: butir grid bawaannya `min-width:auto`, dan
-          lebar min-content sebuah <select> ditentukan opsi terpanjangnya —
-          cukup untuk mendorong seluruh halaman melar di layar 375px. */}
       <div className="mt-dekat grid gap-dekat lg:grid-cols-[minmax(0,1fr)_30rem]">
         <Kartu judul="Jadwal mingguan" padat min0>
           <div className="flex flex-wrap items-center gap-1 border-b border-border px-2 py-2">
@@ -111,7 +93,6 @@ export default async function A7({
                     key={a.id}
                     className="flex flex-wrap items-center gap-4 px-4 py-3"
                   >
-                    {/* DS-28 — hari dan jam jadi jangkar kiri, lebar tetap. */}
                     <div className="w-24 shrink-0">
                       <p className="text-app-body">{HARI[a.hari - 1]}</p>
                       <p className="text-app-body-sm tabular-nums text-muted-foreground">
@@ -133,9 +114,8 @@ export default async function A7({
                       {a.sesi_mendatang} sesi mendatang
                     </div>
 
-                    {/* Dihentikan bukan keadaan akhir — tanpa "Jalankan
-                        lagi", satu klik Hentikan cuma bisa dibatalkan dengan
-                        Reset Demo, yang membuang seluruh data lain sekalian. */}
+                    {/* Tanpa "Jalankan lagi", satu-satunya pembatal Hentikan
+                        adalah Reset Demo. */}
                     {berhenti ? (
                       owner ? (
                         <form action={jalankanLagiAturan} className="shrink-0">
@@ -171,9 +151,6 @@ export default async function A7({
           )}
         </Kartu>
 
-        {/* Formulir yang sama persis dengan yang ada di sebelah kalender
-            (DS-40). Satu komponen, dua layar — dulu dua salinan yang harus
-            diubah bersamaan tiap kali jenis kelas atau batas kursi berubah. */}
         <div className="min-w-0">
           <BuatKelas
             owner={owner}

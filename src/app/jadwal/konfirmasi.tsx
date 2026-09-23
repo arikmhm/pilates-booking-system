@@ -1,17 +1,6 @@
-// Layar M2 Konfirmasi — 02-rules.md bagian 6.1, 07-design.md bagian 9.
-//
-// Panel geser di atas jadwal, bukan halaman sendiri: yang dikonfirmasi adalah
-// sebuah blok di kalender, dan kalendernya harus tetap terlihat di belakang.
-//
-// Komponen server murni. Terbuka-tutupnya lewat `?pilih=<session_id>` di URL —
-// sama seperti minggu, saringan jenis kelas, dan panel buat-kelas di layar ini.
-// Tanpa state klien berarti tombol kembali browser bekerja, panelnya bisa
-// ditautkan, dan tidak ada JavaScript yang harus dimuat dulu sebelum seseorang
-// bisa merebut kursi terakhir.
-//
-// BR-2.6 — memilih alat sifatnya pilihan, bukan syarat. Radio pertama yang
-// masih kosong sudah tercentang, jadi member yang tidak peduli cukup menekan
-// satu tombol seperti sebelumnya.
+// Layar M2 Konfirmasi — panel geser di atas jadwal, bukan halaman sendiri.
+// Buka-tutupnya lewat `?pilih=<session_id>`, jadi tanpa state klien dan tanpa JS.
+// BR-2.6 — memilih alat sifatnya pilihan; radio kosong pertama sudah tercentang.
 
 import Link from "next/link";
 import { Tombol } from "@/components/kerangka";
@@ -37,12 +26,10 @@ export function Konfirmasi({
   tutup,
 }: {
   sesi: BarisJadwal;
-  /** Nomor tempat yang sudah terisi — tampil mati, tidak bisa dipilih. */
+  /** Nomor tempat yang sudah terisi — tampil mati. */
   terpakai: number[];
   setelan: Setelan;
-  /** Sisa kredit member sebelum booking ini. */
   sisa: number;
-  /** URL layar jadwal tanpa panelnya. */
   tutup: string;
 }) {
   const dipakai = new Set(terpakai);
@@ -51,9 +38,7 @@ export function Konfirmasi({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      {/* Tirai beropasitas (DS bagian 9). Sekaligus tombol tutup: satu klik di
-          luar panel mengembalikan orang ke jadwal, seperti panel geser mana
-          pun. Tautan, bukan tombol — supaya tetap bekerja tanpa JavaScript. */}
+      {/* Tirai sekaligus tombol tutup. Tautan, bukan tombol — tanpa JS pun jalan. */}
       <Link
         href={tutup}
         aria-label="Tutup konfirmasi"
@@ -86,16 +71,12 @@ export function Konfirmasi({
               <legend className="text-app-label uppercase text-muted-foreground">
                 Pilih tempat
               </legend>
-              {/* "Tempat", bukan "alat": nomor ini reformer nomor 3 di kelas
-                  Reformer, tapi matras nomor 3 di kelas Mat — yang memang
-                  dijual sebagai kelas tanpa alat. Kolomnya masih bernama
-                  `nomor_alat`; yang dibaca orang tidak harus ikut. */}
+              {/* "Tempat", bukan "alat": nomor 3 itu matras di kelas Mat.
+                  Kolomnya tetap `nomor_alat`. */}
               <p className="mt-1 text-app-body-sm text-muted-foreground">
                 {sesi.kapasitas - sesi.terisi} dari {sesi.kapasitas} tempat masih
                 kosong. Tidak memilih pun boleh — yang tercentang sudah siap.
               </p>
-              {/* Kisi chip: radio disembunyikan, labelnya yang digambar.
-                  Tanpa JavaScript, dan `peer-checked` yang mewarnai. */}
               <div className="mt-3 flex flex-wrap gap-2">
                 {alat.map((a) => {
                   const mati = dipakai.has(a);
@@ -127,9 +108,7 @@ export function Konfirmasi({
               </div>
             </fieldset>
 
-            {/* BR-2.2 dan BR-3.1/BR-3.2 ditulis apa adanya sebelum tombolnya
-                ditekan. Aturan batal yang baru ketahuan sesudah orang telat
-                membatalkan adalah aturan yang terasa seperti jebakan. */}
+            {/* BR-2.2 dan BR-3.1/BR-3.2 disebut sebelum tombolnya ditekan. */}
             <div className="py-4">
               <p className="text-app-body">
                 1 kredit dipotong sekarang. Sisa kredit {sisa} → {sisa - 1}.

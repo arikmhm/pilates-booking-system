@@ -1,12 +1,6 @@
-// Kerangka halaman publik — dipakai jadwal dan katalog paket.
-//
-// Halaman publik memakai bilah atas yang sama dengan halaman profil
-// (`bilah-publik.tsx`) plus hero pendek (DS-46), bukan sidebar aplikasi:
-// sidebar member penuh menu yang belum bisa dibuka tamu, dan sidebar yang
-// separuh butirnya melempar ke layar masuk itu janji kosong.
-//
-// Hero-nya sengaja pendek — ia menamai halaman, bukan membujuk. Isi halaman
-// harus sudah terlihat tanpa menggulung.
+// Kerangka halaman publik — dipakai jadwal dan katalog paket. Bilah atas sama
+// dengan halaman profil (`bilah-publik.tsx`) plus hero pendek (DS-46), bukan
+// sidebar aplikasi: sidebar member penuh menu yang belum bisa dibuka tamu.
 
 import Link from "next/link";
 import { BilahPublik, FOTO } from "@/components/bilah-publik";
@@ -32,17 +26,14 @@ export function RangkaPublik({
     <div className="flex min-h-full flex-1 flex-col bg-background">
       <BilahPublik aktif={aktif} lebar="max-w-6xl" />
 
-      {/* Hero pendek — DS-46. Sepertiga tinggi hero halaman profil: di sini
-          orang datang untuk membaca jadwal, bukan untuk dibujuk, dan hero
-          setinggi 70vh berarti kalendernya harus digulung dulu sebelum
-          terlihat. Fotonya belum ada, jadi blok gradien yang sama dengan
-          halaman profil (DS-25) — tata letaknya tidak akan bergeser saat foto
-          aslinya dipasang. */}
+      {/* Hero pendek — DS-46, sepertiga tinggi hero profil: orang datang untuk
+          membaca jadwal, bukan dibujuk. Blok gradien yang sama (DS-25) supaya
+          tata letaknya tidak bergeser saat foto asli dipasang. */}
       <section className="relative flex h-40 items-end overflow-hidden sm:h-52">
         <div aria-hidden className={`absolute inset-0 ${FOTO}`} />
 
-        {/* DS-20 — tirai wajib sebelum teks putih. Arahnya dari bawah, bukan
-            dari kiri seperti hero profil: judulnya duduk di dasar hero. */}
+        {/* DS-20 — tirai wajib sebelum teks putih. Arahnya dari bawah: judulnya
+            duduk di dasar hero. */}
         <div
           aria-hidden
           className="absolute inset-0"
@@ -52,10 +43,8 @@ export function RangkaPublik({
           }}
         />
 
-        {/* Kata raksasa yang setengah tenggelam di tepi bawah. Murni hiasan —
-            `aria-hidden`, dan opasitasnya 10% supaya ia jadi tekstur, bukan
-            teks kedua yang ikut dibaca. Disembunyikan di HP: di 375px ia
-            menabrak judulnya sendiri. */}
+        {/* Kata raksasa setengah tenggelam — murni hiasan (`aria-hidden`,
+            opasitas 10%). Disembunyikan di HP: di 375px ia menabrak judul. */}
         <span
           aria-hidden
           className="pointer-events-none absolute -bottom-10 right-4 hidden select-none text-[9rem] font-medium uppercase leading-none tracking-tight text-white/10 sm:block lg:text-[12rem]"
@@ -80,9 +69,8 @@ export function RangkaPublik({
         {children}
       </main>
 
-      {/* Satu ajakan saja di kaki halaman. Tamu yang sudah melihat jadwalnya
-          cuma punya dua langkah berikutnya yang masuk akal: punya kredit lalu
-          masuk, atau belum punya dan perlu paketnya. */}
+      {/* Satu ajakan saja di kaki: tamu yang sudah melihat jadwal cuma punya
+          dua langkah berikutnya — masuk, atau beli paket. */}
       <section className="border-t border-border bg-surface-sand">
         <div className={`${LEBAR} flex flex-wrap items-center justify-between gap-4 py-sedang`}>
           <div>
@@ -93,8 +81,8 @@ export function RangkaPublik({
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            {/* Di halaman paket, tombol "Lihat Paket" menunjuk halaman yang
-                sedang dibuka. Yang berguna di sana justru jadwalnya. */}
+            {/* Di halaman paket, "Lihat Paket" menunjuk halaman yang sedang
+                dibuka; yang berguna di sana jadwalnya. */}
             <Link
               href={diPaket ? "/jadwal" : "/paket"}
               className="inline-flex h-12 items-center justify-center rounded-sm border border-foreground px-6 text-app-label font-medium uppercase"

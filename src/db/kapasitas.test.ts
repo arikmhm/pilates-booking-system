@@ -1,9 +1,7 @@
 // Test integrasi wajib — AGENTS.md dan 06-architecture.md bagian 3.
-//
-// Tembakkan 20 booking paralel ke kelas berkapasitas 8. Tepat 8 harus berhasil.
-// Ini satu-satunya cara membuktikan BR-2.3 dijaga database, bukan kebetulan.
-// Nilainya melebihi 50 unit test: kalau partial unique index di schema.ts hilang,
-// test ini merah. Tidak ada cara lain menangkapnya.
+// 20 booking paralel ke kelas berkapasitas 8; tepat 8 harus berhasil. Satu-
+// satunya cara membuktikan BR-2.3 dijaga database: kalau partial unique index
+// di schema.ts hilang, test ini merah.
 
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import postgres from "postgres";
@@ -40,9 +38,8 @@ beforeAll(async () => {
     returning id`;
   sesi = s.id;
 
-  // Sesi kedua yang dibiarkan kosong. Dipakai test BR-2.4: di sesi yang sudah
-  // penuh, penjaga kapasitas menyalip lebih dulu dan index (session_id,
-  // user_id) tidak pernah tersentuh.
+  // Sesi kedua yang dibiarkan kosong — dipakai test BR-2.4: di sesi penuh,
+  // penjaga kapasitas menyalip dan index (session_id, user_id) tak tersentuh.
   const [s2] = await sql`
     insert into sessions (studio_id, class_type_id, mulai_at, durasi_menit, kapasitas)
     values (${studio.id}, ${jenis.id}, now() + interval '3 days', 70, ${KAPASITAS})
@@ -67,18 +64,16 @@ afterAll(async () => {
   await sql.end();
 });
 
-// Query 5.1 sekarang tinggal di src/db/booking.ts dan dipakai server action
-// juga. Test ini menyuntikkan koneksi lokalnya sendiri — itu yang menahan
-// TRUNCATE supaya tidak pernah kena Neon.
+// Test menyuntikkan koneksi lokalnya sendiri — itu yang menahan TRUNCATE
+// supaya tidak pernah kena Neon.
 const pesan = (user_id: string, member_package_id: string, session_id = sesi) =>
   pesanKursi(sql, { session_id, user_id, member_package_id }).then((r) => r !== null);
 
 test("20 booking paralel ke kelas 8 kursi → tepat 8 berhasil (BR-2.3)", async () => {
   const hasil = await Promise.all(
     member.map(async (m) => {
-      // Dua penyerbu bisa memilih alat yang sama di detik yang sama; yang kalah
-      // ditolak unique index dengan 23505, lalu mencoba alat berikutnya.
-      // Inilah yang dilakukan server action nanti.
+      // Dua penyerbu bisa memilih alat yang sama; yang kalah ditolak unique
+      // index dengan 23505 lalu mencoba alat berikutnya, persis server action.
       for (let coba = 0; coba < PENYERBU; coba++) {
         try {
           return await pesan(m.user_id, m.member_package_id);
@@ -116,9 +111,8 @@ test("member yang sama tidak bisa dua kursi di satu sesi (BR-2.4)", async () => 
 });
 
 test("dipromosikan_at tersimpan saat kursi diisi dari waitlist (titik 6)", async () => {
-  // src/rules/ sudah diuji mengembalikan dipromosikan_at. Yang belum terjaga
-  // adalah sisi database: kalau kolomnya tidak ikut tertulis, BR-3.5 diam-diam
-  // berhenti bekerja dan orang yang baru naik 3 jam sebelum kelas kena hangus.
+  // Sisi database yang belum terjaga: kalau `dipromosikan_at` tidak ikut
+  // tertulis, BR-3.5 diam-diam berhenti bekerja.
   const m = member[PENYERBU - 1];
   const naik = new Date("2026-09-22T03:00:00Z");
   const kursi = await pesanKursi(sql, {
@@ -176,8 +170,7 @@ test("alat pilihan member dihormati, dan tidak menggagalkan booking (BR-2.6)", a
 
 /* ══ Normalisasi timestamptz ═══════════════════════════════════════════════
    postgres.js mengembalikan Date di node dan string mentah di runtime Next.
-   Salah parse di sini tidak melempar apa-apa — cuma menggeser kelas 7 jam,
-   yang artinya hari yang salah di layar jadwal.                            */
+   Salah parse tidak melempar apa-apa — cuma menggeser kelas 7 jam.        */
 describe("saat() — timestamptz dari postgres.js", () => {
   test("string offset +00 dibaca sebagai UTC", () => {
     expect(saat("2026-09-22 09:00:00+00").toISOString()).toBe(

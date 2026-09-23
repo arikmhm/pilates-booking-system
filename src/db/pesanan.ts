@@ -1,19 +1,9 @@
 // Siklus hidup satu kursi: dipesan, dibatalkan, dan antrean yang menyusul.
 //
-// Sebelumnya isi berkas ini tersebar di dua server action — `booking()` di
-// layar member dan `batalBooking()` di layar akun. Begitu admin harus bisa
-// melakukan hal yang sama atas nama member (UC-A05, UC-A06), menyalinnya jadi
-// dua pasang berarti dua tempat yang harus ingat memotong kredit, dua tempat
-// yang harus ingat menaikkan antrean, dan dua tempat yang bisa lupa.
-//
-// Antarmukanya sengaja sempit: siapa, kursi mana, atas nama siapa. Yang
-// mengembang ada di dalam — jendela booking, pemilihan paket, balapan alat
-// terakhir, potongan kredit, promosi antrean, notifikasi.
-//
-// Fungsi di sini **tidak** melakukan redirect dan tidak tahu soal URL. Ia
-// mengembalikan hasil; server action yang menerjemahkannya jadi kalimat.
-// Itu yang membuat jalur member dan jalur admin benar-benar berbagi kode,
-// bukan cuma mirip.
+// Satu tempat untuk jalur member dan jalur admin (UC-A05, UC-A06) — kalau
+// disalin, ada dua tempat yang harus ingat memotong kredit dan menaikkan
+// antrean. Fungsi di sini tidak redirect dan tidak tahu URL: ia mengembalikan
+// hasil, server action yang menerjemahkannya jadi kalimat.
 
 import type postgres from "postgres";
 import {
@@ -48,14 +38,10 @@ const MAKS_COBA = 12;
 /**
  * Pesan satu kursi untuk `user_id`.
  *
- * `sumber` membedakan siapa yang menekan tombolnya — `member` dari layar
- * jadwal, `admin` dari meja depan (BR-9.2), `waitlist` dari promosi otomatis.
- * Kolom itu yang nanti menjawab "kenapa saya terdaftar di kelas ini?".
- *
- * Aturan booking-nya identik untuk semua: admin TIDAK menembus jendela
- * booking, tidak menembus kapasitas, dan tidak membuat kredit dari udara.
- * Kalau studio mau mengampuni sesuatu, jalannya koreksi kredit BR-1.8 yang
- * wajib beralasan — bukan pintu belakang diam-diam di sini.
+ * `sumber` membedakan siapa yang menekan tombolnya — `member`, `admin`
+ * (BR-9.2), atau `waitlist`. Aturan booking-nya identik untuk semua: admin
+ * TIDAK menembus jendela booking, kapasitas, maupun kredit. Pengampunan
+ * lewat koreksi kredit BR-1.8 yang wajib beralasan.
  */
 export async function bookingkan(
   sql: postgres.Sql,
@@ -103,9 +89,8 @@ export async function bookingkan(
         });
         if (!k) return null; // kelas penuh
 
-        // BR-2.2 — kredit dipotong saat booking, bukan saat hadir. Satu
-        // transaksi dengan INSERT kursi: kursi tanpa potongan kredit adalah
-        // kursi gratis.
+        // BR-2.2 — kredit dipotong saat booking. Satu transaksi dengan INSERT
+        // kursi: kursi tanpa potongan kredit adalah kursi gratis.
         await tx`
           insert into credit_ledger (member_package_id, booking_id, delta, alasan, pelaku_id)
           values (${putusan.paket.id}, ${k.id}, -1, 'booking', ${pelaku_id})`;
@@ -124,8 +109,8 @@ export async function bookingkan(
     } catch (e) {
       const galat = e as { code?: string; constraint_name?: string };
       if (galat.code !== "23505") throw e;
-      // Dua constraint, dua arti yang berlawanan — membedakannya wajib,
-      // kalau tidak yang satu diulang selamanya.
+      // Dua constraint, dua arti berlawanan — kalau tidak dibedakan, yang satu
+      // diulang selamanya.
       if (galat.constraint_name === SUDAH_TERDAFTAR)
         return { ok: false, pesan: "Sudah terdaftar di kelas ini." };
       if (galat.constraint_name !== ALAT_BENTROK) throw e;
@@ -135,17 +120,12 @@ export async function bookingkan(
 }
 
 /**
- * Alur 3 — batalkan satu kursi, lalu Alur 4 seketika.
+ * Alur 3 — batalkan satu kursi, lalu Alur 4 seketika (BR-3.3: kursi dilepas
+ * seketika, waitlist langsung diproses).
  *
- * BR-3.3: "Kursi dilepas seketika di kedua kasus; waitlist langsung diproses."
- * Membatalkan tanpa memproses antrean bukan fitur setengah jadi, tapi salah:
- * kursinya kosong padahal ada yang menunggu — persis uang yang mau
- * diselamatkan sistem ini.
- *
- * `user_id` diisi kalau yang membatalkan si pemilik kursi (jadi kepemilikan
- * ikut diperiksa query), dan dibiarkan kosong kalau admin yang membatalkan
- * atas nama orang. Keputusan kreditnya sama persis — BR-3.2 tetap berlaku,
- * batal telat tetap hangus, siapa pun yang menekan tombolnya.
+ * `user_id` diisi kalau yang membatalkan si pemilik kursi, sehingga kepemilikan
+ * ikut diperiksa query; kosong kalau admin yang membatalkan atas nama orang.
+ * Keputusan kreditnya sama persis — BR-3.2 tetap berlaku.
  */
 export async function batalkan(
   sql: postgres.Sql,
@@ -192,12 +172,8 @@ export async function batalkan(
   return { ok: true, kredit_kembali: putusan.kredit_kembali, naik: Boolean(naik) };
 }
 
-/**
- * Alur 4 — naikkan satu orang dari antrean.
- *
- * Keputusan siapa yang naik diambil `naikkanWaitlist()` di src/rules/;
- * fungsi ini hanya memuat data dan menuliskan hasilnya.
- */
+/** Alur 4 — naikkan satu orang dari antrean. Keputusan siapa yang naik ada di
+ *  `naikkanWaitlist()`; fungsi ini hanya memuat data dan menulis hasilnya. */
 export async function prosesWaitlist(
   sql: postgres.Sql,
   session_id: string,
@@ -237,8 +213,7 @@ export async function prosesWaitlist(
       user_id: hasil.naik.user_id,
       member_package_id: hasil.naik.paket_id,
       sumber: "waitlist",
-      // Titik rawan 6 — tanpa ini BR-3.5 tidak bisa dihitung dan orang yang
-      // baru naik 3 jam sebelum kelas ikut kena aturan hangus.
+      // Titik rawan 6 — tanpa ini BR-3.5 tidak bisa dihitung.
       dipromosikan_at: hasil.naik.dipromosikan_at,
     });
     if (!kursi) return null; // kursi keburu terisi lagi

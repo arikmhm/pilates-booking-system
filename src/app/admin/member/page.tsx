@@ -1,15 +1,5 @@
-// Layar A4 Direktori member — UC-A16.
-//
-// Sampai layar ini ada, satu-satunya jalan ke detail member adalah lewat panel
-// "kredit hangus" atau daftar peserta sebuah sesi. Artinya member yang
-// kreditnya masih panjang dan tidak sedang ikut kelas apa pun tidak bisa
-// dicari sama sekali — padahal itu pertanyaan resepsionis paling sering:
-// "Bu Sri tadi telepon, kreditnya masih berapa?"
-//
-// Cari, halaman, dan jumlah baris semuanya lewat URL (`?q=`, `?hal=`, `?per=`).
-// Bukan state klien: hasil pencarian jadi bisa ditautkan, di-refresh, dan
-// dibuka di tab baru — tiga hal yang dipakai resepsionis sambil menelepon.
-// Tabelnya tetap Server Component, tanpa satu pun kilobyte JavaScript.
+// Layar A4 Direktori member — UC-A16. Cari, halaman, dan jumlah baris lewat
+// URL (`?q=`, `?hal=`, `?per=`), jadi hasilnya bisa ditautkan. Server Component.
 
 import Link from "next/link";
 import { pg } from "@/db";
@@ -27,10 +17,8 @@ const LAMA = 30 * 86_400_000;
 const PER_HALAMAN = [10, 25, 50] as const;
 const BAKU = 10;
 
-/**
- * Tiga status yang menentukan tindakan, bukan tiga cara mendeskripsikan data.
- * Kuning berarti "hubungi hari ini"; abu berarti "tawarkan paket".
- */
+/** Tiga status yang menentukan TINDAKAN: kuning "hubungi hari ini", abu
+ *  "tawarkan paket". */
 function status(m: BarisMember, kini: number): [Status, string] {
   if (m.sisa_kredit <= 0 || !m.hangus_at)
     return ["kosong", "Tidak punya kredit aktif — tawarkan paket"];
@@ -42,7 +30,6 @@ function status(m: BarisMember, kini: number): [Status, string] {
   return ["aman", `${m.sisa_kredit} kredit, masa berlaku masih panjang`];
 }
 
-/** Tautan yang mempertahankan parameter lain — ganti satu, sisanya utuh. */
 function tautan(kini: URLSearchParams, ubah: Record<string, string | null>) {
   const p = new URLSearchParams(kini);
   for (const [k, v] of Object.entries(ubah)) {
@@ -69,8 +56,8 @@ export default async function A4({
 
   const semua = await daftarMember(pg, { q, sekarang });
 
-  // Batas dijaga di sini, bukan dipercayakan ke tautan yang kita tulis
-  // sendiri: `?per=99999` cuma perlu diketik sekali untuk menarik semua baris.
+  // Batas dijaga di sini, bukan dipercayakan ke tautan kita sendiri: `?per=99999`
+  // cuma perlu diketik sekali.
   const perHalaman = PER_HALAMAN.includes(Number(per) as never)
     ? Number(per)
     : BAKU;
@@ -81,7 +68,6 @@ export default async function A4({
   const mulai = (halaman - 1) * perHalaman;
   const baris = semua.slice(mulai, mulai + perHalaman);
 
-  // Dihitung dari baris yang sama — tidak perlu query kedua.
   const mepet = semua
     .filter(
       (m) => m.sisa_kredit > 0 && m.hangus_at && m.hangus_at.getTime() - kini < MEPET,
@@ -107,16 +93,10 @@ export default async function A4({
       aktif="/admin/member"
       kabar={kabar}
     >
-      {/* Delapan kolom untuk daftar, empat untuk yang butuh ditindaklanjuti.
-          Pisahnya di 1280px, bukan 1024px: di 1024 panel kanan tinggal 227px
-          dan tabelnya mulai menggulir — dua-duanya jadi sempit, lebih buruk
-          daripada menumpuk. */}
       <div className="grid grid-cols-12 gap-dekat">
         <div className="col-span-12 xl:col-span-8">
           <Kartu padat>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-              {/* GET biasa: hasilnya bisa ditautkan dan di-refresh tanpa
-                  mengirim ulang apa pun. */}
               <form className="flex items-center gap-2">
                 {per && <input type="hidden" name="per" value={per} />}
                 <input
@@ -181,8 +161,6 @@ export default async function A4({
                           {m.sisa_kredit || "—"}
                         </td>
                         <td className={`${TD} whitespace-nowrap text-muted-foreground`}>
-                          {/* Tanggal hangus paket berisi nol kredit tidak
-                              menjawab apa pun — yang hilang sudah habis. */}
                           {m.sisa_kredit > 0 && m.hangus_at
                             ? tanggalRingkasWib(m.hangus_at)
                             : "—"}
@@ -237,8 +215,7 @@ export default async function A4({
                 {PER_HALAMAN.map((n) => (
                   <Link
                     key={n}
-                    // Ganti jumlah baris selalu balik ke halaman 1: halaman 4
-                    // dari 4 tidak ada lagi begitu isinya 50 per halaman.
+                    // Ganti jumlah baris selalu balik ke halaman 1.
                     href={tautan(param, {
                       per: n === BAKU ? null : String(n),
                       hal: null,
@@ -280,8 +257,7 @@ export default async function A4({
             />
           </Kartu>
 
-          {/* Bukan ringkasan — ini daftar orang yang harus dihubungi hari ini,
-              lengkap dengan tombolnya. Sama semangatnya dengan panel di A1. */}
+          {/* Bukan ringkasan — daftar orang yang harus dihubungi hari ini. */}
           <Kartu
             judul="Kredit hangus ≤ 7 hari"
             catatan={`${mepet.length} orang. Urut dari yang paling dekat.`}
@@ -322,9 +298,7 @@ export default async function A4({
             </ul>
           </Kartu>
 
-          {/* Punya kredit, tidak memesan apa pun, dan lama tidak kelihatan.
-              Ini yang berhenti pelan-pelan — biasanya tidak pernah menelepon
-              untuk pamit, jadi tidak ada yang menyadarinya tanpa daftar ini. */}
+          {/* Punya kredit, tidak memesan apa pun, lama tidak kelihatan. */}
           <Kartu
             judul="Punya kredit, lama tak datang"
             catatan="Belum pesan kelas dan tidak hadir 30 hari terakhir."

@@ -1,14 +1,9 @@
 "use client";
 
-// Tombol kembali ke halaman SEBELUMNYA, bukan ke satu tujuan tetap.
-//
-// Sebelumnya tertulis "← Dashboard" dan selalu melempar ke dashboard — padahal
-// layar detail ini paling sering dibuka dari direktori member atau dari daftar
-// peserta sebuah sesi. Kembali ke dashboard berarti kehilangan tempat, lengkap
-// dengan kata pencarian dan halaman yang tadi dibuka.
-//
-// `history.back()` mengembalikan itu semua. Kalau riwayatnya kosong — tautan
-// dibuka langsung dari WhatsApp, atau tab baru — barulah `cadangan` dipakai.
+// Tombol kembali ke halaman SEBELUMNYA, bukan satu tujuan tetap: layar detail
+// paling sering dibuka dari direktori member atau daftar peserta, dan kembali
+// ke dashboard menghilangkan kata pencarian serta halaman yang tadi dibuka.
+// `cadangan` dipakai kalau riwayatnya kosong (tautan dari WA, tab baru).
 
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";

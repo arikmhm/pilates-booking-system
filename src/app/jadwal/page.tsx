@@ -1,17 +1,8 @@
 // Layar M1 Jadwal — 02-rules.md bagian 6.1.
-//
-// Satu halaman, empat peran. Member melihat tombol booking, staf melihat
-// tautan ke detail sesi, coach hanya melihat, dan **tamu** — pengunjung yang
-// belum masuk — melihat jadwal yang sama tanpa satu pun tombol. Datanya sama
-// persis; yang berbeda cuma apa yang bisa dilakukan pada sebuah blok.
-//
-// DS-45 — jadwal bersifat publik. Melempar tamu ke /masuk berarti meminta
-// orang membuat akun untuk membaca jam buka; yang layak disembunyikan adalah
-// tombolnya, bukan jadwalnya. Tamu memakai kerangka publik (`publik.tsx`),
-// bukan sidebar aplikasi.
-//
-// Keputusan boleh-tidaknya booking diambil bolehBooking() di src/rules/,
-// bukan di sini. Berkas ini membaca database dan menggambar hasilnya.
+// Satu halaman, empat peran: member (tombol booking), staf (tautan detail),
+// coach (lihat saja), dan tamu (tanpa tombol). DS-45 — jadwal bersifat publik,
+// yang disembunyikan tombolnya bukan jadwalnya; tamu memakai `publik.tsx`.
+// Keputusan boleh-tidaknya booking diambil bolehBooking() di src/rules/.
 
 import Link from "next/link";
 import { pg } from "@/db";
@@ -54,20 +45,14 @@ type Konteks = {
   paket: PaketMember[];
   aktif: { session_id: string; mulai_at: Date; durasi_menit: number }[];
   sekarang: Date;
-  /** URL layar ini dengan panel konfirmasi (M2) sesi itu terbuka. */
   tautanPilih: (session_id: string) => string;
-  /** URL layar ini apa adanya — dibawa formulir supaya minggunya tidak hilang. */
   sini: string;
 };
 
-/**
- * Tombol aksi di rupa daftar — DS-51. Lime `primary` karena ini memang aksi
- * utama barisnya (DS-2), dan 44px karena DS-11 tidak mengenal pengecualian.
- */
 const TOMBOL =
   "inline-flex min-h-11 shrink-0 items-center rounded-sm bg-primary px-4 text-app-label font-medium uppercase text-primary-foreground transition-opacity hover:opacity-90";
 
-/** Alasan tolak diringkas jadi dua kata — kalimat penuh tidak muat di blok. */
+/** Alasan tolak diringkas dua kata — kalimat penuh tidak muat di blok. */
 const RINGKAS: Record<string, string> = {
   X1: "dibatalkan",
   X2: "di luar jendela",
@@ -77,11 +62,8 @@ const RINGKAS: Record<string, string> = {
   X7: "paket lain",
 };
 
-/**
- * Satu-satunya tempat yang memutuskan rupa sebuah sesi. Dipakai kalender dan
- * daftar HP, supaya keduanya tidak pernah bercerita berbeda tentang sesi yang
- * sama. DS-14 — warna tidak pernah jadi satu-satunya penanda; semua berteks.
- */
+/** Satu-satunya tempat yang memutuskan rupa sebuah sesi; kalender dan daftar HP
+ *  memakainya bersama. DS-14 — semua berteks, bukan warna saja. */
 function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
   const sisa = b.kapasitas - b.terisi;
   const penuh = sisa <= 0;
@@ -98,10 +80,7 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
       catatan: `Mengantre · ${b.antre} di daftar`,
     };
 
-  // Tamu — DS-45. Yang perlu terbaca cuma tiga hal: kelas apa, jam berapa,
-  // masih ada kursi atau tidak. Jumlah antre dan kode tolak milik member
-  // tidak berarti apa-apa untuk orang yang belum punya akun, dan blok yang
-  // masih kosong jadi tautan ke layar masuk — itu langkah berikutnya.
+  // Tamu — DS-45. Blok yang masih kosong jadi tautan ke layar masuk.
   if (k.mode === "tamu") {
     if (b.status !== "scheduled" || b.mulai_at <= k.sekarang)
       return {
@@ -124,9 +103,6 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
           {anak}
         </Link>
       ),
-      // Tamu belum punya akun, jadi tombolnya mendarat di layar masuk. Kata
-      // yang sama dengan tombol member — yang dituju orangnya memang sama,
-      // dan "Masuk dulu" di sini terbaca seperti penolakan.
       tombol: (
         <Link href="/masuk" className={TOMBOL}>
           Pesan
@@ -159,8 +135,8 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
     sekarang: k.sekarang,
   });
 
-  // BR-4.5 — antre tidak memotong kredit, jadi kelas penuh selalu boleh
-  // diantre. Penuhnya daftar tunggu sendiri (BR-4.1) baru diuji di aksinya.
+  // BR-4.5 — antre tidak memotong kredit, jadi kelas penuh selalu boleh diantre.
+  // Penuhnya daftar tunggu (BR-4.1) baru diuji di aksinya.
   if (penuh)
     return {
       warna: "border-border bg-neutral-surface text-neutral-foreground",
@@ -185,14 +161,11 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
       ),
     };
 
-  // Bloknya tidak lagi memesan langsung: ia membuka panel konfirmasi M2, dan
-  // di sanalah nomor tempat dipilih serta aturan batal dibaca (BR-2.6).
+  // Blok membuka panel konfirmasi M2, tempat alat dipilih (BR-2.6).
   if (putusan.boleh)
     return {
       warna:
         "border-foreground bg-background transition-colors hover:bg-primary hover:text-primary-foreground",
-      // Sejak ada tombolnya sendiri, chip cukup menyebut keadaannya. "4 kursi
-      // · Booking" di sebelah tombol Pesan menyuruh dua kali.
       catatan: `${sisa} kursi tersisa`,
       bungkus: (anak) => (
         <Link href={k.tautanPilih(b.id)} className="block h-full">
@@ -212,24 +185,13 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
   };
 }
 
-/**
- * Satu sesi dalam rupa daftar — dipakai di HP dan di rupa "daftar" (DS-51).
- *
- * Jam mulai ditumpuk di atas jam selesai, bukan di atas durasi: "55m" harus
- * dijumlahkan sendiri oleh pembacanya, sedangkan yang ditanya orang yang
- * menyusun harinya selalu "jam berapa saya keluar".
- *
- * Baris yang punya `tombol` TIDAK ikut dibungkus jadi tautan: tombol di dalam
- * tautan itu HTML yang tidak sah, dan dua target sentuh bersarang membuat
- * separuh ketukan mendarat di tempat yang tidak diniatkan. Yang tersisa
- * dibungkus seperti semula — baris staf menuju detail sesinya.
- */
+/** Satu sesi dalam rupa daftar (DS-51). Baris yang punya `tombol` TIDAK
+ *  dibungkus jadi tautan — tombol di dalam tautan HTML tidak sah. */
 function Baris({ b, k }: { b: BarisJadwal; k: Konteks }) {
   const { warna, catatan, bungkus, tombol } = rupa(b, k);
   const selesai = new Date(b.mulai_at.getTime() + b.durasi_menit * 60_000);
   const dalam = (
     <div className="flex w-full items-center gap-4 px-4 py-4 text-left">
-      {/* DS-28 — jam jadi jangkar kiri, lebar tetap. */}
       <div className="w-14 shrink-0">
         <p className="text-app-section tabular-nums">{jamWib(b.mulai_at)}</p>
         <p className="text-app-label tabular-nums text-muted-foreground">
@@ -263,7 +225,6 @@ export default async function M1({
   }>;
 }) {
   // Tidak ada penjaga di sini — jadwal boleh dibaca siapa saja (DS-45).
-  // Yang menentukan tombol apa yang muncul adalah `mode` di bawah.
   const user_id = await userSaatIni();
 
   const {
@@ -281,12 +242,8 @@ export default async function M1({
   const rupaAktif: Rupa = rupaParam === "daftar" ? "daftar" : "kalender";
   const sekarang = new Date();
 
-  // SATU jangkar waktu untuk layar ini: tanggal yang sedang dipilih. Ia
-  // menentukan minggu mana yang digambar sekaligus hari mana yang dibuka rupa
-  // daftar — dan ia yang jadi nilai `<input type="date">` di bilah kendali.
-  // Sebelumnya dua parameter (`?minggu=` offset + `?hari=` indeks) yang harus
-  // dijaga tetap sejalan; pemilih tanggal membuat salah satunya mustahil
-  // dipetakan tanpa yang lain.
+  // SATU jangkar waktu: tanggal yang dipilih menentukan minggu yang digambar,
+  // hari yang dibuka rupa daftar, dan nilai `<input type="date">`.
   const hariIni = awalHariWib(sekarang);
   const dipilih = (tglParam && dariKunciWib(tglParam)) || hariIni;
   const senin = awalMingguWib(dipilih);
@@ -298,16 +255,15 @@ export default async function M1({
   const idxDipilih = Math.round(
     (dipilih.getTime() - senin.getTime()) / 86_400_000,
   );
-  // Hari ini dan hari yang dipilih dua hal berbeda sejak ada pemilih tanggal;
-  // −1 berarti minggu yang dibuka bukan minggu ini.
+  // −1 = minggu yang dibuka bukan minggu ini.
   const idxHariIni = Math.round(
     (hariIni.getTime() - senin.getTime()) / 86_400_000,
   );
   const hariIniDiMinggu =
     idxHariIni >= 0 && idxHariIni <= 6 ? idxHariIni : -1;
 
-  // Tiga query terakhir milik pengguna yang sudah masuk. Nilai biasa di dalam
-  // Promise.all tetap sah, jadi tamu tidak perlu cabang await sendiri.
+  // Tiga query terakhir milik pengguna yang sudah masuk; nilai biasa di dalam
+  // Promise.all tetap sah, jadi tamu tidak perlu cabang sendiri.
   const [setelan, baris, paket, aktif, saya] = await Promise.all([
     setelanStudio(pg),
     jadwal(pg, { user_id, dari: senin, sampai }),
@@ -315,11 +271,7 @@ export default async function M1({
     user_id ? bookingAktif(pg, user_id) : [],
     user_id ? penggunaById(pg, user_id) : null,
   ]);
-  // Cookie yang menunjuk user sudah tidak ada — biasanya sesudah `db:seed`
-  // menerbitkan id baru — diperlakukan sebagai tamu, bukan dilempar ke
-  // /masuk. Halaman publik yang menutup diri karena cookie basi adalah
-  // kebalikan dari yang dijanjikan DS-45, dan pengunjung yang tidak pernah
-  // punya akun tidak boleh dikirim ke daftar peran demo.
+  // Cookie yang menunjuk user yang sudah tidak ada diperlakukan sebagai tamu.
 
   const mode: Mode = !saya
     ? "tamu"
@@ -330,7 +282,6 @@ export default async function M1({
         : "member";
   const staf = mode === "staf";
 
-  /** URL layar ini dengan satu bagian diganti — sisanya ikut terbawa. */
   const url = (ubah: {
     tgl?: Date;
     rupa?: Rupa;
@@ -345,14 +296,12 @@ export default async function M1({
     const c = ubah.pelatih ?? pelatih;
     const b = ubah.buat ?? modeBuat;
     const r = ubah.rupa ?? rupaAktif;
-    // Hari ini tidak perlu disebut — `/jadwal` polos sudah berarti itu.
     if (t.getTime() !== hariIni.getTime()) q.set("tgl", kunciHariWib(t));
     if (a) q.set("kelas", a);
     if (c) q.set("pelatih", c);
     if (b === "berulang") q.set("buat", b);
     if (r === "daftar") q.set("rupa", r);
-    // `pilih` sengaja TIDAK diwarisi: geser minggu atau ganti saringan berarti
-    // orang sedang melihat-lihat lagi, dan panelnya harus ikut tertutup.
+    // `pilih` sengaja TIDAK diwarisi: ganti minggu/saringan menutup panelnya.
     if (ubah.pilih) q.set("pilih", ubah.pilih);
     const sisa = q.toString();
     return sisa ? `/jadwal?${sisa}` : "/jadwal";
@@ -368,11 +317,8 @@ export default async function M1({
     sini: url({}),
   };
 
-  // Isi kedua saringan dihitung dari minggu yang sedang dibuka, bukan dari
-  // katalog jenis kelas atau daftar pelatih: yang menarik adalah apa yang
-  // BERJALAN minggu ini. Nilai yang sedang dipilih tetap disebut walau nol —
-  // kalau tidak, pindah ke minggu tanpa kelas itu membuat pilihannya hilang
-  // dari daftar dan tidak bisa dilepas lagi.
+  // Isi saringan dihitung dari minggu yang sedang dibuka. Nilai yang dipilih
+  // tetap disebut walau nol, kalau tidak ia tidak bisa dilepas lagi.
   const hitung = (ambil: (b: BarisJadwal) => string | null, terpilih: string) => {
     const n = new Map<string, number>();
     for (const b of baris) {
@@ -389,7 +335,6 @@ export default async function M1({
     (b) => (!kelas || b.kelas === kelas) && (!pelatih || b.coach === pelatih),
   );
 
-  // BR-1.7 — sisa kredit dijumlahkan dari buku besar, tidak ada kolom saldo.
   const hidup = paket.filter((p) => p.hangus_at > sekarang && p.sisa_kredit > 0);
   const sisa = hidup.reduce((t, p) => t + p.sisa_kredit, 0);
   const terdekat = [...hidup].sort(
@@ -398,10 +343,8 @@ export default async function M1({
   const mepet =
     terdekat && terdekat.hangus_at.getTime() - sekarang.getTime() < 7 * 86_400_000;
 
-  // Panel konfirmasi M2. `?pilih=` bisa diketik siapa saja, jadi syaratnya
-  // diperiksa ulang di sini — bukan dipercaya dari tautan yang membukanya.
-  // Kapasitas tetap TIDAK dijamin: kursi terakhir bisa hilang antara panel
-  // terbuka dan tombol ditekan, dan yang memutuskan itu tetap INSERT-nya.
+  // `?pilih=` bisa diketik siapa saja, jadi syaratnya diperiksa ulang di sini.
+  // Kapasitas tetap TIDAK dijamin — yang memutuskan INSERT-nya.
   const sesiPilih =
     mode === "member" && pilih
       ? (baris.find((b) => b.id === pilih) ?? null)
@@ -420,13 +363,8 @@ export default async function M1({
   const terpakai =
     sesiPilih && bolehKonfirmasi ? await alatTerpakai(pg, sesiPilih.id) : [];
 
-  /**
-   * `?pilih=` yang tidak bisa dibuka harus bersuara.
-   *
-   * Tanpa ini halaman kembali persis seperti semula dan kliknya terasa tidak
-   * terjadi — padahal justru ada yang terjadi: kursi terakhir keburu diambil
-   * antara halaman digambar dan bloknya diklik, atau tautannya sudah basi.
-   */
+  /** `?pilih=` yang tidak bisa dibuka harus bersuara: kursi terakhir bisa
+   *  keburu diambil antara halaman digambar dan bloknya diklik. */
   const kabarPilih =
     !pilih || mode !== "member" || bolehKonfirmasi
       ? undefined
@@ -438,8 +376,7 @@ export default async function M1({
             ? putusanPilih.pesan
             : undefined;
 
-  // Dikelompokkan per hari WIB, bukan per hari UTC — kelas 06.00 WIB jatuh di
-  // tanggal sebelumnya kalau dihitung UTC (BR-7.5).
+  // Dikelompokkan per hari WIB, bukan UTC (BR-7.5).
   const perHari = new Map<string, BarisJadwal[]>();
   for (const b of tampil) {
     const kunci = kunciHariWib(b.mulai_at);
@@ -452,10 +389,6 @@ export default async function M1({
 
   const sesiHari = perHari.get(kunciHariWib(dipilih)) ?? [];
 
-  /**
-   * Daftar satu hari tanpa kotak sendiri — kotaknya milik pembungkusnya
-   * (DS-57), supaya bilah kendali dan jadwalnya duduk di dalam satu tepi.
-   */
   const daftarHari = (
     <>
       <div className="border-b border-border px-4 py-3">
@@ -494,17 +427,7 @@ export default async function M1({
       tautanHariIni={url({ tgl: hariIni })}
       menyatu={mode !== "tamu"}
     >
-      {/* Di rupa daftar kepala minggu jadi pemilih hari — cuma satu hari
-          yang digambar — jadi ia ikut menempel: memilih hari lain tidak
-          boleh menuntut menggulung ke atas dulu. Tanpa `min-w` di sini; ia
-          harus muat di 375px, dan tujuh kolom selebar 34px masih menampung
-          "SEN" 11px. Lebar 46rem cuma berlaku saat kepalanya menyangga kisi
-          kalender. */}
-      {/* Di bawah 768px yang digambar SELALU daftar satu hari, apa pun
-          `?rupa=`-nya — jadi pemilih harinya harus ada di sana juga. Di
-          atas 768px rupa kalender sudah punya kepala minggunya sendiri di
-          dalam kotak kalender, dan dua deret tanggal yang bersisian memaksa
-          pembacanya menebak mana yang berlaku. */}
+      {/* Di bawah 768px yang digambar SELALU daftar satu hari, apa pun `?rupa=`. */}
       <div className={rupaAktif === "daftar" ? "" : "md:hidden"}>
         <div className="border-t border-border">
           <KepalaMinggu
@@ -522,16 +445,10 @@ export default async function M1({
 
   const isi = (
     <>
-      {/* Rentang tanggal dulu jadi <h1> layar ini. Ia dibuang — kepala
-          kalender sudah menyebut ketujuh tanggalnya, dan sebaris teks yang
-          cuma menamai apa yang tepat di bawahnya bukan judul. Yang tersisa
-          judul untuk pembaca layar: tamu sudah punya <h1> dari hero. */}
       {mode !== "tamu" && <h1 className="sr-only">Jadwal Kelas</h1>}
 
-      {/* DS-57 — di dalam aplikasi bilah ini duduk DI DALAM kotak jadwal,
-          jadi satu tepi membungkus kendali dan isinya. Tamu memakainya
-          berdiri sendiri selebar halaman: di halaman publik tidak ada kartu
-          untuk ditempeli. */}
+      {/* DS-57 — di dalam aplikasi bilah duduk DI DALAM kotak jadwal; tamu
+          memakainya berdiri sendiri. */}
       {mode === "tamu" && bilah}
 
       {mode === "member" && (
@@ -551,9 +468,6 @@ export default async function M1({
                 }
               />
               <div className="flex items-center gap-4">
-                {/* Ikut pindah dari subjudul yang dihapus: tanpa kalimat ini,
-                    blok minggu depan yang abu "di luar jendela" tidak punya
-                    penjelasan di mana pun (BR-2.1). */}
                 <p className="text-app-body-sm text-muted-foreground">
                   Booking dibuka {setelan.booking_opens_days} hari ke depan.
                 </p>
@@ -569,19 +483,11 @@ export default async function M1({
         </div>
       )}
 
-      {/* DS-40 — 12 kolom: jadwal 8, panel buat-kelas 4. Di bawah xl
-          keduanya menumpuk; 8/12 dari 1024px menyisakan kalender 480px, dan
-          kalender yang harus digulung mendatar sejak kolom pertama bukan
-          kalender lagi. */}
-      {/* TANPA `items-start`: kolom yang menciut setinggi isinya tidak
-          menyisakan ruang bagi panel menempel di dalamnya untuk bergerak —
-          `sticky` butuh induk yang lebih tinggi daripada dirinya. */}
+      {/* TANPA `items-start`: `sticky` butuh induk yang lebih tinggi darinya. */}
       <div className="mt-dekat grid grid-cols-12 gap-dekat">
         <div className={`col-span-12 min-w-0 ${staf ? "xl:col-span-8" : ""}`}>
-          {/* DS-57 — SATU kotak untuk bilah kendali dan jadwalnya. Kotak ini
-              sengaja tidak punya `overflow`: leluhur ber-overflow membuat
-              bilah di dalamnya berhenti menempel, dan gulung mendatar kalender
-              memang sudah punya lapisannya sendiri. */}
+          {/* DS-57 — SATU kotak, sengaja tanpa `overflow`: leluhur ber-overflow
+              melepas `sticky` bilahnya. */}
           <div className="rounded-md border border-border bg-background">
             {mode !== "tamu" && bilah}
 
@@ -589,9 +495,8 @@ export default async function M1({
               daftarHari
             ) : (
               <>
-                {/* Minggu kosong tetap menggambar kepala kalendernya.
-                    Mengganti kalender dengan satu kalimat membuat sumbu
-                    harinya ikut hilang, berikut tombol geser minggunya. */}
+                {/* Minggu kosong tetap menggambar kepala kalendernya, kalau tidak
+                    sumbu hari dan tombol geser minggu ikut hilang. */}
                 {tampil.length === 0 && (
                   <p className="hidden px-4 pt-4 text-app-body text-muted-foreground md:block">
                     {kelas || pelatih
@@ -600,7 +505,6 @@ export default async function M1({
                   </p>
                 )}
 
-                {/* Kalender mingguan butuh ruang; di bawah md selalu daftar. */}
                 <div className="hidden md:block">
                   <Kalender
                     polos
@@ -621,13 +525,9 @@ export default async function M1({
 
         {staf && (
           <div className="col-span-12 min-w-0 xl:col-span-4">
-            {/* DS-57 — panel buat-kelas ikut menempel, tapi hanya saat ia
-                memang berdampingan dengan jadwalnya (≥ 1280px). Di bawah itu
-                keduanya menumpuk, dan kartu yang menempel di tumpukan cuma
-                menutupi isi yang sedang dibaca.
-                `max-h` + gulung sendiri wajib: panel berulang lebih tinggi
-                dari layar 800px, dan kartu menempel yang ujungnya tidak bisa
-                dicapai berarti tombol simpannya tidak bisa ditekan. */}
+            {/* DS-57 — panel ikut menempel hanya saat berdampingan (≥ 1280px).
+                `max-h` + gulung sendiri wajib: panel lebih tinggi dari layar
+                800px, dan tombol simpan di ujungnya harus bisa dicapai. */}
             <div className="xl:sticky xl:top-0 xl:max-h-svh xl:overflow-y-auto">
               <BuatKelas
                 owner={saya?.peran === "owner"}
@@ -641,9 +541,6 @@ export default async function M1({
         )}
       </div>
 
-      {/* Keterangan warna duduk DI BAWAH jadwal: ia penjelasan, bukan
-          pengantar. Ditaruh di atas, ia jadi hal pertama yang dibaca orang
-          padahal belum ada yang perlu dijelaskan. */}
       {mode === "tamu" && (
         <div className="mt-dekat">
           <Keterangan />

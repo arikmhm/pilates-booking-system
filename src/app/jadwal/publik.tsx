@@ -1,13 +1,6 @@
-// Keterangan warna blok kalender — hanya dipakai layar jadwal publik.
-//
-// Kerangkanya sendiri sudah pindah ke `components/rangka-publik.tsx` begitu
-// halaman kedua (katalog paket) memakainya.
+// Keterangan warna blok — hanya layar jadwal publik.
 
-/**
- * Keterangan warna blok — DS-14 menuntut tiap blok berteks, tapi tamu belum
- * pernah melihat kalender ini sebelumnya dan tetap perlu tahu tiga rupa itu
- * berarti apa sebelum membacanya satu per satu.
- */
+/** Tamu belum pernah melihat kalender ini, jadi tiga rupanya dinamai. */
 export function Keterangan() {
   const butir: [string, string][] = [
     ["border-foreground bg-background", "Masih ada kursi"],

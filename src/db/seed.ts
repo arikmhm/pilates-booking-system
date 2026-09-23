@@ -1,31 +1,20 @@
-// Seed demo — docs/02-rules.md bagian 6.2.
-//
-// Semua tanggal RELATIF terhadap saat dijalankan. Tidak ada tanggal mati:
-// demo yang di-seed hari ini harus tetap masuk akal saat dipresentasikan
-// dua minggu lagi.
-//
-// Hasilnya deterministik (PRNG berbenih tetap). Demo yang tampil beda tiap
-// reset adalah demo yang tidak bisa dilatih.
-//
-// Dipakai dua tempat: `npm run db:seed` lewat seed-cli.mts, dan tombol
-// "Reset Demo" di layar A1. Karena itu berkas ini tidak mencetak apa pun dan
-// tidak membuat koneksi sendiri — keduanya urusan pemanggil.
+// Seed demo — docs/02-rules.md bagian 6.2. Semua tanggal RELATIF terhadap saat
+// dijalankan, hasilnya deterministik (PRNG berbenih). Dipakai `npm run db:seed`
+// dan tombol Reset Demo di A1 — jadi tidak mencetak dan tidak membuka koneksi.
 
 import postgres from "postgres";
 
-// CATATAN: tiap `sql(baris, ...)` di berkas ini menyebut kolomnya eksplisit.
-// postgres.js menyimpulkan daftar kolom dari kunci objek PERTAMA; satu objek
-// yang kekurangan kunci membuat kolom itu hilang dari INSERT tanpa galat apa
-// pun. Sudah dua kali menggigit di sini — lihat AGENTS.md.
+// Tiap `sql(baris, ...)` di sini menyebut kolomnya eksplisit: postgres.js
+// menyimpulkan kolom dari kunci objek PERTAMA, kunci yang hilang = kolom
+// hilang dari INSERT tanpa galat. Sudah dua kali menggigit — lihat AGENTS.md.
 
 export const STUDIO_DEMO = "Studio Pilates Kenari";
 const STUDIO = STUDIO_DEMO;
 const WIB = 7; // UTC+7, tanpa DST
 
 /* ── Penjaga ──────────────────────────────────────────────────────────────
-   Seed ini TRUNCATE 12 tabel. DATABASE_URL menunjuk Neon, dan suatu hari
-   akan menunjuk VPS klien. Menolak jalan kalau menemukan studio yang bukan
-   studio demo — database kosong dan database demo tetap boleh.            */
+   Seed ini TRUNCATE 12 tabel. Menolak jalan kalau studionya bukan studio
+   demo; database kosong tetap boleh.                                      */
 async function pastikanAman(sql: postgres.Sql | postgres.TransactionSql) {
   const ada = await sql<{ nama: string }[]>`select nama from studios limit 5`;
   const asing = ada.filter((r) => r.nama !== STUDIO);
@@ -38,8 +27,7 @@ async function pastikanAman(sql: postgres.Sql | postgres.TransactionSql) {
   }
 }
 
-/* ── Acak berbenih ───────────────────────────────────────────────────────
-   mulberry32 — cukup untuk memvariasikan okupansi, dan sama tiap kali.   */
+/* Acak berbenih — mulberry32, cukup untuk memvariasikan okupansi. */
 function acak(benih: number) {
   let a = benih;
   return () => {
@@ -52,8 +40,7 @@ function acak(benih: number) {
 }
 const rnd = acak(20260922);
 const antara = (a: number, b: number) => a + Math.floor(rnd() * (b - a + 1));
-// Fisher-Yates. `sort(() => rnd() - 0.5)` itu shuffle yang bias — untuk data
-// demo bedanya kelihatan: orang yang sama terus muncul di kelas pertama.
+// Fisher-Yates. `sort(() => rnd() - 0.5)` bias — orang yang sama terus muncul.
 function ambilAcak<T>(arr: T[], n: number): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -63,8 +50,7 @@ function ambilAcak<T>(arr: T[], n: number): T[] {
   return a.slice(0, n);
 }
 
-/* ── Waktu ───────────────────────────────────────────────────────────────
-   Jadwal ditulis sebagai jam dinding WIB; yang disimpan UTC — BR-7.5.    */
+/* Waktu: jadwal ditulis jam dinding WIB, yang disimpan UTC — BR-7.5. */
 const SEKARANG = new Date();
 
 /** Tanggal WIB `offset` hari dari hari ini, jam `jam`:`menit` WIB → UTC. */
@@ -82,14 +68,9 @@ function jamWib(offsetHari: number, jam: number, menit: number): Date {
 }
 const hariKe = (n: number) => new Date(SEKARANG.getTime() + n * 86_400_000);
 
-/**
- * Date → ISO string untuk parameter timestamptz.
- *
- * Seed ini dipanggil dari dua tempat: node biasa (CLI) dan server action
- * Reset Demo. Di runtime Next, parser/serializer postgres.js tidak terpasang
- * dan `Date` sebagai parameter ditolak mentah-mentah — sama seperti di
- * src/db/booking.ts. String ISO benar di dua-duanya.
- */
+/** Date → ISO string untuk parameter timestamptz. Seed dipanggil dari node
+ *  biasa (CLI) dan dari server action Reset Demo; di runtime Next `Date`
+ *  sebagai parameter ditolak. String ISO benar di dua-duanya. */
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 const jamKe = (n: number) => new Date(SEKARANG.getTime() + n * 3_600_000);
 const tglIso = (d: Date) => d.toISOString().slice(0, 10);
@@ -116,8 +97,7 @@ const JENIS = [
   { nama: "Mat", kapasitas: 12 },
 ];
 
-// Slot jam dinding WIB. Senin–Jumat 7 slot, Sabtu 5 → 40 kelas per minggu,
-// angka yang dipakai halaman profil dan 01-product.md.
+// Slot jam dinding WIB. Senin-Jumat 7 slot, Sabtu 5 → 40 kelas per minggu.
 const SLOT_KERJA = [
   [6, 0, "Reformer"],
   [7, 20, "Reformer"],
@@ -153,13 +133,8 @@ const DURASI = 70; // grid 70 menit
 /** Nilai default kolom `studios` — dipakai seed sebelum studionya dibuat. */
 const setelanDefault = { cancel_window_hours: 12 };
 
-/**
- * UUID tetap untuk user, supaya Reset Demo tidak melempar presenter keluar.
- *
- * Cookie login berisi user_id. Kalau id-nya baru tiap reset, sekali klik
- * tombol reset di tengah presentasi berarti harus login ulang. Bentuknya
- * sengaja jelas-jelas buatan — nol semua kecuali nomor urut.
- */
+/** UUID tetap untuk user supaya Reset Demo tidak melempar presenter keluar:
+ *  cookie login berisi user_id. Bentuknya sengaja jelas-jelas buatan. */
 const idDemo = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
@@ -198,9 +173,8 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
   ];
   const orang = await sql`
     insert into users ${sql([
-      // Bentuk objek staf dan member HARUS sama persis — kalau salah satu
-      // kekurangan kunci, TypeScript menolak daftar kolomnya. Itu penjaga
-      // yang tepat: kunci yang hilang berarti kolom hilang dari INSERT.
+      // Bentuk objek staf dan member HARUS sama persis — kunci yang hilang
+      // berarti kolom hilang dari INSERT; TypeScript yang menjaganya di sini.
       ...staf.map((s, i) => ({
         id: idDemo(i + 1),
         studio_id: studio.id,
@@ -218,8 +192,7 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
         // Sengaja tidak semua punya email — 02-rules.md pertanyaan terbuka 6.
         email: i % 3 === 0 ? null : `member${i}@kenari.test`,
         peran: "member",
-        // Tanpa ini semua member "bergabung hari ini", dan layar A3 studio
-        // yang katanya sudah jalan dua tahun terbaca seperti baru dipasang.
+        // Tanpa ini semua member "bergabung hari ini".
         created_at: iso(hariKe(-antara(20, 900))),
       })),
     ],
@@ -242,7 +215,6 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
   const paketId = Object.fromEntries(paket.map((p) => [p.nama, p]));
 
   // BR-1.4 — "10 Sesi Reformer" hanya untuk kelas beralat; Mat tidak masuk.
-  // Ini yang membuat aturan jenis kelas kelihatan di demo, bukan teori.
   const izin: { package_id: string; class_type_id: string }[] = [];
   for (const j of JENIS) {
     izin.push({ package_id: paketId["Drop-in"].id, class_type_id: jenisId[j.nama].id });
@@ -315,13 +287,11 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
     )}
     returning id, schedule_rule_id, class_type_id, mulai_at, kapasitas`;
 
-  // Arah sebaliknya: di runtime Next `mulai_at` kembali sebagai string, dan
-  // seluruh logika di bawah ini membandingkan serta menghitung tanggal.
+  // Arah sebaliknya: di runtime Next `mulai_at` kembali sebagai string.
   const sesi = sesiMentah.map((s) => ({ ...s, mulai_at: new Date(s.mulai_at) }));
 
   /* 7 — paket milik member + ledger pembelian */
-  // Lima orang pertama sengaja hangus 2–6 hari lagi: itu isi panel A1,
-  // senjata presentasi menit 2:15.
+  // Lima orang pertama sengaja hangus 2-6 hari lagi: itu isi panel A1.
   const mp: Record<string, unknown>[] = [];
   const kredit: { mp_id: string; sisa: number; reformer_saja: boolean }[] = [];
 
@@ -370,25 +340,18 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
   const bookingBaris: Record<string, unknown>[] = [];
   const waitlistBaris: Record<string, unknown>[] = [];
 
-  // Dua kelompok member kreditnya dijaga jangan sampai habis:
-  //
-  //  i < 5            panel A1 — kalau kreditnya nol mereka hilang dari panel
-  //                   "hangus ≤ 7 hari", dan senjata presentasi menit 2:15 ikut hilang.
-  //  antreanDijaga    orang di daftar tunggu — BR-4.4 melewati antrean yang
-  //                   kreditnya tidak valid. Kalau ketiganya nol, pembatalan
-  //                   di menit 3:00 tidak menaikkan siapa pun dan momen uang
-  //                   demo menampilkan layar yang tidak berubah.
+  // Dua kelompok member kreditnya dijaga jangan sampai habis: i < 5 (isi panel
+  // A1 "hangus ≤ 7 hari") dan antreanDijaga (BR-4.4 melewati antrean tanpa
+  // kredit valid — kalau ketiganya nol, pembatalan tidak menaikkan siapa pun).
   const antreanDijaga = new Set<number>();
   const bolehIkut = (i: number, ctId: string) =>
     kredit[i].sisa > (i < 5 ? 3 : antreanDijaga.has(i) ? 1 : 0) &&
     (!kredit[i].reformer_saja || ctId !== jenisId["Mat"].id);
 
   // Sesi besok pagi paling awal → dipaksa penuh 8/8 + waitlist 3 (skenario B).
-  //
-  // `schedule_rule_id !== null` WAJIB: sesi "dalam 8 jam" dibuat manual, dan
-  // kalau seed dijalankan sore hari, +8 jam jatuh besok pagi. Tanpa saringan
-  // ini sesi yang sama terpilih dua kali dan diisi dua kali — langsung
-  // melanggar unique index kapasitas. Bug yang cuma muncul sesudah ~16.00 WIB.
+  // `schedule_rule_id !== null` WAJIB: sesi "dalam 8 jam" dibuat manual dan
+  // kalau seed jalan sore hari, +8 jam jatuh besok pagi — sesi yang sama
+  // terpilih dua kali dan melanggar unique index kapasitas.
   const besokPagi = sesi
     .filter(
       (s) =>
@@ -399,27 +362,20 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
     )
     .sort((a, b) => a.mulai_at.getTime() - b.mulai_at.getTime())[0];
 
-  // Sesi untuk mendemokan batas 12 jam (BR-3.2) diambil dari jadwal yang
-  // SUDAH ada, tidak dibuatkan sendiri. Sesi buatan waktunya mengikuti jam
-  // seed dijalankan, jadi bisa mendarat pukul 01.18 — di layar jadwal itu
-  // terbaca seperti bug. Grid harian 06.00–18.40 menjamin selalu ada kelas
-  // di dalam jendela 12 jam, jam berapa pun seed dijalankan.
+  // Sesi demo batas 12 jam (BR-3.2) diambil dari jadwal yang SUDAH ada: sesi
+  // buatan mengikuti jam seed dijalankan dan bisa mendarat pukul 01.18.
   const dalamJendela = sesi.find(
     (s) =>
       s.mulai_at > jamKe(0.5) &&
       s.mulai_at < jamKe(setelanDefault.cancel_window_hours),
   );
 
-  // BR-2.1 — member tidak bisa booking lebih dari `booking_opens_days` (7 hari)
-  // ke depan. Seed yang mengisi sesi 3 minggu lagi akan menampilkan keadaan
-  // yang tidak mungkin terjadi di aplikasi. Sesi di luar jendela dibiarkan
-  // kosong — dan itu memang tampilan yang benar.
+  // BR-2.1 — member tidak bisa booking > 7 hari ke depan, jadi sesi di luar
+  // jendela sengaja dibiarkan kosong.
   const batasBooking = hariKe(7);
 
-  // Sesi penuh dan sesi nanti malam diproses DULU: keduanya wajib ada isinya,
-  // dan kalau ikut antre di akhir bisa kehabisan member yang masih punya kredit.
-  // Dedupe lewat Map: kalaupun daftar di atas pernah memuat sesi yang sama
-  // dua kali lagi, tiap sesi tetap diproses sekali.
+  // Sesi penuh dan sesi nanti malam diproses DULU — keduanya wajib ada isinya.
+  // Dedupe lewat Map supaya tiap sesi tetap diproses sekali.
   const urutan = [
     ...new Map(
       [besokPagi, dalamJendela, ...sesi]
@@ -468,8 +424,8 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
       });
 
       // BR-2.2 — kredit dipotong saat booking, apa pun hasilnya nanti.
-      // `_kunci` diisi id booking-nya setelah insert: tanpa tautan itu, layar
-      // M3 cuma bisa bilang "booking", bukan kelas apa dan kapan.
+      // `_kunci` diisi id booking setelah insert; tanpa tautan itu M3 cuma
+      // bisa bilang "booking", bukan kelas apa dan kapan.
       ledger.push({
         member_package_id: kredit[i].mp_id,
         booking_id: null,
@@ -523,8 +479,8 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
     )}
     returning id, status, session_id, user_id`;
 
-  // Dipetakan lewat (session_id, user_id), bukan lewat urutan baris: urutan
-  // hasil INSERT ... RETURNING tidak dijamin SQL.
+  // Dipetakan lewat (session_id, user_id), bukan urutan baris: urutan hasil
+  // INSERT ... RETURNING tidak dijamin SQL.
   const idBooking = new Map(
     bookingRows.map((b) => [`${b.session_id}:${b.user_id}`, b.id as string]),
   );
@@ -539,10 +495,8 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
       waitlistBaris, "session_id", "user_id", "status", "created_at",
     )}`;
 
-  // Kolom ditulis eksplisit. postgres.js menyimpulkan daftar kolom dari kunci
-  // objek PERTAMA; baris pertama di sini 'beli' yang tidak punya booking_id,
-  // jadi tanpa daftar ini kolom itu hilang dari INSERT tanpa galat apa pun —
-  // dan seluruh riwayat kehilangan tautannya ke kelas.
+  // Kolom ditulis eksplisit: baris pertama 'beli' tidak punya booking_id, jadi
+  // tanpa daftar ini kolom itu hilang dari INSERT tanpa galat apa pun.
   await sql`insert into credit_ledger ${sql(
     ledger,
     "member_package_id",
@@ -598,8 +552,7 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
       select member_package_id from credit_ledger
       group by member_package_id having sum(delta) < 0) t`;
 
-  // Tanpa tautan booking_id, layar M3 cuma bisa bilang "booking" — bukan kelas
-  // apa dan kapan. Gagalnya senyap: INSERT tetap sukses, kolomnya saja hilang.
+  // Tanpa tautan booking_id, M3 cuma bisa bilang "booking". Gagalnya senyap.
   if (tertaut.n > 0) {
     throw new Error(
       `Seed rusak: ${tertaut.n} baris ledger booking tidak tertaut ke booking-nya.`,
@@ -607,7 +560,6 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
   }
 
   // Demo batas 12 jam butuh satu kelas di dalam jendela yang ADA pesertanya.
-  // Tanpa itu skrip menit 1:30 tidak punya apa pun untuk ditunjuk.
   const [jendela] = await sql<{ n: number }[]>`
     select count(*)::int as n
       from sessions s join bookings b on b.session_id = s.id
@@ -619,8 +571,7 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
     );
   }
 
-  // BR-4.4 — antrean tanpa kredit valid akan dilewati saat ada kursi kosong.
-  // Kalau tidak ada satu pun yang berkredit, skenario B mati diam-diam.
+  // BR-4.4 — antrean tanpa kredit valid dilewati; skenario B butuh yang valid.
   if (antreSiap.n === 0) {
     throw new Error(
       "Seed rusak: tidak ada antrean yang punya kredit valid. " +
@@ -652,27 +603,15 @@ export async function seed(sql: postgres.Sql | postgres.TransactionSql) {
 export type RingkasSeed = Awaited<ReturnType<typeof seed>>;
 
 /* ── Reset jadwal ─────────────────────────────────────────────────────────
-   Panggung kosong, bukan database kosong.
+   Panggung kosong, bukan database kosong: hapus sesi + segala yang menempel
+   padanya, sisakan studio, orang, jenis kelas, katalog paket, ATURAN JADWAL
+   MINGGUAN (kalau ikut terhapus, "Terbitkan sekarang" tak punya isi), dan
+   paket yang sudah dibeli.
 
-   Menghapus semua yang bergantung pada satu sesi tertentu — sesi itu sendiri,
-   kursi yang dipesan, antrean, pesan terkirim, dan jejak kreditnya — lalu
-   berhenti. Yang tidak disentuh: studio dan setelannya, orang-orangnya, jenis
-   kelas, katalog paket, **aturan jadwal mingguan**, dan paket yang sudah
-   dibeli member.
-
-   Aturan mingguan sengaja dibiarkan: kalau ikut terhapus, tombol "Terbitkan
-   sekarang" tidak punya apa pun untuk diterbitkan, dan reset ini justru
-   mematikan fitur yang ingin dicoba.
-
-   Kredit member kembali seperti saat dibeli, bukan jadi nol. Baris ledger yang
-   dihapus hanya yang menunjuk sebuah booking (`booking`, `batal_tepat_waktu`,
-   `batal_telat`, `no_show`); baris `beli`, `hangus`, dan `koreksi` tinggal.
-   Karena BR-1.7 menghitung sisa dari SUM(delta), menghapus potongannya
-   MENGEMBALIKAN kreditnya — tidak ada kolom saldo yang perlu ikut disetel.
-
-   Penjaganya sama dengan seed(): menolak jalan kalau studionya bukan studio
-   demo. Menghapus semua booking di studio yang sungguh berjalan tidak bisa
-   dibatalkan.                                                             */
+   Ledger yang dihapus hanya yang menunjuk booking; `beli`/`hangus`/`koreksi`
+   tinggal. Karena BR-1.7 menghitung SUM(delta), menghapus potongannya
+   MENGEMBALIKAN kredit — tidak ada kolom saldo yang perlu disetel.
+   Penjaganya sama dengan seed(): hanya studio demo.                       */
 export async function resetJadwal(sql: postgres.Sql | postgres.TransactionSql) {
   await pastikanAman(sql);
 

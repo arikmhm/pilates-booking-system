@@ -1,6 +1,5 @@
 // Tombol kirim-WA — 06-architecture.md bagian 5. WhatsApp API resmi ditunda,
-// jadi admin yang mengirim sendiri lewat tautan wa.me. Nol integrasi, nol
-// risiko nomor studio diblokir.
+// jadi admin mengirim sendiri lewat tautan wa.me.
 
 /** 08xx… → 628xx… WhatsApp menolak format nasional berawalan 0. */
 export function nomorWa(telepon: string): string {

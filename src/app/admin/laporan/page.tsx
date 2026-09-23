@@ -1,12 +1,5 @@
-// Layar O1 Laporan — UC-O04, UC-O05. Hanya untuk peran `owner`.
-//
-// Pemisahan itu sendiri bagian dari yang dijual: resepsionis butuh melihat
-// seluruh jadwal dan seluruh member, tapi tidak perlu melihat omzet. Admin
-// yang membuka halaman ini dilempar ke dashboard (BR-9.3).
-//
-// Tidak ada tabel ringkasan. Semua angka dihitung ulang dari baris transaksi
-// tiap halaman dibuka — satu studio menulis ~25 baris sehari, dan ringkasan
-// yang basi lebih mahal daripada query yang diulang.
+// Layar O1 Laporan — UC-O04, UC-O05. Hanya `owner` (BR-9.3). Tanpa tabel
+// ringkasan: semua dihitung ulang dari baris transaksi tiap halaman dibuka.
 
 import Link from "next/link";
 import { pg } from "@/db";
@@ -148,8 +141,6 @@ export default async function O1({
                     {rupiah(b.rupiah)}
                   </span>
                 </div>
-                {/* Batang proporsional — DS-14: angkanya tetap tertulis penuh
-                    di atas, batang hanya mempercepat perbandingan. */}
                 <div className="mt-1 flex items-center gap-3">
                   <div
                     className="h-2 rounded-full bg-primary"

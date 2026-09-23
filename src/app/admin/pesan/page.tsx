@@ -1,12 +1,5 @@
-// Layar A8 Pesan terkirim — UC-A03, UC-S06.
-//
-// Tabel `notifications` ditulis dari empat tempat sejak awal — booking,
-// pembatalan, promosi antrean, penutupan antrean — dan sampai layar ini
-// dibuat tidak pernah dibaca sekali pun. Semua notifikasi demo menumpuk tak
-// terlihat, termasuk yang paling penting: "kamu dapat kursi".
-//
-// Di demo kanalnya `layar`, jadi halaman inilah tempat pesan benar-benar
-// sampai ke manusia. Di versi nyata ia jadi jejak audit di samping email.
+// Layar A8 Pesan terkirim — UC-A03, UC-S06. Di demo kanalnya `layar`, jadi
+// halaman inilah tempat notifikasi benar-benar sampai ke manusia.
 
 import Link from "next/link";
 import { pg } from "@/db";
@@ -18,11 +11,7 @@ import { Angka, Chip, Kartu, Kerangka } from "@/components/kerangka";
 
 export const dynamic = "force-dynamic";
 
-/**
- * BR-4.3 dan BR-5.3 — dua template ini mendesak: kursi terbuang kalau tidak
- * terbaca dalam hitungan jam. Keduanya dapat tombol kirim-WA; sisanya tidak,
- * supaya tombol yang penting tidak tenggelam di antara yang rutin.
- */
+/** BR-4.3 dan BR-5.3 — dua template mendesak ini saja yang dapat tombol WA. */
 const MENDESAK = new Set(["waitlist_naik", "kelas_batal"]);
 
 const TEMPLATE: Record<string, [string, string]> = {
@@ -44,7 +33,6 @@ function Baris({ p, sekarang }: { p: Pesan; sekarang: Date }) {
 
   return (
     <li className="flex flex-wrap items-start gap-4 px-4 py-3">
-      {/* DS-28 — waktu jadi jangkar kiri, lebar tetap. */}
       <div className="w-20 shrink-0">
         <p className="text-app-body tabular-nums">{jamWib(p.created_at)}</p>
         <p className="text-app-label uppercase text-muted-foreground">
@@ -55,7 +43,6 @@ function Baris({ p, sekarang }: { p: Pesan; sekarang: Date }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-app-body">{p.nama}</span>
-          {/* DS-14 — jenis pesan berteks, bukan hanya berwarna. */}
           <Chip warna={warna} anak={label} />
           {p.mulai_at && (
             <span className="text-app-body-sm text-muted-foreground">

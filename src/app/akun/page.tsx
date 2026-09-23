@@ -1,8 +1,5 @@
-// Layar M3 Akun Saya — 02-rules.md bagian 6.1. Tampilan HP (DS-16).
-// "Sisa kredit + tanggal hangus + hitung mundur · booking aktif · riwayat kredit"
-//
-// Jantung skenario A. Kalimat yang harus bisa diucapkan sambil menunjuk layar:
-// "sisa 6 sesi, hangus 14 Nov, 24 hari lagi — tidak perlu tanya admin."
+// Layar M3 Akun Saya — sisa kredit + tanggal hangus + hitung mundur ·
+// booking aktif · riwayat kredit.
 
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -34,8 +31,8 @@ function Ledger({ b }: { b: BarisLedger }) {
   return (
     <li className="flex items-baseline justify-between gap-4 px-4 py-3">
       <div className="min-w-0">
-        {/* AGENTS.md — nilai `alasan` tampil apa adanya dalam Bahasa Indonesia.
-            Hanya garis bawahnya diganti spasi; katanya tidak diterjemahkan. */}
+        {/* AGENTS.md — nilai `alasan` tampil apa adanya; hanya garis bawahnya
+            diganti spasi. */}
         <p className="text-app-body first-letter:uppercase">
           {b.alasan.replace(/_/g, " ")}
         </p>
@@ -78,7 +75,7 @@ export default async function M3({
   ]);
   if (!saya) redirect("/masuk");
 
-  // BR-1.7 — dijumlahkan dari buku besar. Tidak ada kolom saldo di mana pun.
+  // BR-1.7 — dijumlahkan dari buku besar, tidak ada kolom saldo.
   const aktif = paket.filter((p) => p.hangus_at > sekarang && p.sisa_kredit > 0);
   const sisa = aktif.reduce((t, p) => t + p.sisa_kredit, 0);
   // BR-1.5 — yang paling cepat hangus dipakai duluan, jadi itu yang ditonjolkan.
@@ -96,7 +93,6 @@ export default async function M3({
       judul="Akun Saya"
       kabar={kabar}
     >
-      {/* Kartu ini yang ditunjuk saat presentasi menit 0:45 */}
       <Kartu>
         <Angka
           nilai={sisa}
@@ -109,8 +105,7 @@ export default async function M3({
           warnaCatatan={mepet ? "text-warn-foreground" : "text-muted-foreground"}
         />
 
-        {/* BR-1.2 — tiap paket punya tanggal hangusnya sendiri. Kalau cuma
-            satu, barisnya sudah tertulis di atas. */}
+        {/* BR-1.2 — tiap paket punya tanggal hangusnya sendiri. */}
         {urut.length > 1 && (
           <ul className="mt-3 space-y-1 border-t border-border pt-3">
             {urut.map((p) => (
@@ -126,9 +121,7 @@ export default async function M3({
         )}
       </Kartu>
 
-      {/* BR-4.7 — antrean sendiri, lengkap dengan jalan keluarnya. Sebelum
-          ini member yang mengantre hanya bisa melihatnya di kalender, dan
-          tidak punya cara membatalkan sama sekali. */}
+      {/* BR-4.7 — antrean sendiri, lengkap dengan jalan keluarnya. */}
       {antre.length > 0 && (
         <div className="mt-dekat">
           <Kartu
@@ -142,7 +135,6 @@ export default async function M3({
                   key={a.entry_id}
                   className="flex items-center gap-4 px-4 py-4"
                 >
-                  {/* DS-28 — jam jadi jangkar kiri, lebar tetap. */}
                   <div className="w-14 shrink-0">
                     <p className="text-app-section tabular-nums">
                       {jamWib(a.mulai_at)}
@@ -218,7 +210,6 @@ export default async function M3({
       </div>
 
       <div className="mt-dekat">
-        {/* DS — daftar sederhana, tanpa tabel bergaris. */}
         <Kartu
           judul="Riwayat kredit"
           catatan="Sisa kredit = jumlah kolom kanan. Tidak ada angka saldo yang disimpan terpisah."

@@ -2,10 +2,9 @@ import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768
 
-// Ditulis ulang dari versi shadcn yang memakai useEffect + setState: aturan
-// `react-hooks/set-state-in-effect` menolaknya. useSyncExternalStore membaca
-// matchMedia langsung, jadi tidak ada render berantai dan nilai di server
-// (false) eksplisit, bukan undefined.
+// Ditulis ulang dari versi shadcn (useEffect + setState) yang ditolak aturan
+// `react-hooks/set-state-in-effect`. useSyncExternalStore membaca matchMedia
+// langsung; nilai di server false eksplisit, bukan undefined.
 const mql = () => window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
 
 function subscribe(onChange: () => void) {

@@ -1,18 +1,7 @@
-// Layar A6 Kelas & paket — UC-O02, UC-O03.
-//
-// Dua tabel yang menentukan apa yang dijual studio ini: kelas (`class_types`)
-// dan paket kredit (`packages`), di atasnya tiga angka ringkas, dan satu
-// peringatan yang cuma muncul saat kursi terjadwal kurang dari kredit yang
-// sudah terjual (DS-55).
-//
-// DS-56 — barisnya tabel dengan cari + halaman seperti direktori member (A4),
-// aksinya di menu "⋯", formulirnya dialog dari URL. Paket dapat 8 kolom dan
-// kelas 4: paket punya enam kolom angka, kelas cuma dua.
-//
-// Apa yang boleh diubah, dan kenapa, dijaga lapisan db — bukan di sini:
-//   kelas   selalu boleh (BR-7.3 melindungi sesi yang sudah terbit)
-//   paket   hanya selama belum dibeli siapa pun (harga dan nama dibaca
-//           hidup-hidup oleh buku transaksi; cakupan menentukan BR-1.4)
+// Layar A6 Kelas & paket — UC-O02, UC-O03. Dua tabel (`class_types`,
+// `packages`), masing-masing dengan cari + halamannya sendiri (DS-56).
+// Apa yang boleh diubah dijaga lapisan db: kelas selalu boleh (BR-7.3), paket
+// hanya selama belum dibeli siapa pun.
 
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -46,7 +35,6 @@ const TH =
   "px-3 py-2 text-left text-app-label uppercase tracking-[0.08em] text-muted-foreground font-medium";
 const TD = "px-3 py-2 align-middle";
 
-/** Potong satu halaman, dengan nomor halaman yang selalu di dalam rentang. */
 function sepotong<T>(semua: T[], hal: string | undefined) {
   const total = Math.ceil(semua.length / PER_HALAMAN) || 1;
   const halaman = Math.max(1, Math.min(total, Math.trunc(Number(hal)) || 1));
@@ -66,11 +54,6 @@ function Tambah({ href, anak }: { href: string; anak: string }) {
   );
 }
 
-/**
- * Kepala tabel: namanya, tombol tambah, lalu baris cari — semuanya di dalam
- * kartu yang sama, tanpa kalimat penjelasan. Nama layarnya sudah disebut remah
- * roti, dan peran tiap tabel terbaca dari isinya (DS-54).
- */
 function KepalaTabel({
   nama,
   jumlah,
@@ -82,16 +65,11 @@ function KepalaTabel({
 }: {
   nama: string;
   jumlah: number;
-  /** Nama parameter pencarian di URL — tiap tabel punya sendiri. */
   kunci: string;
   nilai: string;
-  /**
-   * Parameter tabel SEBELAH yang harus ikut terkirim. Formulir GET cuma
-   * mengirim kolomnya sendiri, jadi tanpa ini mencari paket akan menghapus
-   * pencarian kelas yang sedang berjalan di kartu di sebelahnya.
-   */
+  /** Parameter tabel SEBELAH: formulir GET cuma mengirim kolomnya sendiri, jadi
+   *  tanpa ini mencari paket menghapus pencarian kelas yang sedang berjalan. */
   bawa: Record<string, string>;
-  /** URL tanpa filternya; null saat memang tidak sedang memfilter. */
   hapus: string | null;
   tambah?: React.ReactNode;
 }) {
@@ -107,8 +85,6 @@ function KepalaTabel({
         {tambah}
       </div>
 
-      {/* GET biasa: hasilnya bisa ditautkan dan di-refresh tanpa mengirim
-          ulang apa pun, sama seperti A4. */}
       <div className="flex flex-wrap items-center gap-2">
         <form className="flex min-w-0 flex-1 items-center gap-2">
           {Object.entries(bawa).map(([k, v]) => (
@@ -151,7 +127,7 @@ export default async function A6({
   }>;
 }) {
   const pengguna = await pastikanAdmin();
-  // Harga = keputusan bisnis. Admin melihat katalog, owner yang mengubahnya.
+  // Harga = keputusan bisnis: admin melihat katalog, owner yang mengubahnya.
   const owner = pengguna.peran === "owner";
   const { kabar, panel: panelDiminta, id, qk, halk, qp, halp } = await searchParams;
 
@@ -163,9 +139,7 @@ export default async function A6({
   ]);
   const kurang = muat.terkunci.filter((t) => t.kursi < t.kredit);
 
-  // Dicari di sini, bukan di query: katalog studio puluhan baris, bukan
-  // puluhan ribu. Menambah `where` di dua query untuk itu cuma memindahkan
-  // kerja yang sama ke tempat yang lebih sulit diubah.
+  // Dicari di sini, bukan di query: katalog studio puluhan baris.
   const cocok = (teks: string, q: string | undefined) =>
     !q || teks.toLowerCase().includes(q.trim().toLowerCase());
   const jenisCocok = jenis.filter((j) => cocok(j.nama, qk));
@@ -174,7 +148,6 @@ export default async function A6({
   const halamanJenis = sepotong(jenisCocok, halk);
   const halamanPaket = sepotong(paketCocok, halp);
 
-  /** Tautan yang mempertahankan parameter lain — ganti satu, sisanya utuh. */
   const kini = new URLSearchParams();
   if (qk) kini.set("qk", qk);
   if (qp) kini.set("qp", qp);
@@ -193,9 +166,7 @@ export default async function A6({
   const tutup = tautan({});
   const ke = (panel: string, id?: string) => tautan({ panel, id: id ?? null });
 
-  // `?panel=` bisa diketik siapa saja. Semua dialog di layar ini mengubah
-  // katalog, jadi semuanya milik owner — dan syaratnya diperiksa ULANG di
-  // server action-nya, karena action bisa dipanggil tanpa layar ini.
+  // `?panel=` bisa diketik siapa saja; syaratnya diperiksa ULANG di server action.
   const panel = owner ? panelDiminta : undefined;
   const jenisPanel = jenis.find((j) => j.id === id) ?? null;
   const paketPanel = paket.find((p) => p.id === id) ?? null;
@@ -247,9 +218,6 @@ export default async function A6({
     >
       <h1 className="sr-only">Kelas & paket</h1>
 
-      {/* Tiga angka yang menjawab "katalognya seberapa besar" sebelum mata
-          turun ke tabelnya. Terjual dijumlahkan dari baris yang sama — tidak
-          perlu query kedua. */}
       <div className="grid gap-dekat sm:grid-cols-3">
         <Kartu>
           <Angka nilai={jenis.length} label="Kelas" />
@@ -269,8 +237,7 @@ export default async function A6({
         </Kartu>
       </div>
 
-      {/* DS-55 — hanya digambar saat ada yang kurang. Kartu yang selalu hijau
-          adalah baris yang berhenti dibaca orang. */}
+      {/* DS-55 — hanya digambar saat ada yang kurang. */}
       {kurang.length > 0 && (
         <div className="mt-dekat">
           <Kartu
@@ -312,8 +279,6 @@ export default async function A6({
         </div>
       )}
 
-      {/* Paket 8 kolom, kelas 4. Pisahnya di 1280px seperti A4: di 1024 kolom
-          kanan tinggal 227px dan tabelnya menggulir sejak kolom pertama. */}
       <div className="mt-dekat grid grid-cols-12 items-start gap-dekat">
         <div className="col-span-12 xl:col-span-8">
           <Kartu padat min0>
@@ -349,9 +314,6 @@ export default async function A6({
                     <tr key={p.id} className="border-b border-border last:border-0">
                       <td className={TD}>
                         <p className="text-app-body">{p.nama}</p>
-                        {/* Cakupan jadi baris kedua, bukan kolom: "Chair, Mat,
-                            Reformer, Tower" terlalu panjang untuk kolom yang
-                            harus berbagi ruang dengan lima angka. */}
                         <p className="text-app-label text-muted-foreground">
                           {p.kelas.length ? p.kelas.join(" · ") : "belum ada kelas"}
                         </p>
@@ -367,7 +329,6 @@ export default async function A6({
                       </td>
                       <td className={`${TD} text-right tabular-nums`}>{p.terjual}</td>
                       <td className={TD}>
-                        {/* DS-14 — status punya chip berteks, bukan warna saja. */}
                         <Chip
                           warna={
                             p.aktif
@@ -425,9 +386,6 @@ export default async function A6({
                     <tr key={j.id} className="border-b border-border last:border-0">
                       <td className={TD}>
                         <p className="text-app-body">{j.nama}</p>
-                        {/* Keadaan yang menuntut tindakan disebut; yang baik
-                            tidak. Kelas yang sudah masuk paket dan sudah
-                            dijadwalkan tidak punya baris kedua sama sekali. */}
                         {(!j.dipakai_paket || !j.slot_mingguan) && (
                           <p className="text-app-label text-warn-foreground">
                             {!j.dipakai_paket && "Belum masuk paket"}

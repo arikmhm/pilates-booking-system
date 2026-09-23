@@ -1,11 +1,7 @@
-// Penjaga endpoint job terjadwal — 06-architecture.md keputusan 8.
-//
-// Job sengaja BUKAN fitur platform: empat endpoint HTTP biasa yang dipanggil
-// Vercel Cron di demo dan `crontab` + `curl` di VPS klien. Kodenya sama, yang
-// berbeda cuma satu berkas config. Itu syarat portabilitas di AGENTS.md.
-//
-// Header `Authorization: Bearer <CRON_SECRET>` dipilih karena dua-duanya bisa
-// mengirimnya: Vercel Cron memasangnya sendiri, curl memakai `-H`.
+// Penjaga endpoint job terjadwal — 06-architecture.md keputusan 8. Job BUKAN
+// fitur platform: endpoint HTTP biasa, dipanggil Vercel Cron di demo dan
+// crontab + curl di VPS. Header `Authorization: Bearer <CRON_SECRET>` karena
+// dua-duanya bisa mengirimnya.
 
 import { timingSafeEqual } from "node:crypto";
 
@@ -13,17 +9,13 @@ import { timingSafeEqual } from "node:crypto";
 function sama(a: string, b: string): boolean {
   const x = Buffer.from(a);
   const y = Buffer.from(b);
-  // timingSafeEqual melempar kalau panjangnya beda, jadi panjang dicek dulu.
-  // Panjang secret bukan rahasia yang perlu dijaga; isinya iya.
+  // timingSafeEqual melempar kalau panjangnya beda; panjang bukan rahasia.
   return x.length === y.length && timingSafeEqual(x, y);
 }
 
-/**
- * Kembalikan `null` kalau boleh lanjut, atau Response penolakan kalau tidak.
- *
- * CRON_SECRET kosong ditolak 500, bukan dibiarkan lewat. Endpoint ini menulis
- * ke database; "belum dikonfigurasi" tidak boleh berarti "terbuka".
- */
+/** `null` kalau boleh lanjut, Response penolakan kalau tidak. CRON_SECRET
+ *  kosong ditolak 500: endpoint ini menulis ke database, "belum dikonfigurasi"
+ *  tidak boleh berarti "terbuka". */
 export function pastikanCron(req: Request): Response | null {
   const rahasia = process.env.CRON_SECRET;
   if (!rahasia)

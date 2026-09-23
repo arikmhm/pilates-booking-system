@@ -1,9 +1,6 @@
 "use server";
 
-// Layar jadwal hanya menerjemahkan: baca form, panggil satu operasi, ubah
-// hasilnya jadi kalimat. Aturan booking, balapan alat, potongan kredit, dan
-// notifikasi semuanya ada di `src/db/pesanan.ts` — dipakai bersama jalur
-// admin (UC-A05), supaya tidak ada dua tempat yang bisa lupa memotong kredit.
+// Penerjemah saja: baca form, panggil `src/db/pesanan.ts`, jadikan kalimat.
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -13,15 +10,8 @@ import { bookingkan } from "@/db/pesanan";
 import { bolehIkutWaitlist } from "@/rules";
 import { userSaatIni } from "@/lib/masuk";
 
-/**
- * Kembali ke layar jadwal membawa satu kalimat — halaman yang menampilkannya.
- *
- * `ke` membawa minggu dan saringan jenis kelas yang sedang dibuka. Tanpa itu, booking
- * kelas minggu depan melemparkan orang kembali ke minggu ini dan blok yang
- * baru saja dipesannya tidak kelihatan. Nilainya datang dari formulir, jadi
- * ia disaring: hanya path layar ini, tanpa host, tanpa `//` pembuka —
- * `redirect()` akan menurut saja ke mana pun ia diarahkan.
- */
+/** `ke` disaring: hanya path layar ini, tanpa host dan tanpa `//` pembuka —
+ *  nilainya datang dari formulir. */
 function kembali(pesan: string, ke = "/jadwal"): never {
   const aman = /^\/jadwal(\?[^#]*)?$/.test(ke) ? ke : "/jadwal";
   const [path, kueri] = aman.split("?");
@@ -52,9 +42,7 @@ export async function booking(formData: FormData) {
   revalidatePath("/akun");
   if (!hasil.ok) kembali(hasil.pesan, ke);
 
-  // Alat yang diminta bisa keburu diambil orang lain di detik yang sama.
-  // Menyebutkannya penting: member yang menutup layar sambil mengira dapat
-  // alat 3 akan berdiri di depan alat yang salah.
+  // Alat yang diminta bisa keburu diambil orang lain; harus disebut.
   kembali(
     pilihan && pilihan !== hasil.nomor_alat
       ? `Alat ${pilihan} keburu terisi. Kamu dapat alat ${hasil.nomor_alat}, 1 kredit dipotong.`

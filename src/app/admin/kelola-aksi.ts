@@ -1,10 +1,7 @@
 "use server";
 
-// Aksi layar pengelolaan: layanan/paket dan aturan jadwal.
-//
-// Semua validasi diulang di sini meski form sudah punya `required`, `min`,
-// dan `max`. Atribut HTML itu kenyamanan pengguna, bukan penjaga — server
-// action bisa dipanggil tanpa browser sama sekali.
+// Aksi layar pengelolaan. Semua validasi diulang di sini meski form punya
+// `required`/`min`/`max` — atribut HTML kenyamanan, bukan penjaga.
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -41,22 +38,15 @@ import { hariWib, jamWib, kunciHariWib } from "@/lib/waktu";
 function keLayanan(pesan: string): never {
   redirect(`/admin/layanan?kabar=${encodeURIComponent(pesan)}`);
 }
-// Formulir buat-kelas hidup di dua layar: Aturan Jadwal dan kalender M1.
-// Daftar putih, bukan path apa adanya dari form — `dari` datang dari klien,
-// dan redirect yang menurut saja adalah open redirect.
+// Daftar putih, bukan path apa adanya: `dari` datang dari klien, dan redirect
+// yang menurut saja adalah open redirect.
 function keJadwal(pesan: string, dari?: FormDataEntryValue | null): never {
   const tujuan = String(dari ?? "") === "/jadwal" ? "/jadwal" : "/admin/jadwal";
   redirect(`${tujuan}?kabar=${encodeURIComponent(pesan)}`);
 }
 
-/**
- * Jam dinding WIB dari dua `<select>` — "14" + "30" jadi "14:30".
- *
- * Bukan `<input type="time">`: tampilannya mengikuti locale browser, jadi
- * sebagian orang melihat 02:30 PM dan sebagian 14:30 untuk berkas yang sama.
- * Dua select selalu 24 jam di mana pun, dan tidak ada yang bisa mengetik jam
- * yang tidak ada (DS-41).
- */
+/** Jam dinding WIB dari dua `<select>`. Bukan `<input type="time">`: tampilannya
+ *  mengikuti locale browser (DS-41). */
 function jamDinding(form: FormData, kunciJam: string, kunciMenit: string) {
   const j = Number(form.get(kunciJam));
   const m = Number(form.get(kunciMenit));
@@ -65,20 +55,13 @@ function jamDinding(form: FormData, kunciJam: string, kunciMenit: string) {
   return `${String(j).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-/** Bilangan bulat dalam rentang, atau null. */
 function angka(form: FormData, kunci: string, [min, maks]: readonly [number, number]) {
   const n = Number(form.get(kunci));
   return Number.isInteger(n) && n >= min && n <= maks ? n : null;
 }
 
-/**
- * Kursi dan durasi di formulir jadwal boleh dikosongkan — artinya "ikut jenis
- * kelasnya" (BR-7.2). Tiga keadaan, jadi tiga nilai kembalian:
- *
- * - `null`      dikosongkan, pakai bawaan jenis kelasnya
- * - `number`    diisi dan sah
- * - `undefined` diisi tapi di luar rentang — itu galat, bukan "ikut bawaan"
- */
+/** Kursi/durasi boleh kosong = ikut jenis kelasnya (BR-7.2). `null` kosong ·
+ *  `number` sah · `undefined` di luar rentang. */
 function angkaOpsional(
   form: FormData,
   kunci: string,
@@ -90,15 +73,10 @@ function angkaOpsional(
   return Number.isInteger(n) && n >= min && n <= maks ? n : undefined;
 }
 
-/* ── Layanan & paket — UC-O03 ──────────────────────────────────────────────
-   Kewenangan OWNER. Harga adalah keputusan bisnis: staf meja depan yang bisa
-   mencetak paket Rp 0 adalah risiko yang tidak perlu ada. Admin tetap boleh
-   MELIHAT katalognya — yang dijaga kemampuannya, bukan layarnya.          */
+/* ── Layanan & paket — UC-O03. Kewenangan OWNER; admin boleh MELIHAT. ──── */
 
-/**
- * Satu aksi untuk buat dan ubah. Mengubah hanya boleh selama paketnya belum
- * dibeli siapa pun — `ubahPaket()` yang menjaganya, di dalam transaksinya.
- */
+/** Satu aksi untuk buat dan ubah. Mengubah hanya boleh selama paketnya belum
+ *  dibeli siapa pun — `ubahPaket()` yang menjaganya di dalam transaksinya. */
 export async function simpanPaket(formData: FormData) {
   await pastikanOwner();
 
@@ -153,11 +131,7 @@ export async function simpanPaket(formData: FormData) {
   );
 }
 
-/**
- * Satu aksi untuk buat dan ubah: `id` kosong berarti baru. Formulirnya memang
- * satu formulir yang sama, jadi memecahnya jadi dua aksi berarti dua tempat
- * yang harus diubah tiap kali batasnya bergeser.
- */
+/** Satu aksi untuk buat dan ubah: `id` kosong berarti baru. */
 export async function simpanJenisKelas(formData: FormData) {
   await pastikanOwner();
 
@@ -239,9 +213,8 @@ export async function setAktifPaket(formData: FormData) {
 }
 
 /* ── Aturan jadwal berulang — UC-O01 ───────────────────────────────────────
-   Kewenangan OWNER: slot mingguan permanen berarti beban coach dan biaya
-   operasional tiap minggu. Kelas tambahan sekali jalan di bawah TETAP milik
-   admin — itu operasional, sekali pakai, dan sering mendesak.             */
+   Kewenangan OWNER: slot mingguan permanen berarti beban coach tiap minggu.
+   Kelas sekali jalan di bawah TETAP milik admin — itu operasional.        */
 
 export async function tambahAturan(formData: FormData) {
   await pastikanOwner();
@@ -258,10 +231,8 @@ export async function tambahAturan(formData: FormData) {
 
   const coach_id = String(formData.get("coach_id") ?? "") || null;
 
-  // BR-7.2 — kursi dan durasi bawaannya milik jenis kelas; yang disimpan di
-  // slot hanya kalau sengaja ditimpa. Formulir yang mengisi angka duluan
-  // membuat keputusan itu diambil dua kali, dan yang kedua diam-diam menang:
-  // "Private 1 kursi" terbit 8 kursi karena kolomnya sudah terlanjur terisi.
+  // BR-7.2 — kursi dan durasi bawaan milik jenis kelas; yang disimpan di slot
+  // hanya kalau sengaja ditimpa.
   const kapasitas = angkaOpsional(formData, "kapasitas", [1, 60]);
   if (kapasitas === undefined) keJadwal("Kursi harus 1–60, atau dikosongkan.", dari);
   const durasi = angkaOpsional(formData, "durasi_menit", [15, 240]);
@@ -274,17 +245,12 @@ export async function tambahAturan(formData: FormData) {
   const kursiBerlaku = kapasitas ?? jenis.kapasitas_default;
   const durasiBerlaku = durasi ?? jenis.durasi_menit;
 
-  // Jangka terbit ikut di formulir ini (DS-41): membuat kelas mingguan dan
-  // memutuskan sampai kapan ia terbit adalah satu keputusan, bukan dua.
   const minggu = angka(formData, "minggu", BATAS_TERBIT);
   if (minggu === null)
     keJadwal(`Jangka terbit harus ${BATAS_TERBIT[0]}–${BATAS_TERBIT[1]} minggu.`, dari);
 
-  // BR-7.6 — slot baru tidak boleh menabrak slot yang masih berjalan kalau
-  // jenis kelasnya sama (alatnya dipakai dua kali) atau pelatihnya sama.
-  // Dijaga di sini, bukan saat booking: yang salah jadwalnya, bukan pesanan
-  // membernya. Slot yang sudah dihentikan dilewati — ia tidak menerbitkan
-  // sesi apa pun, jadi menolak karenanya berarti memblokir jam yang kosong.
+  // BR-7.6 — slot baru tidak boleh menabrak slot berjalan dengan jenis kelas
+  // atau pelatih yang sama. Slot yang sudah dihentikan dilewati.
   const hariIni = kunciHariWib(new Date());
   const berjalan: SlotMingguan[] = (await daftarAturan(pg, new Date()))
     .filter((a) => a.berlaku_sampai === null || a.berlaku_sampai >= hariIni)
@@ -302,8 +268,7 @@ export async function tambahAturan(formData: FormData) {
   );
   if (benturan.ada) {
     const l = benturan.lawan;
-    // "06:00:00" dari kolom `time` jadi "06.00" — titik, seperti jam di
-    // seluruh layar lain (DS-28).
+    // "06:00:00" dari kolom `time` jadi "06.00" — titik, seperti layar lain (DS-28).
     const kapan = `${HARI[l.hari - 1]} ${l.jam_mulai.slice(0, 5).replace(":", ".")}`;
     keJadwal(
       benturan.sebab === "kelas"
@@ -326,18 +291,12 @@ export async function tambahAturan(formData: FormData) {
     durasi_menit: durasi,
   });
 
-  // Aturan baru belum berarti apa-apa sampai jadi sesi, jadi penerbitannya
-  // dijalankan di sini juga — satu tombol, satu hasil yang kelihatan.
+  // Aturan baru belum berarti apa-apa sampai jadi sesi — satu tombol, satu hasil.
   const { dibuat } = await generateSesi(pg, new Date());
 
-  // Job menerbitkan sesi untuk SEMUA aturan sampai batas generate_weeks_ahead,
-  // jadi angkanya bisa ratusan kalau penerbitannya sedang tertinggal. Yang
-  // ingin dilihat admin adalah slot yang baru saja dia buat.
-  //
-  // `perdana` ada karena satu pertanyaan yang selalu muncul: "kok jadwalnya
-  // tidak tampil?". Slot Selasa yang dibuat Rabu tidak punya sesi minggu ini —
-  // Selasanya sudah lewat, dan kalender membuka di minggu ini. Angka "8 sesi
-  // terbit" tidak menjawab itu; tanggal sesi pertamanya menjawab.
+  // Job menerbitkan untuk SEMUA aturan, jadi angkanya bisa ratusan; yang dicari
+  // admin slot yang baru dibuat. `perdana` menjawab "kok jadwalnya tidak tampil?"
+  // — slot Selasa yang dibuat Rabu tidak punya sesi minggu ini.
   const [{ milik_slot, perdana }] = await pg<
     { milik_slot: number; perdana: string | null }[]
   >`
@@ -347,9 +306,7 @@ export async function tambahAturan(formData: FormData) {
 
   revalidatePath("/admin/jadwal");
   revalidatePath("/jadwal");
-  // Pesannya menyebut kursi dan durasi yang BERLAKU, bukan yang diketik.
-  // Sesudah kolomnya boleh dikosongkan, satu-satunya cara tahu angka mana
-  // yang jadi adalah dengan membacanya kembali di sini.
+  // Menyebut kursi dan durasi yang BERLAKU, bukan yang diketik.
   keJadwal(
     `${jenis.nama} ${HARI[hari - 1]} ${jam.replace(":", ".")} — ` +
       `${kursiBerlaku} kursi, ${durasiBerlaku} menit. ` +
@@ -368,7 +325,7 @@ export async function berhentikanAturan(formData: FormData) {
   const id = String(formData.get("id"));
   await hentikanAturan(pg, id);
   // Sesi mendatang yang sudah punya peserta SENGAJA dibiarkan: menghapusnya
-  // membatalkan booking orang tanpa melewati Alur 5 dan tanpa kredit kembali.
+  // membatalkan booking tanpa melewati Alur 5.
   const dihapus = await bersihkanSesiKosong(pg, id);
 
   revalidatePath("/admin/jadwal");
@@ -384,9 +341,8 @@ export async function jalankanLagiAturan(formData: FormData) {
   const id = String(formData.get("id"));
   await jalankanAturan(pg, id);
 
-  // Sesi yang dibersihkan saat dihentikan tidak kembali sendiri — yang
-  // mengembalikannya penerbitan, dan itu dikerjakan di sini supaya slotnya
-  // tidak tampak "berjalan" dengan kalender yang masih kosong.
+  // Sesi yang dibersihkan saat dihentikan dikembalikan oleh penerbitan, dan itu
+  // dikerjakan di sini supaya slotnya tidak "berjalan" dengan kalender kosong.
   await generateSesi(pg, new Date());
   const [{ milik_slot, perdana }] = await pg<
     { milik_slot: number; perdana: string | null }[]
@@ -418,11 +374,8 @@ export async function tambahSesi(formData: FormData) {
   const class_type_id = String(formData.get("class_type_id") ?? "");
   if (!class_type_id) keJadwal("Pilih jenis kelas.", dari);
 
-  // BR-7.2 — sama seperti slot mingguan: kosong berarti ikut jenis kelasnya.
-  // Bedanya di sini nilainya tidak boleh tersimpan null — `sessions.kapasitas`
-  // dan `durasi_menit` NOT NULL karena sesi yang sudah terbit tidak boleh
-  // berubah saat jenis kelasnya diedit (BR-7.3). Jadi bawaannya diselesaikan
-  // di sini, bukan ditunda ke query.
+  // BR-7.2, tapi `sessions.kapasitas`/`durasi_menit` NOT NULL (BR-7.3), jadi
+  // bawaannya diselesaikan di sini, bukan ditunda ke query.
   const kapasitas = angkaOpsional(formData, "kapasitas", [1, 60]);
   if (kapasitas === undefined) keJadwal("Kursi harus 1–60, atau dikosongkan.", dari);
   const durasi = angkaOpsional(formData, "durasi_menit", [15, 240]);
@@ -436,10 +389,8 @@ export async function tambahSesi(formData: FormData) {
 
   const studio = await setelanLengkap(pg);
 
-  // BR-7.6 untuk kelas sekali jalan. Jam dindingnya baru jadi timestamptz di
-  // dalam Postgres (BR-7.5), jadi tanggal + jam diubah lebih dulu lewat query
-  // yang sama polanya — menebak offset di JavaScript adalah cara paling rapi
-  // untuk meleset satu jam dua kali setahun di zona yang punya DST.
+  // BR-7.6 kelas sekali jalan. Jam dinding jadi timestamptz di dalam Postgres
+  // (BR-7.5) — menebak offset di JavaScript meleset sejam.
   const [{ mulai_rencana }] = await pg<{ mulai_rencana: string | Date }[]>`
     select (${tanggal}::date + ${jam}::time) at time zone 'Asia/Jakarta'
              as mulai_rencana`;
@@ -485,14 +436,8 @@ export async function tambahSesi(formData: FormData) {
 }
 
 /* ── Terbitkan sesi dari aturan — UC-S01, BR-7.1 ───────────────────────────
-   Dulu ini cron harian. Sekarang tombol: studio ingin tahu KAPAN jadwalnya
-   bertambah, bukan menemukannya sudah bertambah. Fungsinya sama persis
-   (`generateSesi`), yang berubah cuma siapa yang memulai — dan karena ia
-   idempoten, menekannya dua kali tidak menerbitkan apa pun dua kali.
-
-   Menekan tombolnya operasional, jadi milik admin. Mengubah jangkanya syarat
-   studio, jadi milik owner (DS-35) — 26 minggu ke depan berarti menjanjikan
-   jadwal yang belum tentu ada coach-nya.                                  */
+   Tombol, bukan cron: studio ingin tahu KAPAN jadwalnya bertambah. Idempoten.
+   Menekan → admin; mengubah jangkanya → owner (DS-35).                    */
 
 export async function terbitkanJadwal(formData: FormData) {
   const pengguna = await pastikanAdmin();
@@ -518,10 +463,8 @@ export async function terbitkanJadwal(formData: FormData) {
   revalidatePath("/admin/jadwal");
   revalidatePath("/jadwal");
 
-  // Nol sesi punya DUA sebab yang berlawanan, dan menyamakannya membuat pesan
-  // ini berbohong: jadwalnya sudah lengkap, atau tidak ada satu pun slot
-  // mingguan yang berjalan. Yang kedua itu keadaan buntu — tombol ini tidak
-  // akan pernah menghasilkan apa pun sampai ada aturan yang dijalankan.
+  // Nol sesi punya DUA sebab berlawanan: sudah lengkap, atau tidak ada slot
+  // yang berjalan — yang kedua keadaan buntu.
   const [{ aktif }] = await pg<{ aktif: number }[]>`
     select count(*)::int as aktif from schedule_rules where berlaku_sampai is null`;
 

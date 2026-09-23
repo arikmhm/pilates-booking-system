@@ -1,21 +1,12 @@
-// Halaman profil publik — pola pita, docs/07-design.md bagian 8.
-// Memakai skala pemasaran (DS-4). Layar aplikasi M1–A3 ada di rute lain.
-//
-// Semua slot foto masih blok `photo-warm` dengan rasio terkunci (DS-25):
-// memasang foto asli nanti tidak menggeser tata letak.
-//
-// Angka dan harga diambil dari seed demo docs/02-rules.md bagian 3.
-//
-// DS-43 — tidak ada tautan mati di halaman ini. Tiap butir menu menuju salah
-// satu dari tiga tempat saja: pita di halaman ini, layar aplikasi yang memang
-// ada, atau WhatsApp studio. Halaman jualan yang tautannya mati justru
-// memperagakan kebalikan dari yang dijual.
+// Halaman profil publik — pola pita, 07-design.md bagian 8. Skala pemasaran
+// (DS-4). Slot foto masih blok `photo-warm` berasio terkunci (DS-25); angka dan
+// harga mengikuti seed demo. DS-43 — tidak ada tautan mati di halaman ini.
 
 import Link from "next/link";
 import { BilahPublik, FOTO } from "@/components/bilah-publik";
 import { tautanWa } from "@/lib/wa";
 
-/** Nomor meja depan di seed demo (`src/db/seed.ts`, staf ke-3 = admin). */
+/** Nomor meja depan di seed demo (staf ke-3 = admin). */
 const TELEPON = "0811550002";
 
 const WA_COBA = tautanWa(
@@ -45,26 +36,16 @@ const INSTRUKTUR = [
   ["Bagas Nugroho", "Chair · Keseimbangan"],
 ];
 
-// Nama dan harga mengikuti katalog seed (`src/db/seed.ts`) — di sana paketnya
-// memang bernama "10 Sesi Reformer" dan Mat tidak masuk.
-//
-// `cakupan` bukan hiasan. BR-1.4 mengikat kredit ke jenis kelas, jadi jenis
-// kelas yang tercakup adalah bagian dari barang yang dibeli, setara dengan
-// jumlah kredit dan masa berlakunya. Halaman yang menyembunyikannya membuat
-// member baru tahu saat booking-nya ditolak dengan pesan X7 (BR-2.7).
+// `cakupan` bukan hiasan: BR-1.4 mengikat kredit ke jenis kelas, dan yang tidak
+// disebut di sini baru ketahuan saat booking ditolak X7.
 const PAKET = [
   { nama: "4 Sesi", harga: "560.000", per: "4 kredit · Rp 140.000 per kelas", masa: "Berlaku 1 bulan", cakupan: "Semua jenis kelas", unggulan: false },
   { nama: "10 Sesi Reformer", harga: "1.350.000", per: "10 kredit · Rp 135.000 per kelas", masa: "Berlaku 2 bulan", cakupan: "Reformer, Tower, Chair — Mat tidak termasuk", unggulan: true },
   { nama: "Drop-in", harga: "150.000", per: "1 kredit · sekali datang", masa: "Berlaku 7 hari", cakupan: "Semua jenis kelas", unggulan: false },
 ];
 
-// Kolom Kelas menunjuk pita yang sama berkali-kali, dan itu memang benar:
-// keempat nama alat dijelaskan di satu pita. Yang dicari orang di kaki halaman
-// adalah namanya, bukan alamat yang berbeda-beda.
-//
-// Kolom Member sengaja persis menu sidebar member (`components/kerangka.tsx`).
-// Dua daftar yang menamai hal sama dengan kata berbeda — "Jadwal Saya" di sini,
-// "Jadwal Kelas" di dalam — membuat orang mengira itu dua layar.
+// Kolom Member sengaja persis menu sidebar member — dua daftar yang menamai hal
+// sama dengan kata berbeda terbaca sebagai dua layar.
 const FOOTER: [string, [string, string][]][] = [
   [
     "Kelas",
@@ -99,12 +80,10 @@ function Pita({
   latar = "",
   children,
 }: {
-  /** Tujuan butir menu. Tanpa ini menu di kepala halaman tidak punya sasaran. */
   id?: string;
   latar?: string;
   children: React.ReactNode;
 }) {
-  // DS-24 — 40px di HP, 100px di laptop. Ini sumber kesan lapangnya.
   return (
     <section id={id} className={`py-sedang lg:py-luas ${latar}`}>
       <div className="mx-auto w-full max-w-[1200px] px-gutter">{children}</div>
@@ -112,13 +91,7 @@ function Pita({
   );
 }
 
-/**
- * Satu-satunya cara halaman ini menulis tautan.
- *
- * wa.me membuka tab baru — meninggalkan halaman jualan di tengah jalan untuk
- * membuka WhatsApp adalah cara kehilangan pengunjung. Sisanya `<Link>` biasa,
- * termasuk jangkar `#`: Next menanganinya sebagai navigasi di halaman yang sama.
- */
+/** wa.me membuka tab baru; sisanya `<Link>` biasa, termasuk jangkar `#`. */
 function Tautan({
   href,
   kelas,
@@ -162,10 +135,9 @@ function Tombol({
 export default function Profil() {
   return (
     <>
-      {/* 1 — site-header, bersama dengan jadwal publik. */}
       <BilahPublik />
 
-      {/* 2 — hero. Teks putih hanya aman karena ada tirai (DS-20): 7.74:1. */}
+      {/* Teks putih hanya aman karena ada tirai (DS-20): 7.74:1. */}
       <section className="relative flex min-h-[70vh] items-center overflow-hidden">
         <div aria-hidden className={`absolute inset-0 ${FOTO}`} />
         <div
@@ -189,7 +161,6 @@ export default function Profil() {
         </div>
       </section>
 
-      {/* 3 — manifesto. Aksen warna digelapkan dari rujukan agar terbaca (DS-18). */}
       <Pita>
         <p className="max-w-[60ch] text-marketing-lead">
           Pilates di Kenari bukan soal mengejar angka. Metodenya dirancang supaya
@@ -200,7 +171,6 @@ export default function Profil() {
         </p>
       </Pita>
 
-      {/* 4 — kelas, pita sand */}
       <Pita id="kelas" latar="bg-surface-sand">
         <div className="grid items-center gap-sedang lg:grid-cols-2">
           <div aria-hidden className={`${FOTO} aspect-[4/3] w-full rounded-md`} />
@@ -225,12 +195,10 @@ export default function Profil() {
         </div>
       </Pita>
 
-      {/* 5 — angka */}
       <Pita>
         <div className="grid grid-cols-2 gap-sedang lg:grid-cols-4">
           {ANGKA.map(([n, label]) => (
             <div key={label}>
-              {/* DS-5 — angka selalu tabular-nums */}
               <p className="text-app-number tabular-nums">{n}</p>
               <p className="mt-1 max-w-[18ch] text-app-body-sm text-muted-foreground">
                 {label}
@@ -240,7 +208,6 @@ export default function Profil() {
         </div>
       </Pita>
 
-      {/* 6 — instruktur, pita sand. Geser mendatar pakai scroll asli, tanpa JS. */}
       <Pita id="instruktur" latar="bg-surface-sand">
         <h2 className="text-marketing-h2">Instruktur kami</h2>
         <ul className="mt-dekat -mx-gutter flex snap-x gap-4 overflow-x-auto px-gutter">
@@ -254,7 +221,6 @@ export default function Profil() {
         </ul>
       </Pita>
 
-      {/* 7 — untuk semua */}
       <Pita id="tentang">
         <div className="mx-auto max-w-[52ch] text-center">
           <h2 className="text-marketing-h2">Untuk setiap tubuh</h2>
@@ -277,8 +243,7 @@ export default function Profil() {
         </ul>
       </Pita>
 
-      {/* 8 — paket, pita penutup. Teks sekunder pakai emphasis-sand, bukan
-          muted-foreground: di sand-deep muted cuma 4.24:1 (DS-19). */}
+      {/* Teks sekunder pakai emphasis-sand: di sand-deep muted cuma 4.24:1 (DS-19). */}
       <Pita id="paket" latar="bg-surface-sand-deep">
         <div className="mx-auto max-w-[44ch] text-center">
           <h2 className="text-marketing-h2">Satu kredit, satu kelas</h2>
@@ -313,12 +278,9 @@ export default function Profil() {
           ))}
         </div>
 
-        {/* Satu-satunya jalan mendaftar di demo ini adalah bicara dengan meja
-            depan: pendaftaran member mandiri baru ada di versi real (UC-M13). */}
+        {/* Pendaftaran member mandiri baru ada di versi real (UC-M13). */}
         <div className="mt-sedang flex flex-wrap items-center justify-center gap-4">
           <Tombol anak="Ambil Kelas Gratis" href={WA_COBA} />
-          {/* Tiga kartu di atas ringkasan; katalog lengkapnya — termasuk paket
-              yang baru dibuat owner lewat A6 — ada di halamannya sendiri. */}
           <Tautan
             href="/paket"
             anak="Lihat Semua Paket"
@@ -327,7 +289,7 @@ export default function Profil() {
         </div>
       </Pita>
 
-      {/* 9 — testimoni. Teks ini placeholder sampai ada kutipan member asli. */}
+      {/* Testimoni placeholder sampai ada kutipan member asli. */}
       <Pita>
         <figure className="mx-auto max-w-[44ch] text-center">
           <blockquote className="font-serif text-app-title">
@@ -340,7 +302,6 @@ export default function Profil() {
         </figure>
       </Pita>
 
-      {/* 10 — site-footer */}
       <footer className="bg-surface-sand-deep">
         <div className="mx-auto w-full max-w-[1200px] px-gutter py-sedang lg:py-lega">
           <div className="grid gap-sedang lg:grid-cols-4">

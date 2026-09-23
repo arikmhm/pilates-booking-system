@@ -1,25 +1,8 @@
-// Detail satu transaksi — peristiwa UANG, bukan buku kredit.
-//
-// Dua hal yang sempat tercampur di layar ini, dan bedanya bukan soal rasa:
-//
-// | | Transaksi | Kredit |
-// |---|---|---|
-// | Isinya | uang berpindah: siapa bayar, berapa, untuk apa | saldo bergerak: −1 booking, +1 batal, −4 hangus |
-// | Satuannya | rupiah | kredit |
-// | Barisnya | satu per pembayaran | banyak, sepanjang umur paket |
-// | Layarnya | ini + daftar `/transaksi` | Akun Saya (member) · buku besar di A3 (staf) |
-//
-// Keduanya bertemu tepat di satu titik: sebuah transaksi **menerbitkan**
-// sejumlah kredit. Sesudah itu kreditnya hidup sendiri — dipakai, dikembalikan,
-// atau hangus — dan nasibnya bukan lagi peristiwa uang.
-//
-// Karena itu halaman ini memuat ringkasan nasib kredit terbitannya (empat
-// angka), bukan buku besarnya baris per baris. Barisnya ada di layar kredit,
-// satu tautan dari sini. Layar detail member (A3) boleh memuat dua-duanya —
-// di sana pertanyaannya memang tentang orangnya, bukan tentang satu pembayaran.
-//
-// Kepemilikan dijaga di dalam query: member yang mengetik id paket orang lain
-// mendapat 404, bukan halaman orang lain (`transaksiById` dengan `user_id`).
+// Detail satu transaksi — peristiwa UANG (rupiah, satu baris per pembayaran),
+// bukan buku kredit (saldo bergerak, banyak baris; layarnya M3 dan A3).
+// Keduanya bertemu di satu titik: transaksi MENERBITKAN sejumlah kredit, jadi
+// halaman ini memuat ringkasan nasibnya — empat angka, bukan buku besar.
+// Kepemilikan dijaga di dalam query: id orang lain menghasilkan 404.
 
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -38,7 +21,6 @@ import { Angka, Chip, Kartu, Kerangka } from "@/components/kerangka";
 
 export const dynamic = "force-dynamic";
 
-/** Satu baris fakta transaksi. Label kiri, nilai kanan — bukan tabel. */
 function Fakta({
   label,
   nilai,
@@ -84,7 +66,6 @@ export default async function DetailTransaksi({
 
   const sekarang = new Date();
   const hidup = t.sisa > 0 && t.hangus_at > sekarang;
-  // Ke tempat kreditnya dicatat baris per baris — bukan ke sini.
   const bukuKredit = staf ? `/admin/member/${t.member_id}` : "/akun";
 
   return (
@@ -131,9 +112,8 @@ export default async function DetailTransaksi({
       </div>
 
       <div className="mt-dekat grid items-start gap-dekat lg:grid-cols-2">
-        {/* Kiri: apa yang dibeli. Semuanya fakta yang terkunci saat bayar —
-            harga dan isi paket di katalog boleh berubah kapan saja tanpa
-            mengubah baris ini. */}
+        {/* Semuanya terkunci saat bayar — katalog boleh berubah tanpa mengubah
+            baris ini. */}
         <Kartu judul="Yang dibeli" catatan="Syaratnya terkunci sejak dibayar.">
           <Fakta label="Paket" nilai={t.paket} />
           <Fakta
@@ -150,9 +130,7 @@ export default async function DetailTransaksi({
                 : ""
             }`}
           />
-          {/* BR-1.4 — jenis kelas yang tercakup adalah bagian dari barangnya,
-              setara dengan jumlah kredit dan masa berlakunya. Member yang tidak
-              pernah diberi tahu baru mengetahuinya saat booking ditolak (X7). */}
+          {/* BR-1.4 — jenis kelas yang tercakup bagian dari barangnya. */}
           <Fakta
             label="Berlaku untuk"
             nilai={t.kelas.length ? t.kelas.join(" · ") : "—"}
@@ -163,8 +141,6 @@ export default async function DetailTransaksi({
           {staf && <Fakta label="Nomor HP" nilai={t.telepon} />}
         </Kartu>
 
-        {/* Kanan: satu-satunya tempat kredit muncul di layar ini — sebagai
-            ringkasan empat angka, bukan buku besar. */}
         <Kartu
           judul="Nasib kreditnya"
           catatan="Ringkasan. Baris per barisnya ada di buku kredit."

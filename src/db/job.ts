@@ -1,15 +1,9 @@
 // Empat job terjadwal — 04-flows.md bagian 7, 05-data-model.md bagian 6.
 //
-// Isinya fungsi biasa yang menerima klien database sebagai argumen, persis
-// seperti booking.ts. Endpoint HTTP di `src/app/api/cron/` cuma pembungkus
-// tipis: penjaga secret, panggil, kembalikan hitungannya. Pemisahan itu yang
-// membuat keempatnya bisa diuji tanpa server (`job.test.ts`).
-//
-// Syarat yang mengikat keempatnya: **idempoten**. Cron bisa dijalankan ulang,
-// bisa telat, bisa tumpang tindih dengan dirinya sendiri saat satu jalannya
-// kelamaan. Tiga job menjamin itu lewat filter status — baris yang sudah
-// diproses tidak lagi cocok. Yang keempat (hanguskan kredit) tidak bisa,
-// karena menulis baris baru; ia dijaga partial unique index di schema.ts.
+// Fungsi biasa yang menerima klien db; route di `src/app/api/cron/` cuma
+// pembungkus tipis, supaya keempatnya bisa diuji tanpa server (job.test.ts).
+// Syarat mengikat: IDEMPOTEN. Tiga job dijamin filter status; hanguskan kredit
+// menulis baris baru, jadi ia dijaga partial unique index di schema.ts.
 
 import {
   hasilPenghangusan,
@@ -23,18 +17,12 @@ import { hariPendekWib, jamWib } from "@/lib/waktu";
 
 /**
  * Buat sesi nyata dari `schedule_rules` sampai `generate_weeks_ahead` minggu
- * ke depan. Satu pernyataan, tanpa loop: jumlah barisnya kecil tapi
- * perbandingan "sudah ada atau belum" harus atomik, dan itu yang dikerjakan
- * `on conflict` terhadap index `sessions_rule_mulai_key`.
+ * ke depan. Satu pernyataan: "sudah ada atau belum" harus atomik, dan itu
+ * dikerjakan `on conflict` terhadap `sessions_rule_mulai_key`.
  *
- * `jam_mulai` disimpan sebagai `time` — jam dinding WIB, bukan timestamp.
- * `(tanggal + jam) at time zone 'Asia/Jakarta'` yang mengubahnya jadi
- * timestamptz UTC yang benar (BR-7.5). Menghitungnya di JavaScript berarti
- * menebak offset sendiri.
- *
- * Kapasitas dan durasi DISALIN dari aturan atau jenis kelas, tidak di-join
- * (BR-7.3): setelan jenis kelas boleh berubah tanpa mengusik sesi yang sudah
- * terisi. Keduanya `null` di aturan berarti "pakai bawaan jenis kelas".
+ * `jam_mulai` disimpan `time` (jam dinding WIB); `(tanggal + jam) at time zone
+ * 'Asia/Jakarta'` yang mengubahnya jadi timestamptz UTC (BR-7.5).
+ * Kapasitas dan durasi DISALIN, tidak di-join (BR-7.3).
  */
 export async function generateSesi(sql: Sql, sekarang: Date) {
   const baris = await sql<{ id: string }[]>`
@@ -74,13 +62,9 @@ export async function generateSesi(sql: Sql, sekarang: Date) {
 
 /**
  * Paket yang lewat `hangus_at` dengan sisa > 0 → satu baris ledger `-sisa`.
- *
  * Keputusannya diambil `hasilPenghangusan()` di src/rules/ (titik rawan 7),
- * bukan di SQL. Barisnya sedikit — paket yang hangus dalam sehari — jadi
- * harganya nol, dan imbalannya: yang berjalan di produksi persis fungsi yang
- * diuji, bukan terjemahan SQL-nya yang mirip.
- *
- * BR-1.7 — tidak ada kolom saldo, jadi sisa kredit dijumlahkan dari ledger.
+ * bukan di SQL: yang jalan di produksi persis fungsi yang diuji.
+ * BR-1.7 — sisa kredit dijumlahkan dari ledger.
  */
 export async function hanguskanKredit(sql: Sql, sekarang: Date) {
   const kandidat = await sql<
@@ -113,8 +97,7 @@ export async function hanguskanKredit(sql: Sql, sekarang: Date) {
     alasan: h.alasan,
   }));
 
-  // Kolom disebut eksplisit: sql(array) menyimpulkan daftar kolom dari objek
-  // PERTAMA, dan kolom yang hilang tidak menimbulkan galat apa pun.
+  // Kolom disebut eksplisit: sql(array) menyimpulkan kolom dari objek PERTAMA.
   const ditulis = await sql<{ id: string }[]>`
     insert into credit_ledger ${sql(baris, "member_package_id", "delta", "alasan")}
     on conflict (member_package_id) where alasan = 'hangus' do nothing
@@ -129,15 +112,9 @@ export async function hanguskanKredit(sql: Sql, sekarang: Date) {
 /* ── 3. No-show otomatis — tiap jam · BR-6.2 · Alur 7.1 ──────────────────── */
 
 /**
- * Booking `confirmed` yang kelasnya selesai lebih dari `noshow_after_hours`
- * lalu → `no_show`.
- *
- * BR-6.3 — TIDAK ada baris ledger baru. Kreditnya sudah terpotong saat
- * booking dan memang tidak dikembalikan; menulis ledger di sini akan
- * menghitungnya dua kali.
- *
- * Idempoten tanpa penjaga tambahan: `status = 'confirmed'` berhenti cocok
- * begitu barisnya diubah.
+ * Booking `confirmed` yang kelasnya selesai > `noshow_after_hours` lalu →
+ * `no_show`. BR-6.3 — TIDAK ada baris ledger baru: kreditnya sudah terpotong
+ * saat booking. Idempoten sendiri, `status = 'confirmed'` berhenti cocok.
  */
 export async function tandaiNoShow(sql: Sql, sekarang: Date) {
   const baris = await sql<{ id: string }[]>`
@@ -160,15 +137,10 @@ export async function tandaiNoShow(sql: Sql, sekarang: Date) {
 /* ── 4. Tutup waitlist — tiap jam · BR-4.6 · Alur 7.4 ────────────────────── */
 
 /**
- * Antrean yang sesinya sudah lewat batas tutup booking → `expired`, dan
- * orangnya diberi tahu.
- *
- * Pesannya disusun di JavaScript, bukan `to_char`: nama hari dan bulan
- * Bahasa Indonesia datang dari `Intl` di `src/lib/waktu.ts`, satu-satunya
- * tempat zona waktu dan pelokalan disebut (BR-7.5).
- *
- * BR-4.5 — kredit tidak pernah terpotong selama mengantre, jadi tidak ada
- * yang perlu dikembalikan di sini.
+ * Antrean yang sesinya lewat batas tutup booking → `expired`, orangnya diberi
+ * tahu. Pesannya disusun di JavaScript, bukan `to_char`: nama hari/bulan
+ * Indonesia datang dari `src/lib/waktu.ts` (BR-7.5).
+ * BR-4.5 — kredit tidak pernah terpotong selama mengantre.
  */
 export async function tutupWaitlist(sql: Sql, sekarang: Date) {
   const kena = await sql<

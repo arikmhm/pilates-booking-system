@@ -14,11 +14,9 @@ export type SesiHariIni = {
   status: "scheduled" | "cancelled";
 };
 
-/**
- * "Hari ini" dihitung di kalender WIB, bukan UTC — kelas 06.00 WIB jatuh di
- * tanggal kemarin kalau dipotong pakai hari UTC (BR-7.5). Batasnya disusun di
- * SQL supaya tidak ada parameter waktu yang perlu diserialisasi sama sekali.
- */
+/** "Hari ini" dihitung di kalender WIB, bukan UTC — kelas 06.00 WIB jatuh di
+ *  tanggal kemarin kalau dipotong hari UTC (BR-7.5). Batasnya disusun di SQL
+ *  supaya tidak ada parameter waktu yang perlu diserialisasi. */
 export async function sesiHariIni(
   sql: Sql,
   geser = 0,
@@ -54,10 +52,8 @@ export type KreditMauHangus = {
   sisa: number;
 };
 
-/**
- * Query 5.3 — 05-data-model.md. Senjata presentasi menit 2:15.
- * Ini bukan laporan; ini daftar orang yang harus di-chat hari ini.
- */
+/** Query 5.3 — 05-data-model.md. Bukan laporan: daftar orang yang harus
+ *  di-chat hari ini. */
 export async function kreditMauHangus(
   sql: Sql,
   hari = 7,
@@ -88,13 +84,8 @@ export type AntreMenunggu = {
   kapasitas: number;
 };
 
-/**
- * Siapa yang sedang menunggu kursi, bukan berapa orang.
- *
- * Chip "3 antre" di kalender dan di daftar kelas hari ini cuma menghitung —
- * tidak ada jalan dari angka itu ke orangnya. Padahal begitu satu kursi
- * terbuka, yang dibutuhkan meja depan adalah nama dan nomornya.
- */
+/** Siapa yang menunggu kursi, bukan berapa orang — begitu kursi terbuka, meja
+ *  depan butuh nama dan nomornya, bukan chip "3 antre". */
 export async function antreMenunggu(
   sql: Sql,
   args: { sekarang: Date; batas?: number },
@@ -125,15 +116,9 @@ export type BelumDiabsen = {
   belum: number;
 };
 
-/**
- * Kelas yang sudah selesai tapi kehadirannya belum dicentang.
- *
- * Job `no-show` akan menandainya sendiri sesudah `noshow_after_hours`
- * (BR-6.2) — dan itulah kenapa panel ini ada: sesudah tenggat itu lewat,
- * koreksinya jadi pekerjaan manual per orang (BR-6.4). Jendelanya sengaja dua
- * hari ke belakang, bukan sejak awal waktu: daftar yang memuat kelas bulan
- * lalu bukan daftar tugas lagi.
- */
+/** Kelas selesai yang kehadirannya belum dicentang. Sesudah
+ *  `noshow_after_hours` (BR-6.2) job no-show menandainya sendiri dan koreksinya
+ *  jadi manual per orang (BR-6.4). Jendela dua hari ke belakang saja. */
 export async function belumDiabsen(
   sql: Sql,
   args: { sekarang: Date; batas?: number },
@@ -278,10 +263,8 @@ export async function antreanLengkap(
   return baris.map((b) => ({ ...b, created_at: saat(b.created_at) }));
 }
 
-/**
- * BR-5.4 — mode massal: semua sesi coach yang sama, pada hari WIB yang sama.
- * "Coach sakit" membatalkan satu hari penuh, bukan satu kelas.
- */
+/** BR-5.4 — mode massal: semua sesi coach yang sama pada hari WIB yang sama.
+ *  "Coach sakit" membatalkan satu hari penuh, bukan satu kelas. */
 export async function sesiSekelompok(
   sql: Sql,
   session_id: string,
@@ -314,15 +297,9 @@ export type RingkasBatal = {
   pesan: number;
 };
 
-/**
- * Alur 5 — pembatalan oleh studio, satu pernyataan.
- *
- * Ditulis sebagai rangkaian CTE, bukan loop aplikasi: satu snapshot, satu
- * transaksi implisit, dan mustahil berhenti di tengah dengan separuh kredit
- * dikembalikan. Layar akhir menampilkan angkanya — "8 kredit kembali, 11
- * pesan terkirim, satu klik" — jadi hitungannya harus datang dari pernyataan
- * yang sama yang mengerjakannya, bukan dari query terpisah sesudahnya.
- */
+/** Alur 5 — pembatalan oleh studio dalam SATU pernyataan (rangkaian CTE):
+ *  mustahil berhenti di tengah dengan separuh kredit dikembalikan, dan angka
+ *  yang ditampilkan layar akhir datang dari pernyataan yang mengerjakannya. */
 export async function batalkanSesi(
   sql: Sql,
   args: {
@@ -390,13 +367,8 @@ export async function tandaiHadir(sql: Sql, booking_id: string) {
   return baris.length > 0;
 }
 
-/**
- * BR-6.4 — admin sadar salah tandai: no_show dikoreksi jadi hadir.
- *
- * Berbeda dari `tandaiHadir`: no-show sudah menghanguskan kredit (BR-6.3),
- * jadi koreksinya WAJIB mengembalikan kredit itu, dengan catatan. Tanpa
- * ledger, member kehilangan satu sesi karena kesalahan admin.
- */
+/** BR-6.4 — koreksi no_show jadi hadir. Beda dari `tandaiHadir`: no-show sudah
+ *  menghanguskan kredit (BR-6.3), jadi koreksinya WAJIB mengembalikannya. */
 export async function koreksiNoShow(
   sql: Sql,
   args: { booking_id: string; catatan: string; pelaku_id: string },
@@ -473,14 +445,9 @@ export async function dompetMember(
  *  tidak menambah 500 kredit dalam satu klik. */
 export const BATAS_KOREKSI = 20;
 
-/**
- * BR-1.8 — koreksi manual ±, wajib isi alasan.
- *
- * Saldo tidak boleh jadi negatif: BR-1.7 menjadikan SUM(ledger) sebagai
- * satu-satunya sumber kebenaran, dan saldo minus berarti angka yang
- * ditampilkan ke member tidak punya arti. Dicek di dalam pernyataan yang
- * sama, bukan dibaca dulu lalu ditulis — dua admin bisa mengoreksi bersamaan.
- */
+/** BR-1.8 — koreksi manual ±, wajib isi alasan. Saldo tidak boleh negatif
+ *  (BR-1.7) dan itu dicek di dalam pernyataan yang sama, bukan baca-lalu-tulis:
+ *  dua admin bisa mengoreksi bersamaan. */
 export async function koreksiKredit(
   sql: Sql,
   args: {

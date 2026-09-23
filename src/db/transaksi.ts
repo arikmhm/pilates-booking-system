@@ -1,17 +1,10 @@
 // Query buku transaksi — UC-M14, UC-A17, UC-O09, UC-C03.
 //
-// Tidak ada tabel baru. Demo belum punya `payments` (BR-8.1–8.2 bertanda R di
-// 02-rules.md bagian 5), jadi yang disebut "transaksi" di sini adalah dua hal
-// yang memang tercatat: **pembelian paket** (`member_packages` + harga dari
-// `packages`) dan **tiap gerak kredit** (`credit_ledger`). Begitu `payments`
-// dibangun, berkas ini yang menampungnya — layarnya tidak perlu berubah.
-//
-// BR-1.7 — semua angka kredit dijumlahkan dari buku besar. Tidak ada kolom
-// saldo yang dibaca di mana pun.
-//
-// BR-9.3 — angka rupiah hanya dipanggil layar pemilik. Fungsi yang
-// mengembalikan uang dipisah (`ringkasUang`) supaya layar admin dan coach
-// tidak bisa membocorkannya karena kelupaan menghapus satu kolom.
+// Demo belum punya `payments` (BR-8.1-8.2 bertanda R), jadi "transaksi" di sini
+// = pembelian paket (`member_packages` + harga `packages`) dan tiap gerak
+// kredit (`credit_ledger`). BR-1.7: semua angka dari buku besar, tanpa kolom
+// saldo. BR-9.3: yang mengembalikan rupiah dipisah (`ringkasUang`) supaya layar
+// admin dan coach tidak bisa membocorkannya karena kelupaan satu kolom.
 
 import { saat, ts, type Sql } from "./booking";
 
@@ -31,15 +24,9 @@ export type Pembelian = {
   hangus: number;
 };
 
-/**
- * Riwayat pembelian satu member, lengkap dengan nasib tiap kreditnya.
- *
- * Empat angka terakhir dipecah dari buku besar, bukan disimpan: berapa yang
- * jadi kelas (`dipakai`), berapa yang kembali karena batal tepat waktu
- * (`kembali`), berapa yang mati karena masa berlaku lewat, batal telat, atau
- * no-show (`hangus`), dan sisanya. Member yang menyengketakan tagihan bisa
- * ditunjukkan baris per baris.
- */
+/** Riwayat pembelian satu member + nasib tiap kreditnya. Empat angka terakhir
+ *  dipecah dari buku besar, bukan disimpan — sengketa tagihan bisa ditunjukkan
+ *  baris per baris. */
 export async function pembelianMember(
   sql: Sql,
   user_id: string,
@@ -79,13 +66,8 @@ export async function pembelianMember(
 
 export type BarisTransaksi = Pembelian & { member: string; member_id: string };
 
-/**
- * Satu halaman buku transaksi, plus jumlah seluruh barisnya.
- *
- * `count(*) over ()` ikut di query yang sama — dua query terpisah untuk baris
- * dan totalnya bisa membaca dua keadaan berbeda kalau ada pembelian masuk di
- * antaranya, dan halaman terakhir jadi kosong tanpa sebab yang kelihatan.
- */
+/** Satu halaman buku transaksi + jumlah seluruh barisnya. `count(*) over ()`
+ *  ikut di query yang sama: dua query terpisah bisa membaca dua keadaan. */
 export async function bukuTransaksi(
   sql: Sql,
   args: { sejak: Date; per: number; lewati: number },
@@ -139,11 +121,8 @@ export type DetailTransaksi = BarisTransaksi & {
   kelas: string[];
 };
 
-/**
- * `user_id` diisi kalau yang membuka pemiliknya sendiri, sehingga kepemilikan
- * ikut diperiksa di dalam query — bukan di pemanggil yang bisa lupa. Pola yang
- * sama dengan `bookingById()` di booking.ts.
- */
+/** `user_id` diisi kalau yang membuka pemiliknya sendiri, jadi kepemilikan
+ *  diperiksa di dalam query. Pola sama dengan `bookingById()`. */
 export async function transaksiById(
   sql: Sql,
   id: string,
@@ -209,12 +188,9 @@ export type Koreksi = {
   pelaku: string | null;
 };
 
-/**
- * Kredit yang berpindah tanpa kelas: koreksi manual staf (BR-1.8) dan
- * perpanjangan karena studio membatalkan kelas (BR-5.2). Justru baris beginilah
- * yang ditanyakan saat angka seorang member terasa aneh — pembelian biasa tidak
- * pernah jadi sengketa.
- */
+/** Kredit yang berpindah tanpa kelas: koreksi manual staf (BR-1.8) dan
+ *  perpanjangan karena studio membatalkan (BR-5.2) — baris beginilah yang
+ *  ditanyakan saat angka seorang member terasa aneh. */
 export async function koreksiTerakhir(
   sql: Sql,
   batas = 20,
@@ -259,9 +235,8 @@ export async function ringkasUang(
         join packages p on p.id = mp.package_id
        where mp.dibeli_at >= ${sejak}::timestamptz`,
 
-    // Kredit hangus dinilai per paketnya — harga dibagi jumlah kredit. Sama
-    // persis dengan cara laporan pemilik menghitungnya (`kelola.ts`), supaya
-    // dua layar tidak pernah menyebut dua angka untuk hal yang sama.
+    // Kredit hangus dinilai per paket: harga dibagi jumlah kredit. Sama persis
+    // dengan laporan pemilik di kelola.ts — dua layar, satu angka.
     sql<{ rupiah: string; kredit: number }[]>`
       select coalesce(sum(-cl.delta * p.harga_rupiah
                           / nullif(p.jumlah_kredit, 0)), 0)::bigint as rupiah,
@@ -283,21 +258,10 @@ export async function ringkasUang(
   };
 }
 
-/**
- * Nilai kredit yang masih menggantung — *unearned revenue* dalam istilah
- * pembukuan studio, dan istilah itu yang dipakai dokumentasi Mindbody
- * (`Outstanding Series report`) serta Glofox (`Scheduled Revenue`).
- * Rujukannya `docs/riset-dashboard-peran.md`.
- *
- * Uang yang sudah masuk kas tapi kelasnya belum diberikan. Laporan pemilik
- * selama ini hanya menghitung kredit yang SUDAH hangus — yang menggantung
- * tidak pernah punya angka, padahal itu kewajiban studio yang masih hidup.
- *
- * Paket yang masa berlakunya sudah lewat TIDAK ikut: sisanya bukan kewajiban
- * lagi, ia sudah jadi pendapatan (dan sudah dihitung sebagai kredit hangus di
- * `ringkasUang()`). Penilaiannya sama — harga paket dibagi jumlah kreditnya.
- * Dua layar tidak boleh menyebut dua angka untuk hal yang sama.
- */
+/** Nilai kredit yang masih menggantung (*unearned revenue*) — uang yang sudah
+ *  masuk kas tapi kelasnya belum diberikan; lihat docs/riset-dashboard-peran.md.
+ *  Paket yang masa berlakunya lewat TIDAK ikut: sisanya sudah jadi pendapatan
+ *  dan sudah dihitung sebagai kredit hangus di `ringkasUang()`. */
 export async function kreditMenggantung(
   sql: Sql,
   args: { sekarang: Date },
@@ -331,12 +295,8 @@ export type KelasTerpakai = {
   kredit: number;
 };
 
-/**
- * Coach tidak punya transaksi sendiri — tapi tiap kelas yang ia ajar memakan
- * kredit yang sudah dibayar member, dan itu ukuran yang bisa ia pengaruhi.
- * Tanpa satu pun angka rupiah (BR-9.4 + BR-9.3): yang ditampilkan kredit dan
- * kursi, bukan omzet.
- */
+/** Coach tidak punya transaksi sendiri; yang ditampilkan kredit dan kursi dari
+ *  kelas yang ia ajar, tanpa satu pun angka rupiah (BR-9.3, BR-9.4). */
 export async function kelasTerpakaiCoach(
   sql: Sql,
   args: { coach_id: string; sejak: Date; sampai: Date },

@@ -1,8 +1,6 @@
 "use server";
 
-// Pembungkus tipis di atas `src/db/pesanan.ts`. Alur 3 (pembatalan) dan
-// Alur 4 (promosi antrean) tinggal di sana karena admin harus bisa melakukan
-// hal yang sama atas nama member (UC-A06).
+// Pembungkus tipis di atas `src/db/pesanan.ts` — dipakai bersama jalur admin.
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";

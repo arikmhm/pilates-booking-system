@@ -1,12 +1,7 @@
 // Skema Drizzle — 12 tabel inti. Sumber: docs/05-data-model.md.
-//
-// Tiga invarian yang dijaga di berkas ini, bukan di kode aplikasi:
-//   BR-2.3 — kapasitas keras: partial unique index (session_id, nomor_alat)
-//   BR-2.4 — satu member satu kursi per sesi
-//   BR-1.7 — tidak ada kolom saldo; sisa kredit = SUM(credit_ledger.delta)
-//
-// Nama properti TS sengaja sama persis dengan nama kolom database, supaya
-// dokumen, SQL mentah, dan kode memakai satu kosakata.
+// Tiga invarian dijaga di sini, bukan di kode aplikasi: BR-2.3 (partial unique
+// index session_id+nomor_alat), BR-2.4 (satu member satu kursi/sesi), BR-1.7
+// (tanpa kolom saldo). Nama properti TS = nama kolom database.
 
 import { sql } from "drizzle-orm";
 import {
@@ -28,8 +23,7 @@ const id = () => uuid().primaryKey().defaultRandom();
 const saat = () => timestamp({ withTimezone: true }); // BR-7.5 — selalu UTC
 
 /* ── 1. studios ─ identitas + semua setelan sebagai kolom biasa ───────────── */
-// 02-rules.md bagian 3. Setelan jadi kolom, bukan tabel key-value: jumlahnya
-// tetap, tipenya jelas, dan tidak perlu di-cast tiap dibaca.
+// 02-rules.md bagian 3. Setelan jadi kolom, bukan tabel key-value.
 export const studios = pgTable("studios", {
   id: id(),
   nama: text().notNull(),
@@ -55,8 +49,7 @@ export const users = pgTable(
       .notNull()
       .references(() => studios.id),
     nama: text().notNull(),
-    // Telepon wajib: studio menghubungi member lewat WA. Email opsional —
-    // belum tentu tiap member punya (02-rules.md bagian 8, pertanyaan 6).
+    // Telepon wajib (studio menghubungi lewat WA); email opsional.
     telepon: text().notNull(),
     email: text(),
     peran: text({ enum: PERAN }).notNull().default("member"),
@@ -71,11 +64,9 @@ export const users = pgTable(
 );
 
 /* ── 3. class_types ─ template kelas ─────────────────────────────────────── */
-// Satu daftar untuk tiga hal sekaligus: apa yang dijadwalkan (schedule_rules),
-// apa yang tercakup sebuah paket (package_class_types, BR-1.4), dan apa yang
-// disaring di layar jadwal. Karena itu namanya dipakai apa adanya di layar dan
-// wajib unik per studio — dua "Reformer" membuat kartu paket menyebut dua hal
-// yang tidak bisa dibedakan pembacanya.
+// Satu daftar untuk tiga hal: yang dijadwalkan (schedule_rules), yang tercakup
+// paket (package_class_types, BR-1.4), dan saringan layar jadwal. Namanya
+// dipakai apa adanya di layar, jadi wajib unik per studio.
 export const class_types = pgTable(
   "class_types",
   {
@@ -107,9 +98,8 @@ export const schedule_rules = pgTable(
     hari: integer().notNull(), // 1=Senin … 7=Minggu
     jam_mulai: time().notNull(), // jam dinding WIB, bukan timestamp
     kapasitas: integer(), // null = pakai kapasitas_default
-    // null = pakai durasi_menit jenis kelasnya. Sama polanya dengan kapasitas:
-    // Sabtu boleh 45 menit walau Reformer biasanya 70, tanpa memaksa membuat
-    // jenis kelas kembar hanya untuk membedakan durasinya.
+    // null = pakai durasi_menit jenis kelasnya, sama polanya dengan kapasitas —
+    // supaya tidak perlu jenis kelas kembar hanya untuk beda durasi.
     durasi_menit: integer(),
     level: text({ enum: LEVEL }),
     berlaku_dari: date().notNull(),
@@ -136,8 +126,8 @@ export const sessions = pgTable(
     coach_id: uuid().references(() => users.id),
     mulai_at: saat().notNull(),
     durasi_menit: integer().notNull(),
-    // BR-7.3 — kapasitas DISALIN saat generate, tidak di-join ke class_types.
-    // Kapasitas jenis kelas boleh berubah tanpa mengusik sesi yang sudah terisi.
+    // BR-7.3 — kapasitas DISALIN saat generate, tidak di-join: kapasitas jenis
+    // kelas boleh berubah tanpa mengusik sesi yang sudah terisi.
     kapasitas: integer().notNull(),
     status: text({ enum: SESSION_STATUS }).notNull().default("scheduled"),
     alasan_batal: text(),
@@ -145,10 +135,9 @@ export const sessions = pgTable(
   },
   (t) => [
     index("sessions_studio_mulai_idx").on(t.studio_id, t.mulai_at),
-    // BR-7.1 — job generate sesi boleh dijalankan berkali-kali sehari.
-    // NULL dianggap berbeda oleh Postgres, jadi sesi manual (tanpa aturan)
-    // tidak pernah ikut terjaring; WHERE-nya ditulis eksplisit supaya niat
-    // itu terbaca, bukan disimpulkan dari perilaku NULL.
+    // BR-7.1 — job generate boleh jalan berkali-kali. NULL dianggap berbeda
+    // oleh Postgres, jadi sesi manual tidak terjaring; WHERE ditulis eksplisit
+    // supaya niatnya terbaca.
     uniqueIndex("sessions_rule_mulai_key")
       .on(t.schedule_rule_id, t.mulai_at)
       .where(sql`schedule_rule_id is not null`),
@@ -169,8 +158,8 @@ export const packages = pgTable("packages", {
 });
 
 /* ── 7. package_class_types ─ BR-1.4 ─────────────────────────────────────── */
-// Kredit Mat tidak bisa dipakai di Reformer. Tanpa tabel ini aturan itu
-// tidak punya tempat tinggal.
+// Kredit Mat tidak bisa dipakai di Reformer. Tanpa tabel ini aturan itu tidak
+// punya tempat tinggal.
 export const package_class_types = pgTable(
   "package_class_types",
   {
@@ -197,8 +186,8 @@ export const member_packages = pgTable(
       .references(() => packages.id),
     dibeli_at: saat().notNull().defaultNow(),
     hangus_at: saat().notNull(), // dibeli_at + masa_berlaku_hari
-    // Disalin dari packages: harga dan isi paket boleh berubah kapan saja
-    // tanpa merusak riwayat pembelian lama.
+    // Disalin dari packages: harga dan isi paket boleh berubah tanpa merusak
+    // riwayat pembelian lama.
     jumlah_kredit_awal: integer().notNull(),
     diperpanjang_at: saat(), // jejak BR-5.2
   },
@@ -227,8 +216,8 @@ export const bookings = pgTable(
     user_id: uuid()
       .notNull()
       .references(() => users.id),
-    // BR-3.1 — wajib diisi. Saat batal tepat waktu kredit kembali ke paket
-    // ASALNYA dengan tanggal hangus asli, bukan jadi kredit baru.
+    // BR-3.1 — wajib diisi: batal tepat waktu mengembalikan kredit ke paket
+    // ASALNYA dengan tanggal hangus asli.
     member_package_id: uuid()
       .notNull()
       .references(() => member_packages.id),
@@ -241,8 +230,7 @@ export const bookings = pgTable(
   },
   (t) => [
     // ══ INVARIAN BR-2.3 ══ Dua orang menyerbu alat terakhir, satu pasti gagal.
-    // Partial: baris cancelled tetap tersimpan sebagai riwayat dan tidak
-    // menahan kursinya.
+    // Partial: baris cancelled tersimpan sebagai riwayat, tidak menahan kursi.
     uniqueIndex("bookings_sesi_alat_key")
       .on(t.session_id, t.nomor_alat)
       .where(sql`status = 'confirmed'`),
@@ -255,9 +243,8 @@ export const bookings = pgTable(
 );
 
 /* ── 10. credit_ledger ─ BR-1.7, satu-satunya sumber sisa kredit ─────────── */
-// Tidak ada kolom saldo di mana pun. Sisa = SUM(delta). Sengketa kredit harus
-// bisa dibuktikan baris per baris.
-// `alasan` memakai Bahasa Indonesia karena tampil apa adanya di layar M3.
+// Tidak ada kolom saldo. Sisa = SUM(delta), supaya sengketa bisa dibuktikan
+// baris per baris. `alasan` Bahasa Indonesia karena tampil apa adanya di M3.
 export const ALASAN = [
   "beli",
   "booking",
@@ -286,11 +273,9 @@ export const credit_ledger = pgTable(
   (t) => [
     check("credit_ledger_delta_check", sql`${t.delta} <> 0`),
     index("credit_ledger_member_package_idx").on(t.member_package_id),
-    // BR-1.6 — satu paket hanya boleh dihanguskan sekali. 04-flows.md 7.2
-    // membuat job ini idempoten lewat "cek dulu baru tulis", dan pola itu
-    // bocor persis seperti pada kapasitas: dua cron yang tumpang tindih
-    // membaca "belum" bersamaan lalu menulis dua-duanya. Di sini yang
-    // ditegakkan database, bukan urutan pembacaan.
+    // BR-1.6 — satu paket hanya boleh dihanguskan sekali. "Cek dulu baru tulis"
+    // bocor seperti pada kapasitas: dua cron membaca "belum" bersamaan. Di sini
+    // database yang menegakkan, bukan urutan pembacaan.
     uniqueIndex("credit_ledger_hangus_key")
       .on(t.member_package_id)
       .where(sql`alasan = 'hangus'`),
@@ -298,8 +283,7 @@ export const credit_ledger = pgTable(
 );
 
 /* ── 11. waitlist_entries ─ antrean sesi penuh ───────────────────────────── */
-// Tidak ada kolom posisi. Urutan = ORDER BY created_at, yang tidak pernah
-// perlu di-renumber saat ada yang keluar.
+// Tidak ada kolom posisi. Urutan = ORDER BY created_at, tidak perlu renumber.
 export const WAITLIST_STATUS = [
   "waiting",
   "promoted",
@@ -349,9 +333,8 @@ export const notifications = pgTable("notifications", {
   template: text({ enum: TEMPLATE }).notNull(),
   isi: text().notNull(), // teks final Bahasa Indonesia
   session_id: uuid().references(() => sessions.id),
-  // Kanal 'layar' sampai ke penerimanya begitu barisnya ditulis, jadi
-  // waktunya diisi di sini — bukan diingat di empat tempat yang menulisnya.
-  // Saat email sungguhan dibangun, jalur itu harus mengirim NULL eksplisit:
-  // 'terkirim' untuk email berarti SMTP sudah menerimanya, bukan barisnya ada.
+  // Kanal 'layar' sampai ke penerimanya begitu barisnya ditulis, jadi waktunya
+  // diisi di sini. Saat email sungguhan dibangun, jalur itu harus mengirim NULL
+  // eksplisit — 'terkirim' untuk email berarti SMTP sudah menerimanya.
   terkirim_at: saat().defaultNow(),
 });

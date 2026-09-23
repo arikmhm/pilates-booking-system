@@ -1,47 +1,25 @@
-// Query yang menyentuh kapasitas dan kredit. Semuanya menerima klien sebagai
-// argumen: server action menyuntikkan koneksi aplikasi, test menyuntikkan
-// koneksi lokalnya — supaya test tidak pernah bisa menulis ke Neon.
+// Query kapasitas dan kredit. Klien db selalu lewat argumen: test memakai
+// koneksi lokal, jadi test tidak pernah bisa menulis ke Neon.
 
 import type postgres from "postgres";
 import type { PaketMember, Sesi, Setelan } from "@/rules";
 
-// Sql dan TransactionSql tidak saling assignable — yang satu punya END/CLOSE,
-// yang lain punya savepoint/prepare. Union-nya cukup: tanda tangan tagged
-// template keduanya identik, dan itu satu-satunya yang dipakai di sini.
+// Sql dan TransactionSql tidak saling assignable; union cukup karena hanya
+// tanda tangan tagged template yang dipakai di sini.
 export type Sql = postgres.Sql | postgres.TransactionSql;
 
-/**
- * Date → ISO string untuk parameter timestamptz.
- *
- * Di dalam runtime server Next, `value instanceof Date` di dalam postgres.js
- * bernilai false: objeknya menyeberang batas realm antara kode aplikasi yang
- * dibundel Turbopack dan node_modules yang dieksternalkan. postgres.js lalu
- * menyerahkan Date mentah ke Buffer.byteLength dan meledak. Di node biasa
- * (seed, test) Date yang sama jalan — makanya hanya halaman yang kena.
- *
- * Semua parameter waktu lewat sini. Cast `::timestamptz` wajib menyertainya
- * supaya Postgres tidak menebak tipe dari string.
- */
+/** Date → ISO string untuk parameter timestamptz. Di runtime server Next,
+ *  `value instanceof Date` di postgres.js false (beda realm) dan Date mentah
+ *  meledak. Wajib berpasangan dengan cast `::timestamptz`. */
 export const ts = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 
-/**
- * Kebalikannya: kolom timestamptz yang DITERIMA.
- *
- * Di runtime Next, parser tipe postgres.js tidak terpasang — timestamptz
- * kembali sebagai string mentah ('2026-09-22 09:00:00+00'), bukan Date.
- * Di node biasa parsernya jalan dan hasilnya sudah Date. `new Date()`
- * menangani dua-duanya dan idempoten, offset ikut terbaca benar.
- *
- * Normalisasi dikerjakan di lapisan ini supaya tipe yang dijanjikan ke atas
- * benar-benar Date. Tanpa ini TypeScript ikut berbohong: kolom bertipe Date
- * yang isinya string, lolos typecheck, meledak saat diformat.
- */
+/** timestamptz yang DITERIMA → Date. Di runtime Next parser postgres.js tidak
+ *  terpasang, kolomnya kembali sebagai string; `new Date()` menangani keduanya
+ *  dan idempoten. Dinormalisasi di sini supaya src/rules/ tidak dapat string. */
 export const saat = (v: unknown): Date => new Date(v as string);
 
 /* ── Query 5.1 · booking atomik — 05-data-model.md ────────────────────────
-   Nomor alat diturunkan dari kapasitas sesi, jadi mustahil di luar rentang.
-   Balapan ditangani partial unique index (BR-2.3). Tidak perlu lock, tidak
-   perlu transaksi rumit. 0 baris terinsert = kelas penuh.                 */
+   Balapan dijaga partial unique index (BR-2.3), tanpa lock. 0 baris = penuh. */
 export async function pesanKursi(
   sql: Sql,
   args: {
@@ -50,13 +28,8 @@ export async function pesanKursi(
     member_package_id: string;
     sumber?: "member" | "admin" | "waitlist";
     dipromosikan_at?: Date | null;
-    /**
-     * BR-2.6 — alat yang diminta member di layar M2. Sekadar urutan, bukan
-     * syarat: kalau keburu diambil orang lain, yang terdekat tetap didapat.
-     * Menjadikannya syarat berarti booking bisa gagal padahal kursi ada —
-     * persis kursi hilang yang mau diselamatkan sistem ini. Kosong = sistem
-     * yang menentukan, dan itu tetap jalur waitlist dan admin.
-     */
+    /** BR-2.6 — sekadar urutan pilihan, bukan syarat: kalau keburu diambil
+     *  orang lain, yang terdekat tetap didapat. Kosong = sistem yang pilih. */
     alat_pilihan?: number | null;
   },
 ): Promise<{ id: string; nomor_alat: number } | null> {
@@ -91,8 +64,8 @@ export async function alatTerpakai(
   return baris.map((b) => b.nomor_alat);
 }
 
-/** Nama constraint yang bisa dilanggar `pesanKursi` — dua-duanya 23505,
- *  tapi artinya berbeda jauh dan penanganannya berlawanan. */
+/** Dua constraint yang bisa dilanggar `pesanKursi` — sama-sama 23505, tapi
+ *  penanganannya berlawanan. */
 export const ALAT_BENTROK = "bookings_sesi_alat_key"; // balapan → coba lagi
 export const SUDAH_TERDAFTAR = "bookings_sesi_user_key"; // BR-2.4 → tolak
 
@@ -116,8 +89,7 @@ export async function paketMember(
      group by mp.id, mp.hangus_at, mp.package_id
      order by mp.hangus_at`;
 
-  // Saring sisa <= 0 di sini, bukan lewat HAVING: pilihPaket() yang memutuskan,
-  // dan M3 tetap perlu melihat paket yang sudah nol.
+  // Saring sisa <= 0 di sini, bukan HAVING: M3 tetap perlu melihat paket nol.
   return baris.map((b) => ({
     id: b.id,
     hangus_at: saat(b.hangus_at),
@@ -137,12 +109,9 @@ export type BarisJadwal = Sesi & {
   antre_saya: boolean;
 };
 
-/**
- * `user_id` boleh null — jadwal bersifat publik (UC-P01), dan pengunjung yang
- * belum masuk tetap harus bisa membacanya. Null dicor ke `uuid` supaya
- * Postgres punya tipe untuk parameternya; `= null` tidak pernah benar, jadi
- * `booking_saya` dan `antre_saya` ikut kosong dengan sendirinya.
- */
+/** `user_id` boleh null — jadwal bersifat publik (UC-P01). Dicor ke `uuid`
+ *  supaya Postgres punya tipe; `= null` tidak pernah benar, jadi kolom
+ *  `booking_saya`/`antre_saya` ikut kosong sendiri. */
 export async function jadwal(
   sql: Sql,
   args: { user_id: string | null; dari: Date; sampai: Date },
@@ -191,8 +160,8 @@ export async function bookingAktif(sql: Sql, user_id: string) {
   return baris.map((b) => ({ ...b, mulai_at: saat(b.mulai_at) }));
 }
 
-/** Satu sesi, waktunya sudah dinormalisasi. Server action memakai ini alih-alih
- *  query sendiri — supaya tidak ada baris mentah yang lolos ke src/rules/. */
+/** Satu sesi, waktunya sudah dinormalisasi — dipakai server action supaya
+ *  tidak ada baris mentah lolos ke src/rules/. */
 export async function sesiById(sql: Sql, id: string): Promise<Sesi | null> {
   const [s] = await sql<Sesi[]>`
     select id, class_type_id, status, mulai_at, durasi_menit
@@ -256,8 +225,7 @@ export type BarisLedger = {
   mulai_at: Date | null;
 };
 
-/** BR-1.7 — riwayat baris per baris. Inilah yang membuat sengketa kredit
- *  bisa dibuktikan, dan alasan tidak adanya kolom saldo di mana pun. */
+/** BR-1.7 — riwayat baris per baris; alasan tidak ada kolom saldo. */
 export async function riwayatKredit(
   sql: Sql,
   user_id: string,
@@ -281,12 +249,8 @@ export async function riwayatKredit(
   }));
 }
 
-/**
- * `user_id` opsional: diisi kalau yang membatalkan si pemilik kursi, sehingga
- * kepemilikan ikut diperiksa di query — bukan di kode pemanggil yang bisa
- * lupa. Dikosongkan hanya oleh jalur admin (UC-A06), yang penjaganya
- * `pastikanAdmin()`.
- */
+/** `user_id` opsional: diisi supaya kepemilikan ikut diperiksa di query.
+ *  Dikosongkan hanya jalur admin (UC-A06) yang dijaga `pastikanAdmin()`. */
 export async function bookingById(sql: Sql, id: string, user_id?: string) {
   const pemilik = user_id ?? null;
   const [b] = await sql<

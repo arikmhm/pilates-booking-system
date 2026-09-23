@@ -27,20 +27,11 @@ function kembali(pesan: string): never {
 }
 const keAdmin = kembali;
 
-/**
- * Kewenangan OWNER, bukan admin — 02-rules.md bagian 5.
- *
- * Mengubah batas pembatalan dari 12 jam jadi 2 jam memindahkan kerugian kursi
- * kosong ke pemilik studio, dan berlaku untuk semua member sekaligus. Yang
- * menanggung akibatnya, yang memutuskan. Kartunya juga disembunyikan dari
- * admin di layar, tapi penjaga sebenarnya ada di sini — kartu tersembunyi
- * bukan kartu yang tidak bisa dikirim.
- */
+/** Kewenangan OWNER (02-rules.md bagian 5) — penjaganya di sini, bukan di layar. */
 export async function ubahSetelan(formData: FormData) {
   await pastikanOwner();
 
-  // Batas divalidasi di sini, bukan hanya lewat atribut min/max di input:
-  // form bisa dikirim tanpa browser sama sekali.
+  // Divalidasi ulang di sini: form bisa dikirim tanpa browser.
   const nilai = {} as Record<KunciSetelan, number>;
   for (const [kunci, [min, maks]] of Object.entries(BATAS_SETELAN)) {
     const angka = Number(formData.get(kunci));
@@ -52,7 +43,6 @@ export async function ubahSetelan(formData: FormData) {
   const studio = await setelanLengkap(pg);
   await simpanSetelan(pg, studio.id, nilai);
 
-  // Setelan menyentuh keputusan di tiap layar member, bukan cuma halaman ini.
   revalidatePath("/admin");
   revalidatePath("/jadwal");
   revalidatePath("/akun");
@@ -61,7 +51,6 @@ export async function ubahSetelan(formData: FormData) {
   );
 }
 
-/* ── Layar A2 ─────────────────────────────────────────────────────────── */
 
 function keSesi(id: string, pesan: string): never {
   redirect(`/admin/sesi/${id}?kabar=${encodeURIComponent(pesan)}`);
@@ -103,7 +92,6 @@ export async function batalkanKelas(formData: FormData) {
   revalidatePath("/jadwal");
   revalidatePath("/akun");
 
-  // Angka ini yang ditunjuk saat presentasi menit 4:15.
   keSesi(
     session_id,
     `${hasil.sesi} kelas dibatalkan · ${hasil.kredit} kredit kembali · ` +
@@ -127,8 +115,6 @@ export async function koreksiHadir(formData: FormData) {
   const session_id = String(formData.get("session_id"));
   const catatan = String(formData.get("catatan") ?? "").trim();
 
-  // BR-1.8 — koreksi kredit selalu wajib beralasan; itu yang membuat buku
-  // besar bisa dipertanggungjawabkan saat ada sengketa.
   if (catatan.length < 3)
     keSesi(session_id, "Alasan koreksi wajib diisi, minimal 3 huruf.");
 
@@ -145,14 +131,12 @@ export async function koreksiHadir(formData: FormData) {
   );
 }
 
-/* ── Layar A3 ─────────────────────────────────────────────────────────── */
 
 function keMember(id: string, pesan: string): never {
   redirect(`/admin/member/${id}?kabar=${encodeURIComponent(pesan)}`);
 }
 
-/** BR-1.8 — koreksi kredit manual. Alasan wajib; itu yang membuat buku besar
- *  bisa dipertanggungjawabkan saat member protes bulan depan. */
+/** BR-1.8 — koreksi kredit manual, alasan wajib. */
 export async function koreksiKreditManual(formData: FormData) {
   const admin = await pastikanAdmin();
   const user_id = String(formData.get("user_id"));
@@ -186,11 +170,9 @@ export async function koreksiKreditManual(formData: FormData) {
   );
 }
 
-/* ── Atas nama member — UC-A05, UC-A06, UC-A13 ────────────────────────────
-   BR-9.2. Meja depan melakukan untuk member apa yang member bisa lakukan
-   sendiri — dengan aturan yang sama persis. Admin tidak menembus jendela
-   booking, tidak menembus kapasitas, dan batal telat tetap hangus (BR-3.2).
-   Kalau studio mau mengampuni, jalannya koreksi kredit yang wajib beralasan. */
+/* ── Atas nama member — UC-A05, UC-A06, UC-A13 · BR-9.2 ───────────────────
+   Aturannya sama persis dengan jalur member: tidak menembus jendela booking
+   maupun kapasitas, batal telat tetap hangus (BR-3.2).                    */
 
 export async function bookingAtasNama(formData: FormData) {
   const admin = await pastikanAdmin();
@@ -223,8 +205,7 @@ export async function batalkanBookingMember(formData: FormData) {
 
   const hasil = await batalkan(pg, {
     booking_id: String(formData.get("booking_id")),
-    // Tanpa user_id: ini jalur admin, kepemilikan sengaja tidak dipakai
-    // sebagai filter. Penjaganya pastikanAdmin() di baris pertama.
+    // Jalur admin: kepemilikan sengaja tidak jadi filter, pastikanAdmin() yang jaga.
     pelaku_id: admin.id,
     sekarang: new Date(),
   });
@@ -242,15 +223,8 @@ export async function batalkanBookingMember(formData: FormData) {
   );
 }
 
-/**
- * UC-A13 — berikan paket ke member. Di demo ini pengganti pembayaran; di
- * versi nyata yang memanggilnya webhook QRIS, bukan tombol.
- *
- * Dua baris sekaligus dalam satu transaksi: `member_packages` yang menyimpan
- * masa berlaku, dan satu baris ledger `beli` sebesar kreditnya. Paket tanpa
- * baris ledger berarti kredit yang tidak pernah ada — BR-1.7 menghitung sisa
- * dari buku besar, bukan dari kolom.
- */
+/** UC-A13 — pengganti pembayaran di demo. `member_packages` + ledger `beli`
+ *  dalam satu transaksi: paket tanpa ledger berarti nol kredit (BR-1.7). */
 export async function beriPaket(formData: FormData) {
   const admin = await pastikanAdmin();
   const user_id = String(formData.get("user_id"));
@@ -270,19 +244,13 @@ export async function beriPaket(formData: FormData) {
   );
 }
 
-/* ── Reset Demo ───────────────────────────────────────────────────────────
-   02-rules.md bagian 5 menandainya "wajib": skenario diulang puluhan kali,
-   dan tiap pengulangan butuh data yang sama persis.                      */
+/* ── Reset Demo — 02-rules.md bagian 5, wajib ──────────────────────────── */
 
 export async function resetDemo() {
   await pastikanAdmin();
 
-  // seed() sendiri menolak jalan kalau menemukan studio yang bukan studio
-  // demo. Tombolnya juga disembunyikan di layar, tapi penjaga sebenarnya ada
-  // di sana — tombol tersembunyi bukan tombol yang tidak bisa ditekan.
-  //
-  // Satu transaksi: gagal di tengah presentasi tidak boleh meninggalkan
-  // database separuh terisi. Kalau meledak, demo yang lama tetap utuh.
+  // Penjaganya di seed() sendiri. Satu transaksi supaya gagal di tengah tidak
+  // meninggalkan database separuh terisi.
   const r = await pg.begin((tx) => seed(tx));
 
   for (const jalur of ["/admin", "/jadwal", "/akun"]) revalidatePath(jalur);
@@ -294,23 +262,11 @@ export async function resetDemo() {
   );
 }
 
-/**
- * Kosongkan panggungnya saja.
- *
- * Bedanya dengan Reset Demo: yang ini TIDAK menulis ulang apa pun. Studio,
- * orang-orangnya, katalog paket, aturan mingguan, dan paket yang sudah dibeli
- * tetap di tempatnya; yang hilang cuma jadwal beserta seluruh jejak
- * pemesanannya. Dipakai untuk memperagakan penerbitan jadwal dari nol —
- * kalender kosong, tekan "Terbitkan sekarang", lalu booking di depan klien.
- *
- * Penjaganya ada di `resetJadwal()` sendiri, sama seperti `seed()`: tombol
- * tersembunyi bukan tombol yang tidak bisa ditekan.
- */
+/** Kosongkan panggungnya saja: jadwal dan jejak pemesanan hilang, sisanya —
+ *  termasuk aturan mingguan dan paket yang sudah dibeli — tetap. */
 export async function resetJadwalDemo() {
   await pastikanAdmin();
 
-  // Satu transaksi. Gagal di tengah tidak boleh meninggalkan sesi yang
-  // bookingnya sudah hilang — itu keadaan yang tidak bisa dijelaskan ke klien.
   const r = await pg.begin((tx) => resetJadwal(tx));
 
   for (const jalur of ["/admin", "/admin/jadwal", "/admin/pesan", "/jadwal", "/akun"])

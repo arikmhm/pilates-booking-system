@@ -1,6 +1,5 @@
 // BR-7.5 — aritmetika hari WIB. Empat berkas bergantung padanya dan tidak ada
-// satu pun yang akan berteriak kalau hasilnya meleset sejam: kalender cuma
-// menggambar bloknya di baris yang salah.
+// yang berteriak kalau meleset sejam: kalender cuma salah baris.
 import { expect, test } from "vitest";
 import { awalHariWib, awalMingguWib, menitHariWib } from "./waktu.ts";
 

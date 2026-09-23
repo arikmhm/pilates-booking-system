@@ -1,10 +1,6 @@
-// Penjaga tabrakan nama token — DS-29.
-//
-// Di Tailwind v4, utilitas `max-w-*` ikut membaca namespace `--spacing-*`.
-// Mendefinisikan `--spacing-lg: 60px` membuat `max-w-lg` bernilai 60px alih-alih
-// 512px, dan seluruh kolom isi menyusut jadi selebar dua kata. Gagalnya senyap:
-// tidak ada galat, tidak ada luapan, typecheck dan lint tetap hijau — halamannya
-// saja yang tidak terbaca. Sekali ini terjadi sudah cukup.
+// Penjaga tabrakan nama token — DS-29. Di Tailwind v4 utilitas `max-w-*` ikut
+// membaca namespace `--spacing-*`: mendefinisikan `--spacing-lg: 60px` membuat
+// `max-w-lg` bernilai 60px, bukan 512px. Gagalnya senyap — tidak ada galat.
 
 import { readFileSync } from "node:fs";
 import { expect, test } from "vitest";
@@ -15,8 +11,7 @@ const CONTAINER = [
   "2xl", "3xl", "4xl", "5xl", "6xl", "7xl",
 ];
 
-// Komentar dibuang dulu: penjelasan bug ini sendiri menyebut `--spacing-lg`
-// sebagai contoh, dan tanpa ini test menuduh prosanya.
+// Komentar dibuang dulu: prosa di atas menyebut `--spacing-lg` sebagai contoh.
 const css = readFileSync(new URL("./globals.css", import.meta.url), "utf8")
   .replace(/\/\*[\s\S]*?\*\//g, "");
 

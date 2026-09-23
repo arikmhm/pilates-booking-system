@@ -1,14 +1,7 @@
 // Test integrasi empat job terjadwal — 04-flows.md bagian 7.
-//
-// Yang diuji di sini bukan "apakah barisnya berubah" — itu mudah dan tidak
-// menarik. Yang diuji adalah **idempotensi**: tiap job dijalankan DUA KALI
-// dan jalan kedua harus tidak mengubah apa pun. Cron memang dijalankan ulang:
-// retry setelah timeout, jam yang telat, dua instance yang tumpang tindih,
-// atau orang yang penasaran menekan endpoint-nya.
-//
-// Kalau penjaganya bocor, akibatnya berbeda-beda dan semuanya mahal: kredit
-// terpotong dua kali, jadwal berisi sesi kembar, member menerima dua pesan
-// yang membingungkan. Tidak satu pun bisa ditangkap typecheck.
+// Yang diuji IDEMPOTENSI: tiap job dijalankan DUA KALI dan jalan kedua tidak
+// boleh mengubah apa pun. Bocornya mahal (kredit terpotong dua kali, sesi
+// kembar, pesan ganda) dan tidak satu pun tertangkap typecheck.
 
 import { afterAll, beforeAll, expect, test } from "vitest";
 import postgres from "postgres";
@@ -115,9 +108,8 @@ test("hanguskan kredit: sisa 4 jadi satu baris ledger, jalan kedua diam (BR-1.6)
 });
 
 test("hanguskan kredit: penjaganya database, bukan urutan baca (BR-1.6)", async () => {
-  // Dua cron yang tumpang tindih membaca "belum dihanguskan" bersamaan, lalu
-  // dua-duanya menulis. Yang menahannya credit_ledger_hangus_key, bukan
-  // pemeriksaan di JavaScript — dan hanya INSERT langsung yang membuktikannya.
+  // Dua cron tumpang tindih membaca "belum dihanguskan" bersamaan lalu menulis
+  // dua-duanya. Yang menahannya credit_ledger_hangus_key, bukan JavaScript.
   await expect(
     sql`insert into credit_ledger (member_package_id, delta, alasan)
         values (${paketMember}, -4, 'hangus')`,
@@ -147,9 +139,8 @@ test("tutup waitlist: expired + satu notifikasi, jalan kedua diam (BR-4.6)", asy
 
 test("generate sesi: 2 minggu ke depan, jalan kedua tidak menggandakan (BR-7.1)", async () => {
   const pertama = await generateSesi(sql, SEKARANG);
-  // Aturan jatuh tiap Selasa; 22 Sep 07.00 WIB sudah lewat pukul 12.00 WIB,
-  // jadi yang terbit 29 Sep, 6 Okt — dan bisa 13 Okt kalau tanggal akhir
-  // rentang (hari ini + 14) masih Selasa. Yang dijamin: minimal dua.
+  // Aturan jatuh tiap Selasa; 22 Sep 07.00 WIB sudah lewat, jadi yang terbit
+  // 29 Sep, 6 Okt, dan bisa 13 Okt. Yang dijamin: minimal dua.
   expect(pertama.dibuat).toBeGreaterThanOrEqual(2);
 
   expect(await generateSesi(sql, SEKARANG)).toEqual({ dibuat: 0 });
@@ -170,10 +161,8 @@ test("generate sesi: 2 minggu ke depan, jalan kedua tidak menggandakan (BR-7.1)"
 });
 
 test("generate sesi: durasi aturan menimpa durasi jenis kelas (BR-7.2)", async () => {
-  // Kelas Sabtu 45 menit walau Reformer biasanya 60 — tanpa memaksa membuat
-  // jenis kelas kembar hanya untuk membedakan durasinya. `kapasitas` sudah
-  // bekerja begini sejak awal; `durasi_menit` menyusul supaya keduanya
-  // sejalan, dan yang null tetap jatuh ke bawaan jenis kelas.
+  // Kelas Sabtu 45 menit walau Reformer biasanya 60, tanpa jenis kelas kembar.
+  // `durasi_menit` menyusul pola `kapasitas`; null jatuh ke bawaan jenis kelas.
   const [{ id: aturan }] = await sql<{ id: string }[]>`
     insert into schedule_rules
       (studio_id, class_type_id, hari, jam_mulai, kapasitas, durasi_menit, berlaku_dari)

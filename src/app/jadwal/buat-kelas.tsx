@@ -1,15 +1,5 @@
-// Panel "Buat kelas" — kolom kanan layar M1 dan A7 (UC-O01, UC-A14).
-//
-// Dua tab, dan tiap tab adalah SATU keputusan yang selesai: isi formulirnya,
-// tekan satu tombol, kelasnya ada. Sebelumnya membuat kelas mingguan butuh
-// dua tombol di dua tempat — "Tambah slot" lalu "Terbitkan sekarang" — dan
-// orang yang cuma menekan yang pertama melihat kalender yang tidak berubah
-// sejauh yang dia lihat (DS-41).
-//
-// Sakelarnya lewat URL, bukan state klien: layar ini server component penuh.
-//
-// BR-9.3 — jadwal mingguan tetap kewenangan owner: satu slot berarti beban
-// coach tiap minggu. Kelas sekali jalan milik admin; itu operasional.
+// Panel "Buat kelas" — kolom kanan M1 dan A7 (UC-O01, UC-A14). Sakelar tab
+// lewat URL, bukan state klien. BR-9.3 — mingguan owner, sekali jalan admin.
 
 import Link from "next/link";
 import { pg } from "@/db";
@@ -37,14 +27,8 @@ export type ModeBuat = "sekali" | "berulang";
 const JAM = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
 const MENIT = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
 
-/**
- * Jam dinding 24 jam dari dua select.
- *
- * `<input type="time">` menampilkan AM/PM atau 24 jam menurut locale browser,
- * bukan menurut kita — dua orang bisa melihat jam yang sama dengan dua rupa.
- * Studio ini menulis jadwal dalam 24 jam di mana pun (DS-41), dan select juga
- * menutup kemungkinan mengetik jam yang tidak ada.
- */
+/** Jam dinding 24 jam dari dua select. Bukan `<input type="time">`: tampilannya
+ *  mengikuti locale browser (DS-41). */
 function PilihJam({ jam, menit }: { jam: string; menit: string }) {
   return (
     <div>
@@ -120,12 +104,10 @@ export async function BuatKelas({
 }: {
   owner: boolean;
   mode: ModeBuat;
-  /** URL layar ini dengan mode lain — filter dan minggu ikut terbawa. */
   tautan: (m: ModeBuat) => string;
-  /** Ke mana aksinya kembali setelah selesai. */
   kembali: string;
   sekarang: Date;
-  /** Tampilkan panel terbit ulang. Hanya di layar Aturan Jadwal. */
+  /** Panel terbit ulang — hanya di layar Aturan Jadwal. */
   terbit?: boolean;
 }) {
   const [jenis, tim, status] = await Promise.all([
@@ -136,11 +118,9 @@ export async function BuatKelas({
   const coach = tim.filter((t) => t.peran === "coach");
   const besok = kunciHariWib(new Date(sekarang.getTime() + 86_400_000));
 
-  // Admin tidak punya mode berulang sama sekali — menampilkan tab yang
-  // ditolak servernya cuma memancing klik yang gagal.
+  // Admin tidak punya mode berulang.
   const berulang = owner && mode === "berulang";
 
-  /** Jenis kelas, pelatih, kursi, durasi — sama persis di kedua tab. */
   const isiKelas = (
     <>
       <div>
@@ -175,14 +155,7 @@ export async function BuatKelas({
         </select>
       </div>
 
-      {/* DS-41b — kursi dan durasi TIDAK diisi lebih dulu. Keduanya sudah
-          ditentukan di jenis kelasnya (BR-7.2), jadi mengisinya di sini
-          berarti keputusan yang sama diambil dua kali — dan yang kedua
-          diam-diam menang. Versi sebelumnya mengisi angka dari jenis kelas
-          PERTAMA menurut abjad apa pun yang dipilih, jadi "Private 1 kursi"
-          terbit sebagai kelas 6 kursi selama kolomnya tidak disentuh.
-          Kosong = ikut jenis kelasnya; diisi = sengaja ditimpa untuk slot
-          ini saja. Angka yang berlaku disebut lagi di pesan hasilnya. */}
+      {/* BR-7.2 — kosong = ikut jenis kelasnya; diisi = ditimpa untuk slot ini. */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className={LABEL} htmlFor="kapasitas">
@@ -262,8 +235,6 @@ export async function BuatKelas({
 
             {isiKelas}
 
-            {/* Satu keputusan, bukan dua: berapa lama kelas ini berjalan
-                adalah bagian dari membuatnya (DS-41). */}
             <div className="rounded-sm border border-border p-3">
               <label className={LABEL} htmlFor="minggu">
                 Terbitkan untuk
@@ -318,11 +289,8 @@ export async function BuatKelas({
           </form>
         )}
 
-        {/* ── Terbitkan ulang — BR-7.1 ───────────────────────────────────────
-            Tab di atas sudah menerbitkan sesinya sendiri, jadi panel ini
-            bukan langkah kedua yang wajib. Ia untuk jadwal yang SUDAH ada:
-            memperpanjang jangkanya, atau mengisi lagi kalender yang kosong
-            setelah Reset Jadwal — tanpa membuat kelas baru. */}
+        {/* ── Terbitkan ulang — BR-7.1. Bukan langkah kedua yang wajib; ini
+            untuk jadwal yang SUDAH ada.                                    */}
         {status && (
           <div className="border-t border-border pt-4">
             <p className="text-app-section">Terbitkan ulang</p>
@@ -332,8 +300,6 @@ export async function BuatKelas({
                 : "Belum ada sesi terbit dari jadwal mingguan."}
             </p>
 
-            {/* Tombol yang tidak mungkin berhasil harus mengatakannya SEBELUM
-                ditekan. */}
             {status.aturan_aktif === 0 && (
               <p className="mt-2 rounded-sm bg-warn-surface px-3 py-2 text-app-body-sm text-warn-foreground">
                 Belum ada jadwal mingguan yang berjalan, jadi belum ada yang
@@ -365,8 +331,7 @@ export async function BuatKelas({
                   </span>
                 </label>
               ) : (
-                /* Tanpa field `minggu`, aksinya cuma menerbitkan — jangkanya
-                   tidak ikut terkirim, jadi tidak ada yang bisa diubah. */
+                /* Tanpa field `minggu`, aksinya cuma menerbitkan. */
                 <p className="text-app-body-sm text-muted-foreground">
                   Terbit {status.minggu} minggu ke depan, diatur pemilik studio.
                 </p>

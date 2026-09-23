@@ -1,16 +1,9 @@
-// Aturan bisnis sebagai fungsi murni. Tidak mengimpor db, tidak async —
-// hanya input → keputusan. Server action yang membaca dan menulis database.
-//
-// Seam ini ada demi testability: menguji hasilPembatalan(booking, sesi, setelan)
-// itu tiga baris; mengujinya lewat HTTP butuh server, database, dan seed.
-//
-// Sumber: docs/04-flows.md (Alur 1–8) dan docs/02-rules.md (BR-1 … BR-6).
-// Delapan titik rawan ada di 04-flows.md bagian 9. Titik 1 dijaga database,
-// bukan berkas ini — lihat src/db/kapasitas.test.ts.
+// Aturan bisnis = fungsi murni: input → keputusan, tanpa db dan tanpa async.
+// Sumber: docs/04-flows.md (Alur 1-8), docs/02-rules.md (BR-1 … BR-6).
+// Titik rawan 1 (kapasitas) dijaga database, bukan di sini — src/db/kapasitas.test.ts.
 
-/* ── Tipe masukan ─────────────────────────────────────────────────────────
-   Sengaja bentuk minimal, bukan baris Drizzle. Kalau rules mengimpor skema,
-   seam-nya bocor dan test butuh database lagi.                            */
+/* Tipe masukan sengaja bentuk minimal, bukan baris Drizzle: begitu rules
+   mengimpor skema, test butuh database lagi. */
 
 export type Setelan = {
   booking_opens_days: number;
@@ -59,16 +52,7 @@ export function bentrok(
 }
 
 /* ── Slot mingguan yang saling menabrak — BR-7.6 ──────────────────────────
-
-   Jadwal ini di-assign berdasarkan JENIS KELAS, bukan alat: `schedule_rules`
-   tidak mengenal ruang maupun mesin. Konsekuensinya satu studio bisa
-   menjadwalkan dua kelas Reformer di jam yang sama, dan sistem dengan senang
-   hati menjual 8 + 8 kursi padahal reformernya cuma 8. Yang menemukan
-   masalahnya delapan orang yang sudah datang.
-
-   Penjaganya di sini, bukan di booking: yang salah jadwalnya, bukan pesanan
-   membernya — dan menolak booking untuk kesalahan studio berarti menghukum
-   orang yang tidak membuatnya.                                             */
+   Dijaga di sisi jadwal, bukan booking: yang salah jadwalnya, bukan member. */
 
 export type SlotMingguan = {
   /** 1 = Senin … 7 = Minggu. */
@@ -84,14 +68,8 @@ export type Sebab = "kelas" | "coach";
 
 export type Benturan<T> = { ada: false } | { ada: true; sebab: Sebab; lawan: T };
 
-/**
- * Dua kelas yang waktunya sudah dipastikan bertabrakan — kenapa itu masalah.
- *
- * Jenis kelas yang sama berarti alatnya dipakai dua kali; pelatih yang sama
- * berarti orangnya dipakai dua kali. `coach_id` null artinya "belum
- * ditentukan", bukan "orang yang sama", jadi ia tidak pernah menabrak siapa
- * pun. `null` = boleh berbarengan: itu studio yang menjalankan dua ruang.
- */
+/** Jenis kelas sama = alatnya dipakai dua kali; pelatih sama = orangnya.
+ *  `coach_id` null berarti belum ditentukan, jadi tidak pernah menabrak. */
 function sebabBentur(
   baru: { class_type_id: string; coach_id: string | null },
   lawan: { class_type_id: string; coach_id: string | null },
@@ -109,15 +87,8 @@ function menitMinggu(s: SlotMingguan): number {
   return (s.hari - 1) * 1440 + jam * 60 + menit;
 }
 
-/**
- * Dua slot mingguan tumpang tindih. Sentuhan ujung ke ujung bukan bentrok,
- * sama seperti `bentrok()` pada booking.
- *
- * Dibandingkan pada garis waktu satu minggu yang melingkar: slot Minggu 23.30
- * berdurasi 60 menit menabrak slot Senin 00.00, dan garis lurus tidak melihat
- * itu. Menggeser lawannya satu minggu ke kiri dan ke kanan menangkap kedua
- * arah lipatannya tanpa cabang khusus.
- */
+/** Tumpang tindih pada garis waktu minggu yang melingkar. Geser ±1 minggu
+ *  menangkap lipatan Minggu 23.30 → Senin 00.00 tanpa cabang khusus. */
 function tumpangTindih(a: SlotMingguan, b: SlotMingguan): boolean {
   const aMulai = menitMinggu(a);
   const aSelesai = aMulai + a.durasi_menit;
@@ -128,18 +99,8 @@ function tumpangTindih(a: SlotMingguan, b: SlotMingguan): boolean {
   );
 }
 
-/**
- * BR-7.6 — slot mingguan baru tidak boleh menabrak slot yang sudah berjalan
- * bila **jenis kelasnya sama** (alatnya dipakai dua kali) atau **pelatihnya
- * sama** (orangnya dipakai dua kali).
- *
- * Jenis kelas yang berbeda dengan pelatih yang berbeda boleh berbarengan —
- * itu studio yang menjalankan dua ruang sekaligus, dan tidak ada yang rusak.
- *
- * `yangAda` harus sudah disaring ke slot yang masih berlaku. Slot yang sudah
- * dihentikan tidak menerbitkan sesi apa pun, jadi menolak karenanya berarti
- * memblokir jam yang sebenarnya kosong.
- */
+/** BR-7.6 — `yangAda` harus sudah disaring ke slot yang masih berlaku; slot
+ *  yang dihentikan tidak menerbitkan sesi, jadi tidak boleh memblokir. */
 export function slotBentrok(
   baru: SlotMingguan,
   yangAda: SlotMingguan[],
@@ -159,15 +120,8 @@ export type SesiTerjadwal = {
   coach_id: string | null;
 };
 
-/**
- * BR-7.6 untuk kelas **sekali jalan** — tanggalnya pasti, jadi tumpang
- * tindihnya dihitung pada garis waktu biasa (`bentrok()`), bukan pada minggu
- * yang melingkar.
- *
- * `yangAda` diisi sesi yang sudah terjadwal di sekitar jamnya, termasuk sesi
- * yang lahir dari slot mingguan — keduanya sama-sama duduk di `sessions`,
- * jadi kelas tambahan yang menabrak kelas rutin ikut tertangkap di sini.
- */
+/** BR-7.6 untuk kelas sekali jalan: tanggalnya pasti, jadi pakai `bentrok()`
+ *  biasa. `yangAda` termasuk sesi yang lahir dari slot mingguan. */
 export function sesiBentrok(
   baru: SesiTerjadwal,
   yangAda: SesiTerjadwal[],
@@ -184,12 +138,8 @@ export function sesiBentrok(
 /* ── Titik rawan 2 · pilih kredit yang paling cepat hangus ────────────────
    BR-1.4, BR-1.5, BR-1.7 · Alur 2                                          */
 
-/**
- * Paket mana yang dipakai untuk satu kelas. `null` kalau tidak ada yang cocok.
- *
- * Urutan `hangus_at` menaik itu wajib: kalau paket yang masih lama dipakai
- * duluan, paket yang hampir hangus mati sia-sia dan member pasti protes.
- */
+/** Paket mana yang dipakai untuk satu kelas, `null` kalau tidak ada.
+ *  Urut `hangus_at` menaik itu wajib: yang hampir hangus dipakai duluan. */
 export function pilihPaket(
   paket: PaketMember[],
   class_type_id: string,
@@ -203,21 +153,19 @@ export function pilihPaket(
   );
   if (layak.length === 0) return null;
 
-  // Tie-break `id` supaya hasilnya sama tiap kali dijalankan. Dua paket yang
-  // hangus di detik yang sama tanpa ini bisa bertukar urutan antar query.
+  // Tie-break `id` supaya urutannya sama tiap kali dijalankan.
   return layak.sort(
     (a, b) =>
       a.hangus_at.getTime() - b.hangus_at.getTime() || a.id.localeCompare(b.id),
   )[0];
 }
 
-/* ── Alur 1 · boleh booking atau tidak ────────────────────────────────────
-   BR-2.1 … BR-2.7                                                          */
+/* ── Alur 1 · boleh booking atau tidak — BR-2.1 … BR-2.7 ──────────────── */
 
 export const KODE_TOLAK = ["X1", "X2", "X3", "X4", "X5", "X7"] as const;
 export type KodeTolak = (typeof KODE_TOLAK)[number];
 
-// Teks final Bahasa Indonesia — 04-flows.md Alur 1, tabel pesan penolakan.
+// Teks final — 04-flows.md Alur 1, tabel pesan penolakan.
 export const PESAN_TOLAK: Record<KodeTolak, string> = {
   X1: "Kelas ini sudah dibatalkan.",
   X2: "Booking dibuka 7 hari sebelum kelas dan ditutup 1 jam sebelum mulai.",
@@ -237,11 +185,8 @@ const tolak = (kode: KodeTolak): KeputusanBooking => ({
   pesan: PESAN_TOLAK[kode],
 });
 
-/**
- * Urutannya sengaja begini: yang paling murah dan paling sering gagal dicek
- * duluan. Kapasitas tidak dicek di sini sama sekali — itu urusan database
- * (BR-2.3), dan satu-satunya cara membuktikannya adalah INSERT atomik.
- */
+/** Cek termurah dan paling sering gagal duluan. Kapasitas tidak dicek di
+ *  sini sama sekali — BR-2.3 dijaga INSERT atomik di database. */
 export function bolehBooking(args: {
   sesi: Sesi;
   setelan: Setelan;
@@ -274,11 +219,8 @@ export function bolehBooking(args: {
   // BR-2.7 — tidak punya kredit valid
   const terpilih = pilihPaket(paket, sesi.class_type_id, sekarang);
   if (!terpilih) {
-    // Dua sebab yang sangat berbeda, dan menyamakannya membuat sistem
-    // berbohong: member berkredit 3 yang membuka kelas Mat dibilang
-    // "kredit kamu habis", lalu menghubungi admin — chat yang persis mau
-    // dihapus sistem ini. BR-1.4 punya jalan keluarnya sendiri (beli paket
-    // yang mencakup kelas itu), jadi ia butuh pesannya sendiri.
+    // X7 dibedakan dari X5: punya kredit hidup tapi jenis kelasnya tidak
+    // tercakup (BR-1.4) butuh pesan sendiri, bukan "kredit habis".
     const punyaKreditHidup = paket.some(
       (p) => p.hangus_at > sekarang && p.sisa_kredit > 0,
     );
@@ -320,15 +262,9 @@ export type HasilPembatalan =
       alasan: "batal_tepat_waktu";
     };
 
-/**
- * Dua kesalahan yang paling mahal ada di sini:
- *
- * 1. Batal telat **tidak** menulis ledger. Kredit sudah dipotong saat booking;
- *    "hangus" artinya potongan itu dibiarkan. Menulis −1 lagi memotong dua kali.
- * 2. Kredit kembali ke `member_package_id` ASAL, bukan jadi paket baru. Kalau
- *    dibuatkan kredit baru, member bisa booking–batal berulang untuk
- *    memperpanjang masa berlaku.
- */
+/** Dua kesalahan termahal: (1) batal telat TIDAK menulis ledger — kredit
+ *  sudah dipotong saat booking, menulis −1 lagi memotong dua kali; (2) kredit
+ *  kembali ke paket ASAL, kalau paket baru masa berlaku bisa diperpanjang. */
 export function hasilPembatalan(args: {
   booking: BookingDibatalkan;
   sesi: Sesi;
@@ -353,9 +289,7 @@ export function hasilPembatalan(args: {
     alasan: "batal_tepat_waktu",
   });
 
-  // BR-3.5 — naik dari waitlist di dalam jendela batal: bebas batal.
-  // Diukur dari KAPAN dia naik, bukan kapan dia membatalkan. Orang yang baru
-  // dapat kursi 3 jam sebelum kelas tidak pernah punya kesempatan batal awal.
+  // BR-3.5 — diukur dari KAPAN dia naik waitlist, bukan kapan membatalkan.
   if (
     booking.dipromosikan_at &&
     selisihJam(sesi.mulai_at, booking.dipromosikan_at) <
@@ -395,13 +329,8 @@ export type HasilPromosi = {
   dilewati: string[];
 };
 
-/**
- * Antrean harus sudah urut `created_at` menaik (BR-4.2, FIFO).
- *
- * Titik rawan 5: orang teratas yang kreditnya tidak valid **dilewati**, bukan
- * menghentikan antrean. Berhenti di orang pertama berarti kursi kosong padahal
- * antreannya panjang — persis uang yang mau diselamatkan fitur ini.
- */
+/** Antrean harus sudah urut `created_at` menaik (BR-4.2, FIFO).
+ *  Titik rawan 5: kredit tidak valid DILEWATI, bukan menghentikan antrean. */
 export function naikkanWaitlist(args: {
   antrean: Antre[];
   sesi: Sesi;
@@ -453,11 +382,8 @@ export type HasilPenghangusan =
   | { tulis: false }
   | { tulis: true; ke_paket: string; delta: number; alasan: "hangus" };
 
-/**
- * Job harian, bisa dijalankan ulang kapan saja — cron ganda, retry, atau admin
- * yang penasaran. `sudah_dihanguskan` yang membuatnya aman: tanpa itu, dua kali
- * jalan menulis −sisa dua kali dan saldo member jadi negatif.
- */
+/** `sudah_dihanguskan` yang membuatnya idempoten: tanpa itu dua kali jalan
+ *  menulis −sisa dua kali dan saldo member jadi negatif. */
 export function hasilPenghangusan(
   paket: PaketUntukHangus,
   sekarang: Date,
@@ -486,13 +412,8 @@ export type HasilPembayaran = {
   alasan: "lunas" | "sudah_diproses" | "kedaluwarsa" | "tidak_berlaku";
 };
 
-/**
- * Gateway sering mengirim webhook lebih dari sekali. Tanpa cek `status`, member
- * dapat kredit dobel tiap kali webhook diulang.
- *
- * Berlaku juga di demo: tombol "Simulasi Bayar Berhasil" yang diklik dua kali
- * adalah webhook ganda dalam bentuk lain.
- */
+/** Gateway sering mengirim webhook lebih dari sekali — tanpa cek `status`,
+ *  member dapat kredit dobel. Tombol "Simulasi Bayar" ganda sama saja. */
 export function bolehTerimaPembayaran(
   pembayaran: Pembayaran,
   sekarang: Date,

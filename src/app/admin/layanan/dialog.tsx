@@ -1,12 +1,6 @@
-// Dialog layar A6 — DS-56.
-//
-// Hidup di URL (`?panel=`), bukan di state klien: pola yang sama dengan panel
-// konfirmasi M1 (DS-42). Akibatnya ia dirender server, isinya sudah terisi
-// dari database saat halaman sampai, dan menutupnya cuma tautan — jadi ia
-// tetap bekerja tanpa JavaScript.
-//
-// Formulir "buat" dan "ubah" satu berkas yang sama. Yang membedakan cuma
-// `<input type="hidden" name="id">`: kosong berarti baru.
+// Dialog layar A6 — DS-56. Hidup di URL (`?panel=`), pola yang sama dengan
+// panel konfirmasi M1 (DS-42): dirender server, menutupnya cuma tautan.
+// Formulir buat dan ubah satu berkas; `name="id"` kosong berarti baru.
 
 import Link from "next/link";
 import { Tombol } from "@/components/kerangka";
@@ -17,7 +11,6 @@ const INPUT =
   "h-12 w-full rounded-sm border border-border bg-background px-3 text-app-body";
 const LABEL = "text-app-label uppercase text-muted-foreground";
 
-/** Kerangka dialog: tirai gelap yang juga tombol tutup, lalu kartunya. */
 function Bingkai({
   judul,
   catatan,
@@ -31,7 +24,6 @@ function Bingkai({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      {/* Tautan, bukan tombol — supaya menutup tetap bisa tanpa JavaScript. */}
       <Link
         href={tutup}
         aria-label="Tutup"
@@ -255,11 +247,7 @@ export function DialogPaket({
   );
 }
 
-/**
- * Konfirmasi untuk aksi yang menghilangkan sesuatu dari layar. Sembunyikan
- * memang bisa dibatalkan, tapi ia mencabut paket dari halaman publik — dan
- * satu ketukan keliru di menu "⋯" tidak boleh langsung melakukannya.
- */
+/** Konfirmasi: sembunyikan mencabut paket dari halaman publik. */
 export function DialogTanya({
   judul,
   catatan,

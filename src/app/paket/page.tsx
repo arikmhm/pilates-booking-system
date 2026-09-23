@@ -1,19 +1,7 @@
-// Katalog paket publik — halaman jualan yang isinya benar-benar dari database.
-//
-// Pita harga di halaman profil sengaja tetap statis: tiga kartu pilihan,
-// prerender, tanpa satu query pun. Halaman ini kebalikannya — ia membaca
-// `packages` apa adanya, jadi paket yang baru dibuat owner lewat A6 langsung
-// terbit tanpa menyentuh kode. Yang satu brosur, yang satu katalog.
-//
-// BR-1.4 memimpin tata letaknya. Jenis kelas yang tercakup bukan keterangan
-// tambahan melainkan bagian dari barangnya — dan ia satu-satunya syarat yang
-// baru terasa sesudah bayar, saat booking ditolak dengan kode X7. Karena itu
-// ia jadi label di kepala tiap kartu, bukan baris kecil di bawah harga, dan
-// saringan di atas daftar memakai jenis kelas: "saya mau ikut Mat, paket mana
-// yang bisa?"
-//
-// Foto belum ada (DS-25). Slotnya digambar dengan rasio terkunci dan diberi
-// keterangan apa adanya — memasang foto asli nanti tidak menggeser tata letak.
+// Katalog paket publik — dibaca dari `packages`, jadi paket baru dari A6
+// langsung terbit. BR-1.4 memimpin tata letaknya: jenis kelas yang tercakup
+// bagian dari barangnya dan baru terasa sesudah bayar (X7), jadi ia jadi label
+// kepala kartu sekaligus dasar saringan.
 
 import Link from "next/link";
 import { pg } from "@/db";
@@ -26,7 +14,6 @@ import { RangkaPublik } from "@/components/rangka-publik";
 
 export const dynamic = "force-dynamic";
 
-/** Nomor meja depan di seed demo — sama dengan yang dipakai halaman profil. */
 const TELEPON = "0811550002";
 
 export default async function KatalogPaket({
@@ -42,9 +29,7 @@ export default async function KatalogPaket({
     setelanStudio(pg),
   ]);
 
-  // Saringan dihitung dari katalog yang sedang dijual, bukan dari daftar jenis
-  // kelas: jenis yang tidak tercakup paket mana pun cuma menawarkan layar
-  // kosong. Angkanya jumlah paket yang mencakup jenis itu.
+  // Saringan dari katalog yang sedang dijual: jenis tanpa paket = layar kosong.
   const jumlah = new Map<string, number>();
   for (const p of paket)
     for (const k of p.kelas) jumlah.set(k, (jumlah.get(k) ?? 0) + 1);
@@ -57,9 +42,6 @@ export default async function KatalogPaket({
 
   return (
     <RangkaPublik judul="Paket Kredit" aktif="/paket">
-      {/* Penawaran yang sama dengan pita di halaman profil, diulang di sini
-          karena tombol "Coba Kelas Pertama" di bilah atas mengantar ke halaman
-          ini — dan orang yang baru sampai belum tentu pernah membaca pitanya. */}
       <div className="flex flex-wrap items-end justify-between gap-dekat">
         <div>
           <p className="max-w-[52ch] text-app-body text-muted-foreground">
@@ -122,9 +104,7 @@ export default async function KatalogPaket({
                 key={p.id}
                 className="flex flex-col overflow-hidden rounded-md border border-border bg-background"
               >
-                {/* DS-25 — slot foto berasio terkunci. Keterangannya ditulis
-                    apa adanya, bukan disamarkan jadi hiasan: yang melihat demo
-                    ini harus tahu mana yang belum jadi. */}
+                {/* DS-25 — slot foto berasio terkunci, keterangannya apa adanya. */}
                 <div
                   className={`${FOTO} flex aspect-[4/3] w-full items-end justify-start p-3`}
                 >
@@ -179,9 +159,7 @@ export default async function KatalogPaket({
                     </div>
                   </dl>
 
-                  {/* Pembelian mandiri baru ada di versi real (UC-M11), jadi
-                      tombolnya mengantar ke meja depan — bukan ke keranjang
-                      yang belum ada. Pesannya sudah menyebut paketnya. */}
+                  {/* Pembelian mandiri baru ada di versi real (UC-M11). */}
                   <a
                     href={tautanWa(
                       TELEPON,

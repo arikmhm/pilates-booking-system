@@ -1,15 +1,8 @@
 // Test integrasi buku transaksi — UC-M14, UC-C03.
-//
-// Yang diuji cuma satu hal, dan justru hal yang tidak bisa ditangkap
-// typecheck: **kredit yang kembali harus ikut dihitung.** Pembatalan tepat
-// waktu menulis dua baris ledger (−1 lalu +1), dan query yang membaca baris
-// 'booking' saja akan melaporkan kelas berkursi nol sebagai kelas yang
-// memakan kredit — angka yang salahnya tidak kentara, tidak pernah dilempar
-// ke layar sebagai galat, dan baru ketahuan saat ada yang menjumlahkan ulang
-// dengan tangan.
-//
-// Sisi member diuji dengan invarian yang sama dari arah lain: awal − dipakai
-// + kembali harus persis sama dengan sisa (BR-1.7).
+// Yang diuji: kredit yang KEMBALI harus ikut dihitung. Batal tepat waktu
+// menulis dua baris (−1 lalu +1); query yang cuma membaca 'booking' melaporkan
+// kelas berkursi nol sebagai pemakan kredit. Sisi member diuji dari arah lain:
+// awal − dipakai + kembali harus persis sama dengan sisa (BR-1.7).
 
 import { afterAll, beforeAll, expect, test } from "vitest";
 import postgres from "postgres";
@@ -92,9 +85,8 @@ beforeAll(async () => {
            (${paketMember}, ${batal.id}, -1, 'booking'),
            (${paketMember}, ${batal.id},  1, 'batal_tepat_waktu')`;
 
-  // Paket kedua: masa berlakunya SUDAH lewat dan masih bersisa 4 kredit.
-  // Sisanya bukan kewajiban studio lagi, jadi ia tidak boleh ikut terhitung
-  // sebagai kredit menggantung.
+  // Paket kedua: masa berlaku SUDAH lewat, sisa 4 kredit — bukan kewajiban
+  // studio lagi, jadi tidak boleh ikut terhitung sebagai kredit menggantung.
   const [mati] = await sql<{ id: string }[]>`
     insert into member_packages
       (user_id, package_id, dibeli_at, hangus_at, jumlah_kredit_awal)
@@ -141,10 +133,8 @@ test("pembelian member: awal − dipakai + kembali = sisa (BR-1.7)", async () =>
 });
 
 test("kredit menggantung dinilai per paketnya, bukan per kredit rata-rata", async () => {
-  // Paket 1.350.000 berisi 10 kredit → 135.000 per kredit. Sisa 9 kredit dan
-  // masa berlakunya belum lewat, jadi 9 × 135.000 yang masih jadi kewajiban
-  // studio. Rumus pembaginya sama dengan `ringkasUang()`; dua layar tidak
-  // boleh menyebut dua angka untuk hal yang sama.
+  // Paket 1.350.000 / 10 kredit = 135.000; sisa 9 dan belum lewat → 9 × 135.000.
+  // Rumus pembaginya sama dengan `ringkasUang()`.
   const m = await kreditMenggantung(sql, { sekarang: SEKARANG });
   expect(m).toEqual({ rupiah: 1_215_000, kredit: 9, paket: 1 });
 });

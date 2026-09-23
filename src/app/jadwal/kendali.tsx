@@ -1,17 +1,9 @@
 "use client";
 
-// Bilah kendali layar jadwal — DS-51.
-//
-// Satu baris berisi semua saringan: jenis kelas, pelatih, tanggal, dan sakelar
-// rupa. Ia menempel di atas saat halaman digulung, karena jadwal sebulan lebih
-// panjang dari layar dan saringan yang harus dicari dengan menggulung ke atas
-// dulu praktis tidak dipakai.
-//
-// Satu-satunya komponen klien di layar ini, dan hanya untuk satu hal: `<select>`
-// dan `<input type="date">` tidak bisa berpindah halaman sendiri tanpa JS.
-// Formulirnya tetap `method="get"` yang sah, jadi tanpa JS ia masih bekerja
-// lewat tombol di dalam `<noscript>` — yang berubah cuma perlu-tidaknya menekan
-// tombol itu. Semua keadaan tetap hidup di URL (DS-42), bukan di state klien.
+// Bilah kendali layar jadwal — DS-51, menempel saat halaman digulung.
+// Komponen klien hanya karena `<select>`/`<input type="date">` tidak bisa
+// berpindah halaman tanpa JS; formulirnya tetap `method="get"` yang sah dan
+// semua keadaan hidup di URL (DS-42).
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -30,7 +22,6 @@ function Pilih({
 }: {
   nama: string;
   nilai: string;
-  /** Label pilihan kosong — "Semua kelas", "Semua pelatih". */
   semua: string;
   daftar: [string, number][];
 }) {
@@ -75,23 +66,17 @@ export function BilahKendali({
   daftarKelas: [string, number][];
   pelatih: string;
   daftarPelatih: [string, number][];
-  /** Tanggal terpilih, "YYYY-MM-DD" — nilai mentah `<input type="date">`. */
+  /** "YYYY-MM-DD" — nilai mentah `<input type="date">`. */
   tgl: string;
   hariIni: string;
   rupa: Rupa;
-  /** Mode panel buat-kelas; ikut dibawa supaya tab staf tidak ter-reset. */
   buat?: string;
   /** URL kedua rupa, sudah jadi — fungsi tidak bisa melintasi batas server. */
   tautanRupa: Record<Rupa, string>;
   tautanHariIni: string;
-  /**
-   * Menyatu dengan kotak jadwal di bawahnya (DS-57) — dipakai di dalam
-   * aplikasi. Tamu memakai bilah yang berdiri sendiri selebar halaman: di
-   * halaman publik tidak ada kartu untuk ditempeli, dan hero di atasnya
-   * sudah memberi bilah itu tepi sendiri.
-   */
+  /** Menyatu dengan kotak jadwal di bawahnya (DS-57); tamu memakai bilah yang
+   *  berdiri sendiri. */
   menyatu?: boolean;
-  /** Kepala minggu di rupa daftar — ikut menempel, bukan menggulung pergi. */
   children?: React.ReactNode;
 }) {
   const router = useRouter();
@@ -102,10 +87,8 @@ export function BilahKendali({
   ] as const;
 
   return (
-    // Bilah ini WAJIB tidak punya leluhur ber-`overflow`, kalau tidak
-    // `sticky` menempel pada kotak yang tidak pernah bergulir. Karena itu
-    // kotak jadwal di bawahnya memisahkan `overflow-x-auto`-nya ke lapisan
-    // sendiri, bukan memasangnya di kartu yang membungkus keduanya.
+    // WAJIB tanpa leluhur ber-`overflow`, kalau tidak `sticky` menempel pada
+    // kotak yang tidak pernah bergulir.
     <div
       className={`sticky top-0 z-30 border-b border-border bg-background ${
         menyatu ? "rounded-t-md px-4 py-2" : "-mx-gutter px-gutter py-2"
@@ -114,8 +97,7 @@ export function BilahKendali({
       <form
         method="get"
         action="/jadwal"
-        // Nilai kosong tidak ditulis ke URL, jadi "Semua kelas" mengembalikan
-        // `/jadwal` yang bersih — bukan `/jadwal?kelas=&pelatih=`.
+        // Nilai kosong tidak ditulis ke URL — "Semua kelas" → `/jadwal` bersih.
         onChange={(e) => {
           const q = new URLSearchParams();
           for (const [k, v] of new FormData(e.currentTarget)) {
@@ -125,8 +107,7 @@ export function BilahKendali({
         }}
         className="flex flex-wrap items-center justify-between gap-2 py-1.5"
       >
-        {/* `pilih` sengaja tidak ikut: mengganti saringan berarti orang sedang
-            melihat-lihat lagi, dan panel konfirmasinya harus ikut tertutup. */}
+        {/* `pilih` sengaja tidak ikut: ganti saringan harus menutup panelnya. */}
         {rupa === "daftar" && (
           <input type="hidden" name="rupa" value="daftar" />
         )}
@@ -158,8 +139,6 @@ export function BilahKendali({
             className={`${KOTAK} px-3 py-2 tabular-nums`}
           />
 
-          {/* Muncul hanya saat sedang tidak di hari ini — tombol yang
-              mengantar ke tempat yang sedang dibuka bukan tombol. */}
           {tgl !== hariIni && (
             <Link
               href={tautanHariIni}
@@ -169,9 +148,6 @@ export function BilahKendali({
             </Link>
           )}
 
-          {/* Di bawah 768px rupanya selalu daftar, jadi sakelarnya tidak
-              digambar sama sekali — sakelar yang separuh pilihannya mati cuma
-              memancing ketukan yang gagal. */}
           <div className="hidden items-center gap-0.5 rounded-sm border border-border p-1 md:flex">
             {pilihan.map(([nilai, label, Ikon]) => {
               const dipilih = nilai === rupa;

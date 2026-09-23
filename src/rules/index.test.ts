@@ -1,7 +1,5 @@
-// Delapan titik rawan — docs/04-flows.md bagian 9.
-// Titik 1 (INSERT booking atomik) dijaga database, diuji di
-// src/db/kapasitas.test.ts. Tujuh sisanya keputusan murni, diuji di sini:
-// tanpa database, tanpa server, tanpa seed.
+// Delapan titik rawan — docs/04-flows.md bagian 9. Titik 1 (INSERT atomik)
+// dijaga database dan diuji di src/db/kapasitas.test.ts; tujuh sisanya di sini.
 
 import { describe, expect, test } from "vitest";
 import {
@@ -171,9 +169,8 @@ describe("Alur 1 · bolehBooking (BR-2.1 … BR-2.7)", () => {
   });
 
   test("X7 punya kredit hidup, tapi paketnya tidak mencakup kelas ini (BR-1.4)", () => {
-    // Sebab yang sama sekali berbeda dengan X5, dan jalan keluarnya juga:
-    // yang ini beli paket lain, bukan isi ulang. Menyebutnya "kredit habis"
-    // mengirim member ke admin untuk menanyakan kredit yang jelas-jelas ada.
+    // Sebab yang berbeda dari X5 dan jalan keluarnya juga: beli paket lain,
+    // bukan isi ulang.
     const h = bolehBooking({ ...dasar, paket: [paket({ class_type_ids: [MAT] })] });
     expect(h).toMatchObject({ boleh: false, kode: "X7" });
   });

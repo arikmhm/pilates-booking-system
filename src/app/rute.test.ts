@@ -1,15 +1,7 @@
-// Penjaga menu — DS-43.
-//
-// Tiap butir menu, breadcrumb, dan tombol di aplikasi ini menyebut rutenya
-// sebagai string biasa: `{ href: "/admin/tim", … }` di sidebar, `["Harga",
-// "#harga"]` di halaman publik. String tidak diperiksa siapa pun. Menghapus
-// sebuah layar atau mengganti nama pitanya meninggalkan butir menu yang
-// tampak normal, bisa diklik, dan mendarat di 404 — dan yang menemukannya
-// pertama kali adalah orang yang sedang dipresentasikan.
-//
-// Test ini membaca sumbernya apa adanya, bukan mengimpor daftar menunya:
-// daftar yang diimpor cuma menjaga daftar itu. Yang perlu dijaga adalah
-// SETIAP rute yang ditulis di mana pun.
+// Penjaga menu — DS-43. Tiap butir menu, breadcrumb, dan tombol menyebut
+// rutenya sebagai string biasa yang tidak diperiksa siapa pun; menghapus layar
+// meninggalkan butir menu yang tampak normal tapi mendarat di 404.
+// Test ini membaca sumbernya apa adanya, bukan mengimpor daftar menunya.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { expect, test } from "vitest";
@@ -31,11 +23,8 @@ const semua = [
   ...berkas(new URL("components/", SRC)),
 ].map((u) => ({ jalur: u.pathname.slice(SRC.pathname.length), isi: readFileSync(u, "utf8") }));
 
-/**
- * Rute yang disebut di dalam sumber. Sengaja hanya string harfiah: yang
- * dirakit template (`/admin/sesi/${id}`) tidak bisa diperiksa di sini, dan
- * segmen dinamisnya memang tidak punya berkas bernama sama.
- */
+/** Rute yang disebut di dalam sumber. Sengaja hanya string harfiah: yang
+ *  dirakit template (`/admin/sesi/${id}`) tidak bisa diperiksa di sini. */
 const RUTE = /"(\/[a-z0-9/-]*)"/g;
 
 test("tiap rute yang disebut di sumber punya page.tsx-nya", () => {
@@ -64,9 +53,8 @@ test("tiap jangkar # yang ditautkan punya id-nya di berkas yang sama", () => {
 });
 
 test("tidak ada tautan mati — href ke jangkar kosong", () => {
-  // Halaman publik sempat memakainya di 12 tempat: menu kepala, tiga kolom
-  // kaki, dan dua tombol utama. Halaman jualan yang tautannya mati
-  // memperagakan persis kebalikan dari yang dijual.
+  // Halaman publik sempat memakainya di 12 tempat — halaman jualan yang
+  // tautannya mati memperagakan kebalikan dari yang dijual.
   const mati = semua
     .filter(({ isi }) => /href=\{?"#"/.test(isi))
     .map(({ jalur }) => jalur);
@@ -75,9 +63,8 @@ test("tidak ada tautan mati — href ke jangkar kosong", () => {
 });
 
 test("jangkar ke halaman profil (/#…) punya id-nya di halaman profil", () => {
-  // `"/#paket"` lolos dua penjaga di atas: ia bukan rute (ada `#`-nya) dan
-  // bukan jangkar di berkas yang sama. Padahal justru itu bentuk tautan yang
-  // dipakai layar publik di luar `/` untuk menunjuk pita di halaman profil.
+  // `"/#paket"` lolos dua penjaga di atas: bukan rute (ada `#`) dan bukan
+  // jangkar di berkas yang sama. Padahal itu bentuk yang dipakai layar publik.
   const profil = readFileSync(new URL("page.tsx", APP), "utf8");
   const hilang: string[] = [];
 

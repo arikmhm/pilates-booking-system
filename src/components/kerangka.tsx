@@ -1,12 +1,7 @@
-// Kerangka layar aplikasi — bilah atas + sidebar + area isi.
-//
-// Navigasi ada di sidebar shadcn (`components/ui/sidebar.tsx`): di layar lebar
-// ia menempel kiri, di HP jadi sheet lewat tombol di bilah atas. Token
-// `--sidebar-*` sudah dialiaskan ke palet 07-design.md di globals.css, jadi
-// tidak ada warna baru yang masuk lewat pintu ini (DS-1).
-//
-// Isi memakai lebar penuh area kerja (DS-27): sidebar sudah memakan 256px di
-// kiri, dan tabel admin serta kalender mingguan memang butuh sisanya.
+// Kerangka layar aplikasi — bilah atas + sidebar + area isi. Navigasi memakai
+// sidebar shadcn (di HP jadi sheet); token `--sidebar-*` sudah dialiaskan ke
+// palet 07-design.md di globals.css, jadi tidak ada warna baru (DS-1).
+// Isi memakai lebar penuh area kerja (DS-27).
 
 import * as React from "react";
 import Link from "next/link";
@@ -62,9 +57,8 @@ const JADWAL_KELAS: Butir = {
 };
 
 // Satu rute, empat tampilan (UC-M14, UC-A17, UC-O09, UC-C03) — jadi satu nama
-// juga. Member melihat pembeliannya sendiri, coach melihat kredit yang terpakai
-// di kelasnya, staf melihat buku transaksi studio, dan pemilik melihat angka
-// uangnya (BR-9.3).
+// juga: member melihat pembeliannya, coach kredit yang terpakai di kelasnya,
+// staf buku transaksi studio, pemilik angka uangnya (BR-9.3).
 const TRANSAKSI: Butir = {
   href: "/transaksi",
   label: "Transaksi",
@@ -72,24 +66,15 @@ const TRANSAKSI: Butir = {
 };
 
 // DS-33 — satu peran, satu daftar; yang tidak bisa dipakai peran itu tidak
-// ditampilkan.
+// ditampilkan. Dikelompokkan menurut "saya mau mengurus apa": jadwal, member,
+// studio. Dashboard berdiri sendiri (titik mendarat), Laporan sendiri di bawah
+// (hanya pemilik, BR-9.3).
 //
-// Sembilan butir datar membuat staf memindai seluruh daftar tiap kali, jadi
-// menunya dikelompokkan menurut "saya mau mengurus apa": jadwalnya, membernya,
-// atau studionya. Dashboard berdiri sendiri di atas karena ia titik mendarat,
-// Laporan sendiri di bawah karena hanya pemilik yang punya (BR-9.3) — dan
-// pemisahan itu sendiri yang dijual.
-//
-// Kelompoknya **tidak** dibungkus akordeon. Dicoba dengan pola sidebar-07
-// shadcn (`Collapsible` + `SidebarMenuSub`) dan memang jalan, tapi yang
-// dibelinya tidak sepadan: tiap kelompok cuma berisi dua sampai tiga butir dan
-// semuanya terbuka sejak awal, jadi yang tersisa hanyalah tiga tombol yang
-// bisa menyembunyikan isi sidebar — beserta chevron, garis tegak, dan satu
-// komponen klien baru. Judul kelompok sudah mengelompokkan.
-//
-// Tidak ada butir "Halaman Publik" di mana pun: halaman jualan bukan layar
-// aplikasi, dan menu yang mengeluarkan orang dari aplikasinya sendiri cuma
-// menambah satu cara tersesat. Yang perlu melihatnya mengetik alamatnya.
+// Sengaja TANPA akordeon: dicoba dengan pola sidebar-07 shadcn dan jalan, tapi
+// tiap kelompok cuma dua-tiga butir dan semuanya terbuka — yang tersisa cuma
+// tombol penyembunyi plus satu komponen klien baru.
+// Tidak ada butir "Halaman Publik": menu yang mengeluarkan orang dari
+// aplikasinya sendiri cuma menambah satu cara tersesat.
 const STAF: Grup[] = [
   { butir: [{ href: "/admin", label: "Dashboard", ikon: LayoutDashboard }] },
   {
@@ -115,17 +100,16 @@ const STAF: Grup[] = [
   },
 ];
 
-// Buku transaksi dibuka staf mana pun; Laporan tidak (BR-9.3). Keduanya duduk
-// di kelompok yang sama supaya batas itu terbaca sekali lihat: admin melihat
-// kelompok Bisnis berisi satu butir, pemilik dua.
+// Buku transaksi dibuka staf mana pun; Laporan tidak (BR-9.3). Sekelompok
+// supaya batas itu terbaca: admin melihat satu butir, pemilik dua.
 const BISNIS: Grup = { judul: "Bisnis", butir: [TRANSAKSI] };
 const BISNIS_OWNER: Grup = {
   judul: "Bisnis",
   butir: [TRANSAKSI, { href: "/admin/laporan", label: "Laporan", ikon: LineChart }],
 };
 
-// Member dan coach cukup satu kelompok tanpa judul: dua butir tidak perlu
-// dikategorikan, dan judul "Menu" hanya menamai bahwa ini menu.
+// Member dan coach cukup satu kelompok tanpa judul — dua butir tidak perlu
+// dikategorikan.
 const NAV: Record<string, Grup[]> = {
   member: [
     {
@@ -175,9 +159,8 @@ export function Kerangka({
   aktif?: string;
   judul?: string;
   /**
-   * Ruas TAMBAHAN sesudah butir menunya — layar detail memakai ini.
-   * Ruas pertama dihitung sendiri dari `aktif`, jadi pemanggil tidak pernah
-   * mengulang nama menu dan tidak bisa salah menuliskannya.
+   * Ruas TAMBAHAN sesudah butir menunya. Ruas pertama dihitung dari `aktif`,
+   * jadi pemanggil tidak pernah mengulang nama menu.
    */
   jejak?: { label: string; href?: string }[];
   kabar?: string;
@@ -188,8 +171,7 @@ export function Kerangka({
   const butirAktif = semua.find((b) => b.href === aktif);
   const tajuk = judul ?? butirAktif?.label ?? "Kenari";
 
-  // Ruas terakhir adalah halaman sekarang: tidak bertaut, dan itu yang
-  // membedakan "di mana saya" dari "ke mana saya bisa pergi".
+  // Ruas terakhir adalah halaman sekarang: tidak bertaut.
   const rantai: { label: string; href?: string }[] = [
     { label: tajuk, href: jejak?.length ? butirAktif?.href : undefined },
     ...(jejak ?? []),
@@ -257,8 +239,8 @@ export function Kerangka({
               </SidebarMenuButton>
             </SidebarMenuItem>
             {/* "Ganti Pengguna" memasang cookie baru, jadi ia tidak pernah
-                mengembalikan orang ke tampilan tamu. Keluar yang melakukannya,
-                dan mendarat di jadwal publik (DS-45). */}
+                mengembalikan orang ke tampilan tamu — Keluar yang melakukannya,
+                mendarat di jadwal publik (DS-45). */}
             <SidebarMenuItem>
               <form action={keluarAkun}>
                 <SidebarMenuButton asChild className={BUTIR}>
@@ -274,8 +256,8 @@ export function Kerangka({
       </Sidebar>
 
       <SidebarInset className="bg-muted">
-        {/* Mepet kiri seperti bawaan shadcn — tidak ada pembungkus terpusat di
-            sini, kalau tidak tombol sidebar mengambang jauh dari sidebarnya. */}
+        {/* Mepet kiri seperti bawaan shadcn — pembungkus terpusat di sini akan
+            membuat tombol sidebar mengambang jauh dari sidebarnya. */}
         <header className="border-b border-border bg-background">
           <div className="flex h-16 items-center gap-2 px-gutter">
             <SidebarTrigger className="size-11" />
@@ -418,13 +400,10 @@ export function Chip({ warna, anak }: { warna: string; anak: string }) {
 }
 
 /**
- * Penomoran halaman — dipakai direktori member (A4) dan buku transaksi (A9).
- *
- * Bukan komponen pagination shadcn: yang itu menomori tiap halaman, dan nomor
- * halaman baru berguna kalau orang punya alasan melompat ke halaman 7. Di dua
- * daftar ini urutannya kronologis dan yang dicari selalu dekat ujung, jadi
- * "sebelumnya / berikutnya" plus hitungan baris sudah menjawab semuanya —
- * dengan tinggi sentuh 44px yang memang sudah jadi aturan di sini (DS-11).
+ * Penomoran halaman — direktori member (A4) dan buku transaksi (A9).
+ * Bukan komponen pagination shadcn: di dua daftar ini urutannya kronologis dan
+ * yang dicari selalu dekat ujung, jadi "sebelumnya / berikutnya" plus hitungan
+ * baris sudah cukup — dengan tinggi sentuh 44px (DS-11).
  */
 export function Halaman({
   mulai,

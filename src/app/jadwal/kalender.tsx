@@ -1,24 +1,6 @@
-// Kalender mingguan — tampilan utama layar M1 di layar lebar.
-//
-// Hari jadi kolom, jam jadi baris, sesi jadi kartu di dalam petak jam × hari.
-// Yang dibaca dari bentuk ini dan tidak bisa dibaca dari daftar: jam sibuk
-// terlihat sebagai baris yang menebal dan hari yang kosong sebagai kolom yang
-// melompong — berdampingan, dalam satu tatapan.
-//
-// Komponen server murni — semua perpindahan minggu lewat tautan, tidak ada
-// state klien.
-//
-// DS-52 — tinggi baris mengikuti isinya, bukan durasinya. Versi sebelumnya
-// menggambar tiap blok `position:absolute` setinggi durasinya di atas sumbu
-// 72px/jam, dan membayar tiga hal: jam kosong tetap memakan tinggi penuh, dua
-// sesi berbarengan harus dibagi jadi lajur selebar separuh kolom, dan blok 50
-// menit cuma punya 60px untuk empat baris teks. Sekarang jam yang tidak ada
-// kelasnya tidak digambar sama sekali, sesi berbarengan ditumpuk di petak yang
-// sama, dan tiap kartu setinggi yang ia butuhkan. Yang hilang — jeda antar
-// kelas yang dulu terbaca dari ruang kosong — diganti durasi yang ditulis apa
-// adanya di tiap kartu.
-//
-// DS-40 — kalender menggulung sendiri MENDATAR saja; tegaknya digambar utuh.
+// Kalender mingguan layar M1 — hari jadi kolom, jam jadi baris. Komponen server
+// murni. DS-52 — tinggi baris mengikuti ISINYA, bukan durasinya: jam tanpa kelas
+// tidak digambar dan sesi berbarengan ditumpuk di petak yang sama.
 
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -31,26 +13,17 @@ import {
 import type { BarisJadwal } from "@/db/booking";
 
 export type IsiBlok = {
-  /** Warna latar + garis blok, dari palet status 07-design.md bagian 7. */
   warna: string;
-  /** Baris terakhir di dalam blok: ajakan, status, atau alasan tolak. */
   catatan: string;
-  /** Dibungkus form (booking) atau tautan (staf). Null = blok mati. */
+  /** Null = blok mati. */
   bungkus?: (anak: React.ReactNode) => React.ReactNode;
-  /**
-   * Tombol aksi eksplisit — hanya dipakai rupa daftar (DS-51). Kartu kalender
-   * tetap satu target sentuh utuh (DS-32): di kolom selebar 92px, tombol di
-   * dalam kartu berarti dua target bersarang yang keduanya terlalu kecil.
-   */
+  /** Tombol aksi eksplisit — hanya rupa daftar (DS-51); kartu kalender tetap
+   *  satu target sentuh utuh (DS-32). */
   tombol?: React.ReactNode;
 };
 
-/**
- * Sembilan kolom: lajur jam, tujuh hari, lajur tombol kanan. Dua lajur tepi
- * itu yang menampung tombol geser minggu di baris kepala — DS-51 menuntut
- * tombolnya menyatu dengan kalendernya, bukan berdiri sebagai baris sendiri
- * di atasnya yang mengulang ketujuh tanggal yang sama.
- */
+/** Sembilan kolom: lajur jam, tujuh hari, lajur tombol kanan — tombol geser
+ *  minggu duduk di dua lajur tepi itu (DS-51). */
 const KOLOM =
   "grid grid-cols-[2.75rem_repeat(7,minmax(0,1fr))_2.75rem]";
 
@@ -67,7 +40,6 @@ function Geser({
     <Link
       href={href}
       aria-label={label}
-      // DS-11 — 44px, sama seperti tombol lain. Lajur tepinya selebar itu.
       className="inline-flex size-11 items-center justify-center justify-self-center rounded-full border border-border transition-colors hover:border-foreground"
     >
       {anak}
@@ -75,15 +47,8 @@ function Geser({
   );
 }
 
-/**
- * Baris kepala minggu — nama hari di atas nomor tanggal, tombol minggu di dua
- * lajur tepinya.
- *
- * Dipakai dua kali: sebagai kepala kalender (`tautan` kosong — di sana harinya
- * cuma keterangan kolom, dan pemilih tanggalnya sudah ada di bilah kendali)
- * dan sebagai pemilih hari di rupa daftar (`tautan` terisi, karena di sana
- * cuma satu hari yang digambar).
- */
+/** Baris kepala minggu. Dipakai dua kali: kepala kalender (`tautan` kosong) dan
+ *  pemilih hari di rupa daftar (`tautan` terisi). */
 export function KepalaMinggu({
   hari,
   ditandai,
@@ -93,13 +58,11 @@ export function KepalaMinggu({
   tautan,
 }: {
   hari: Date[];
-  /** Indeks 0–6 hari yang sedang dipilih. */
   ditandai: number;
   /** Indeks hari ini, atau −1 kalau minggu ini bukan minggunya. */
   hariIni: number;
   mundur: string;
   maju: string;
-  /** Kalau ada, tiap hari jadi tautan. Kalau tidak, harinya keterangan saja. */
   tautan?: (i: number) => string;
 }) {
   return (
@@ -126,10 +89,7 @@ export function KepalaMinggu({
             </span>
           </>
         );
-        // Hari ini dapat latar tipis sepanjang kolomnya, terpisah dari
-        // lingkaran `primary` yang menandai hari yang sedang DIPILIH. Dua
-        // pertanyaan berbeda — "sekarang di mana" dan "yang saya buka mana" —
-        // dan di hari biasa keduanya memang jatuh di kolom yang sama.
+        // Latar tipis = hari ini; lingkaran `primary` = hari yang DIPILIH.
         const gaya = `flex flex-col items-center py-1.5 ${
           i === hariIni ? "bg-muted" : ""
         }`;
@@ -163,7 +123,6 @@ export function KepalaMinggu({
   );
 }
 
-/** Satu sesi sebagai kartu di dalam petaknya. Tingginya mengikuti isinya. */
 function KartuSesi({
   b,
   isi,
@@ -180,7 +139,6 @@ function KartuSesi({
       <p className="text-app-label tabular-nums">
         {String(Math.floor(mulai / 60)).padStart(2, "0")}.
         {String(mulai % 60).padStart(2, "0")}
-        {/* Durasi ditulis apa adanya sejak tinggi kartu berhenti mewakilinya. */}
         <span className="opacity-60"> · {b.durasi_menit}m</span>
       </p>
       <p className="truncate text-app-body-sm font-medium">{b.kelas}</p>
@@ -201,7 +159,6 @@ export function Kalender({
   maju,
   polos,
 }: {
-  /** Tujuh hari minggu yang sedang dibuka, Senin lebih dulu. */
   hari: Date[];
   baris: BarisJadwal[];
   isi: (b: BarisJadwal) => IsiBlok;
@@ -210,16 +167,13 @@ export function Kalender({
   mundur: string;
   maju: string;
   /**
-   * Tanpa tepi sendiri — dipakai saat kalender duduk di dalam kotak jadwal
-   * bersama bilah kendali (DS-57). `overflow-x-auto` tetap di sini, BUKAN
-   * naik ke kotak pembungkusnya: leluhur ber-overflow membuat bilah di
-   * atasnya berhenti menempel.
+   * Tanpa tepi sendiri — kalender duduk di dalam kotak jadwal (DS-57).
+   * `overflow-x-auto` WAJIB tetap di sini: leluhur ber-overflow melepas
+   * `sticky` bilah kendali di atasnya.
    */
   polos?: boolean;
 }) {
-  // Petak jam × hari. Jam yang tidak punya satu pun kelas tidak pernah jadi
-  // baris — jeda siang 11.00–15.00 di studio ini lima baris kosong yang
-  // mendorong kelas sore keluar layar.
+  // Jam tanpa kelas tidak pernah jadi baris.
   const petak = new Map<string, BarisJadwal[]>();
   const jamAda = new Set<number>();
   for (const b of baris) {
@@ -236,8 +190,6 @@ export function Kalender({
         polos ? "" : "rounded-md border border-border bg-background"
       }`}
     >
-      {/* 46rem = 7 kolom hari @ ~85px + dua lajur tepi. Di bawah itu barulah
-          muncul gulung mendatar, dan ia berhenti di tepi kotak ini (DS-40). */}
       <div className="min-w-[46rem]">
         <KepalaMinggu
           hari={hari}
@@ -249,9 +201,6 @@ export function Kalender({
 
         {jam.map((j) => (
           <div key={j} className={`${KOLOM} border-t border-border`}>
-            {/* Label jam duduk DI DALAM barisnya, rata atas — bukan di tengah
-                garis pemisah. Angka yang membelah garis tidak jelas milik
-                baris yang mana (DS-52). */}
             <div className="py-2 pr-1.5 text-right text-app-label tabular-nums text-muted-foreground">
               {String(j).padStart(2, "0")}.00
             </div>

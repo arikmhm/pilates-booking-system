@@ -13,8 +13,7 @@ const namaHariFmt = fmt({ weekday: "short" });
 const tanggalFmt = fmt({ day: "numeric", month: "short" });
 // Nomor tanggalnya saja — "21" — untuk strip hari di layar jadwal (DS-51).
 const nomorHariFmt = fmt({ day: "numeric" });
-// "22 Sep 2026" — dipakai kolom tabel. Nama hari sengaja tidak ikut: di
-// sebuah kolom tanggal, "Sen," cuma menambah lebar tanpa menambah jawaban.
+// "22 Sep 2026" — kolom tabel. Nama hari sengaja tidak ikut.
 const ringkasFmt = fmt({ day: "numeric", month: "short", year: "numeric" });
 // en-CA memberi YYYY-MM-DD — kunci pengelompokan per hari WIB, bukan per hari UTC.
 const kunciFmt = fmt({ year: "numeric", month: "2-digit", day: "2-digit" }, "en-CA");
@@ -56,16 +55,9 @@ export function awalMingguWib(d: Date): Date {
   return new Date(tengahMalamUtc - geser * 86_400_000 - WIB_OFFSET);
 }
 
-/**
- * Kebalikan `kunciHariWib`: "2026-09-25" jadi tengah malam WIB hari itu.
- *
- * Dipakai satu tempat — `?tgl=` di layar jadwal (DS-51). Nilainya datang dari
- * `<input type="date">` dan dari tautan yang kita buat sendiri, jadi ia tetap
- * harus diperiksa: tanggal yang tidak ada ("2026-02-31") dibiarkan lolos
- * `Date.UTC` sebagai 3 Maret, dan kalender yang melompat diam-diam lebih buruk
- * daripada kalender yang mengabaikan parameter ngawur. Perbandingan balik ke
- * kuncinya yang menangkap itu. `null` berarti pemanggilnya memakai bawaan.
- */
+/** Kebalikan `kunciHariWib`. Dipakai `?tgl=` di layar jadwal (DS-51). Tanggal
+ *  yang tidak ada ("2026-02-31") lolos `Date.UTC` sebagai 3 Maret, jadi
+ *  hasilnya dibandingkan balik ke kuncinya. `null` = pemanggil pakai bawaan. */
 export function dariKunciWib(kunci: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(kunci)) return null;
   const [y, b, t] = kunci.split("-").map(Number);

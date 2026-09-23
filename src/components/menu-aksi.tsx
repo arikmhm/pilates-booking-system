@@ -1,14 +1,8 @@
 "use client";
 
-// Menu "⋯" di ujung baris tabel — DS-56.
-//
-// Satu-satunya alasan ia komponen klien: menu yang menutup saat diklik di
-// luar atau saat Escape ditekan tidak bisa dibuat tanpa JavaScript, dan menu
-// yang tidak bisa ditutup lebih buruk daripada tidak ada menu.
-//
-// Isinya cuma tautan. Aksi yang sebenarnya hidup di dialog yang dibuka
-// tautan itu, dan dialognya dirender server dari URL (DS-42) — jadi tidak ada
-// satu pun keadaan formulir yang tersimpan di klien.
+// Menu "⋯" di ujung baris tabel — DS-56. Komponen klien hanya supaya menu bisa
+// ditutup lewat klik-di-luar/Escape. Isinya cuma tautan; aksinya hidup di
+// dialog yang dirender server dari URL (DS-42).
 
 import Link from "next/link";
 import { MoreHorizontal } from "lucide-react";

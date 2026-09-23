@@ -1,9 +1,6 @@
-// Layar A5 Pelatih & staf — UC-A17.
-//
-// Bukan layar CRUD. Coach adalah baris `users` dengan `peran='coach'`
-// (05-data-model.md bagian 7), jadi yang berguna di sini bukan formulir
-// melainkan jawaban atas satu pertanyaan: siapa mengajar berapa kelas.
-// Beban yang timpang baru terlihat kalau diletakkan bersebelahan.
+// Layar A5 Pelatih & staf — UC-A17. Bukan layar CRUD: coach adalah baris
+// `users` dengan `peran='coach'`, jadi yang berguna di sini jawaban atas satu
+// pertanyaan — siapa mengajar berapa kelas.
 
 import Link from "next/link";
 import { pg } from "@/db";
