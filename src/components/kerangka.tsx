@@ -320,6 +320,7 @@ export function Kerangka({
 export function Kartu({
   judul,
   catatan,
+  aksi,
   padat,
   min0,
   warna = "bg-background border-border",
@@ -327,6 +328,8 @@ export function Kartu({
 }: {
   judul?: string;
   catatan?: string;
+  /** Satu tombol di ujung kanan kepala kartu — "Tambah", "Buka", sejenisnya. */
+  aksi?: React.ReactNode;
   padat?: boolean;
   /** Butir grid: matikan `min-width:auto` supaya isinya tidak melarkan induknya. */
   min0?: boolean;
@@ -336,11 +339,14 @@ export function Kartu({
   return (
     <section className={`rounded-md border ${min0 ? "min-w-0 " : ""}${warna}`}>
       {judul && (
-        <div className="border-b border-inherit px-4 py-3">
-          <h2 className="text-app-section">{judul}</h2>
-          {catatan && (
-            <p className="text-app-body-sm text-muted-foreground">{catatan}</p>
-          )}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-inherit px-4 py-3">
+          <div className="min-w-0">
+            <h2 className="text-app-section">{judul}</h2>
+            {catatan && (
+              <p className="text-app-body-sm text-muted-foreground">{catatan}</p>
+            )}
+          </div>
+          {aksi}
         </div>
       )}
       <div className={padat ? "" : "p-4"}>{children}</div>

@@ -29,7 +29,8 @@ import {
   NAMA_JENIS_GANDA,
   simpanJangkaTerbit,
   ubahAktifPaket,
-  ubahCakupanPaket,
+  ubahJenisKelas,
+  ubahPaket,
 } from "@/db/kelola";
 import { generateSesi } from "@/db/job";
 import { pastikanAdmin, pastikanOwner } from "@/lib/masuk";
@@ -94,9 +95,14 @@ function angkaOpsional(
    mencetak paket Rp 0 adalah risiko yang tidak perlu ada. Admin tetap boleh
    MELIHAT katalognya — yang dijaga kemampuannya, bukan layarnya.          */
 
-export async function tambahPaket(formData: FormData) {
+/**
+ * Satu aksi untuk buat dan ubah. Mengubah hanya boleh selama paketnya belum
+ * dibeli siapa pun — `ubahPaket()` yang menjaganya, di dalam transaksinya.
+ */
+export async function simpanPaket(formData: FormData) {
   await pastikanOwner();
 
+  const id = String(formData.get("id") ?? "");
   const nama = String(formData.get("nama") ?? "").trim();
   if (nama.length < 3 || nama.length > 60)
     keLayanan("Nama paket harus 3–60 karakter.");
@@ -113,48 +119,76 @@ export async function tambahPaket(formData: FormData) {
   if (kelas.length === 0)
     keLayanan("Pilih minimal satu jenis kelas, kalau tidak paketnya tidak bisa dipakai.");
 
-  const studio = await setelanLengkap(pg);
-  await buatPaket(pg, {
-    studio_id: studio.id,
-    nama,
-    jumlah_kredit: kredit,
-    masa_berlaku_hari: masa,
-    harga_rupiah: harga,
-    class_type_ids: kelas,
-  });
+  if (id) {
+    const berhasil = await ubahPaket(pg, id, {
+      nama,
+      jumlah_kredit: kredit,
+      masa_berlaku_hari: masa,
+      harga_rupiah: harga,
+      class_type_ids: kelas,
+    });
+    if (!berhasil)
+      keLayanan(
+        `"${nama}" sudah ada yang membeli, jadi tidak bisa diubah — harga dan namanya ` +
+          "dibaca hidup-hidup oleh buku transaksi, dan cakupannya menentukan kredit " +
+          "yang sudah dibayar. Sembunyikan paket ini lalu buat penggantinya.",
+      );
+  } else {
+    const studio = await setelanLengkap(pg);
+    await buatPaket(pg, {
+      studio_id: studio.id,
+      nama,
+      jumlah_kredit: kredit,
+      masa_berlaku_hari: masa,
+      harga_rupiah: harga,
+      class_type_ids: kelas,
+    });
+  }
 
   revalidatePath("/admin/layanan");
   revalidatePath("/"); // harga tampil di halaman publik
-  keLayanan(`Paket "${nama}" dibuat — ${kredit} kredit, berlaku ${masa} hari.`);
+  revalidatePath("/paket");
+  keLayanan(
+    `"${nama}" ${id ? "disimpan" : "dibuat"} — ${kredit} kredit, berlaku ${masa} hari.`,
+  );
 }
 
-/* ── Jenis kelas — UC-O02 ──────────────────────────────────────────────────
-   Kewenangan OWNER, sekelompok dengan paket: jenis kelas adalah katalog yang
-   sama. Daftar inilah yang muncul sebagai "berlaku untuk" di kartu paket
-   (BR-1.4) dan sebagai saringan di layar jadwal — satu sumber, tiga tempat. */
-
-export async function tambahJenisKelas(formData: FormData) {
+/**
+ * Satu aksi untuk buat dan ubah: `id` kosong berarti baru. Formulirnya memang
+ * satu formulir yang sama, jadi memecahnya jadi dua aksi berarti dua tempat
+ * yang harus diubah tiap kali batasnya bergeser.
+ */
+export async function simpanJenisKelas(formData: FormData) {
   await pastikanOwner();
 
+  const id = String(formData.get("id") ?? "");
   const nama = String(formData.get("nama") ?? "").trim();
   if (nama.length < 2 || nama.length > 40)
     keLayanan("Nama jenis kelas harus 2–40 karakter.");
 
   const kapasitas = angka(formData, "kapasitas_default", BATAS_JENIS.kapasitas_default);
   const durasi = angka(formData, "durasi_menit", BATAS_JENIS.durasi_menit);
-  if (kapasitas === null) keLayanan("Kapasitas bawaan harus 1–60.");
+  if (kapasitas === null) keLayanan("Kursi bawaan harus 1–60.");
   if (durasi === null) keLayanan("Durasi harus 15–240 menit.");
 
-  const studio = await setelanLengkap(pg);
   try {
-    await buatJenisKelas(pg, {
-      studio_id: studio.id,
-      nama,
-      kapasitas_default: kapasitas,
-      durasi_menit: durasi,
-    });
+    if (id) {
+      await ubahJenisKelas(pg, id, {
+        nama,
+        kapasitas_default: kapasitas,
+        durasi_menit: durasi,
+      });
+    } else {
+      const studio = await setelanLengkap(pg);
+      await buatJenisKelas(pg, {
+        studio_id: studio.id,
+        nama,
+        kapasitas_default: kapasitas,
+        durasi_menit: durasi,
+      });
+    }
   } catch (e) {
-    // Nama ganda ditangkap dari index, bukan dari cek-dulu-baru-insert.
+    // Nama ganda ditangkap dari index, bukan dari cek-dulu-baru-simpan.
     const galat = e as { constraint_name?: string };
     if (galat.constraint_name !== NAMA_JENIS_GANDA) throw e;
     keLayanan(`Jenis kelas "${nama}" sudah ada.`);
@@ -163,9 +197,11 @@ export async function tambahJenisKelas(formData: FormData) {
   revalidatePath("/admin/layanan");
   revalidatePath("/admin/jadwal");
   revalidatePath("/jadwal");
+  revalidatePath("/paket");
   keLayanan(
-    `Jenis kelas "${nama}" dibuat — ${kapasitas} kursi, ${durasi} menit. ` +
-      "Tinggal dijadwalkan di Aturan Jadwal dan dimasukkan ke paket.",
+    id
+      ? `"${nama}" disimpan — ${kapasitas} kursi, ${durasi} menit. Sesi yang sudah terbit tidak ikut berubah.`
+      : `"${nama}" dibuat — ${kapasitas} kursi, ${durasi} menit. Tinggal dijadwalkan dan dimasukkan ke paket.`,
   );
 }
 
@@ -184,36 +220,6 @@ export async function buangJenisKelas(formData: FormData) {
   revalidatePath("/admin/layanan");
   revalidatePath("/jadwal");
   keLayanan(`Jenis kelas "${nama}" dihapus.`);
-}
-
-/**
- * Perbaiki salah centang "kelas yang tercakup" — hanya untuk paket yang belum
- * pernah dibeli siapa pun. Begitu ada yang memegangnya, jalannya tetap yang
- * lama: sembunyikan, lalu terbitkan paket baru yang benar.
- */
-export async function setCakupanPaket(formData: FormData) {
-  await pastikanOwner();
-
-  const id = String(formData.get("id"));
-  const nama = String(formData.get("nama") ?? "paket ini");
-
-  // BR-1.4 — paket tanpa jenis kelas tidak bisa dipakai membooking apa pun.
-  const kelas = formData.getAll("class_type_ids").map(String).filter(Boolean);
-  if (kelas.length === 0)
-    keLayanan("Pilih minimal satu jenis kelas, kalau tidak paketnya tidak bisa dipakai.");
-
-  const berhasil = await ubahCakupanPaket(pg, id, kelas);
-  if (!berhasil)
-    keLayanan(
-      `"${nama}" sudah ada yang membeli, jadi cakupannya tidak bisa diubah — ` +
-        "kredit yang sudah dibayar akan berubah artinya. Sembunyikan paket ini " +
-        "lalu buat paket baru yang benar.",
-    );
-
-  revalidatePath("/admin/layanan");
-  revalidatePath("/"); // cakupan tampil di kartu paket halaman publik
-  revalidatePath("/paket");
-  keLayanan(`Cakupan "${nama}" diperbarui — sekarang berlaku di ${kelas.length} jenis kelas.`);
 }
 
 export async function setAktifPaket(formData: FormData) {

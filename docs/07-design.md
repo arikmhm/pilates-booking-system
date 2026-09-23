@@ -719,79 +719,76 @@ Semua batas nilai di formulir **diulang di server action**, bukan cuma `min`/`ma
 input. Atribut HTML itu kenyamanan pengguna; server action bisa dipanggil tanpa
 browser sama sekali.
 
-`DS-53` — **Jenis kelas boleh ditambah dari layar, tidak boleh diubah.**
+`DS-53` — **Apa yang boleh diubah ditentukan oleh siapa yang sudah terlanjur
+memegangnya.**
 
-Satu daftar `class_types` melayani tiga tempat sekaligus: yang dijadwalkan di A7, yang
-dicentang sebagai "kelas yang tercakup" di kartu paket (BR-1.4), dan yang jadi saringan
-di layar jadwal. Karena itu menambahnya aman tapi mengubahnya tidak:
+Satu daftar `class_types` melayani tiga tempat: yang dijadwalkan di A7, yang dicentang
+sebagai "kelas yang tercakup" di kartu paket (BR-1.4), dan yang jadi saringan di layar
+jadwal. Satu daftar `packages` menentukan apa yang dibayar. Keduanya punya batas yang
+berbeda, dan bedanya bukan selera:
 
-- **Menambah** tidak menyentuh apa pun yang sudah jalan — BR-7.3 menyalin kapasitas ke
-  `sessions` saat sesi dibuat, jadi baris baru tidak mengubah satu pun sesi lama.
-  Formulirnya duduk di kanan daftarnya (`DS-34`), dan apa yang baru dibuat langsung
-  muncul sebagai pilihan di formulir paket tepat di bawahnya.
-- **Mengubah** nama atau kapasitas jenis yang sudah dipakai mengubah arti kartu paket
-  yang sudah dibeli orang. Itu percakapan, bukan formulir — dan sengaja tidak ada.
-- **Menghapus** hanya untuk yang belum menempel di slot, sesi, maupun paket: salah
-  ketik yang baru saja dibuat. Tombolnya **tidak digambar** begitu jenisnya terpakai,
-  bukan digambar lalu gagal — syarat di layar sama persis dengan syarat di `DELETE`-nya.
+**Jenis kelas selalu boleh diubah — nama, kursi bawaan, durasi.** BR-7.3 menyalin
+kapasitas dan durasi ke `sessions` saat sesi dibuat, jadi sesi yang sudah terbit
+beserta bookingnya tidak ikut berubah; yang berubah cuma sesi yang terbit sesudahnya,
+dan itu memang maksud orang yang mengubahnya. Namanya pun aman: paket menunjuk jenis
+kelas lewat id, bukan nama. (Versi pertama melarangnya karena mengira cakupan paket
+ikut berubah. Tidak — yang berubah cuma labelnya.)
 
-Nama unik per studio dijaga index, bukan cek-dulu-baru-insert: dua tab yang mengirim
-nama yang sama pada saat yang sama sama-sama membaca "belum ada". Pola yang sama dengan
-kapasitas (BR-2.3).
+**Paket hanya boleh diubah selama belum ada yang membelinya.** Kredit dan masa berlaku
+memang disalin ke `member_packages` saat dibeli, tapi **harga dan nama dibaca
+hidup-hidup** oleh buku transaksi dan laporan: mengubahnya menulis ulang riwayat
+penjualan yang sudah terjadi. Cakupannya lebih keras lagi — mempersempitnya membuat
+kredit yang sudah dibayar ditolak di kelas yang kemarin masih boleh (BR-1.4).
+Sesudah ada pemegangnya, jalannya yang sudah tertulis di
+[02-rules.md](02-rules.md) bagian 5: sembunyikan paketnya, terbitkan yang baru.
 
-**Aturan yang sama berlaku untuk cakupan paket, dengan batas yang berbeda: sampai ada
-yang membelinya.** "Kelas yang tercakup" adalah satu-satunya bagian paket yang boleh
-diperbaiki dari layar, dan hanya selama `terjual = 0`. Sesudah ada pemegangnya,
-mempersempitnya membuat kredit yang sudah dibayar tiba-tiba ditolak di kelas yang
-kemarin masih boleh (BR-1.4), dan memperluasnya memberi orang sesuatu yang tidak dia
-beli — jadi jalannya tetap yang lama: sembunyikan paketnya, terbitkan yang baru.
+**Menghapus jenis kelas hanya untuk yang belum menempel di slot, sesi, maupun paket** —
+salah ketik yang baru saja dibuat.
 
-Yang ditutup celah nyata, bukan kenyamanan: paket bernama "Private" yang ikut
-mencentang Reformer, Mat, Chair, dan Tower **bukan paket privat** — pembelinya bayar
-harga privat lalu boleh membelanjakan kreditnya di kelas rombongan. Sebelum ini salah
-centang seperti itu tidak bisa dibetulkan sama sekali; satu-satunya jalan menyembunyikan
-paketnya dan membuat kembarannya.
+Ketiganya diperiksa **di lapisan db**, di dalam transaksinya, bukan dipercaya dari
+layar: server action bisa dipanggil tanpa browser sama sekali. Layar cuma tidak
+menggambar aksi yang pasti ditolak — butir "Ubah" hilang dari menu paket yang sudah
+laku, butir "Hapus" hilang dari jenis kelas yang sudah dipakai, dan dialognya pun tidak
+dirender walau URL-nya diketik. Tombol yang pasti gagal lebih buruk daripada tombol
+yang tidak ada.
 
-Formulirnya sembunyi di balik `<details>` pada barisnya sendiri — tanpa JS, dan baris
-yang tidak sedang diperbaiki tetap satu baris. Barisnya tidak digambar sama sekali untuk
-paket yang sudah laku: tombol yang pasti ditolak lebih buruk daripada tombol yang tidak
-ada, aturan yang sama dengan tombol hapus jenis kelas di atas.
+Nama jenis kelas unik per studio dijaga index, bukan cek-dulu-baru-simpan: dua tab yang
+mengirim nama yang sama pada saat yang sama sama-sama membaca "belum ada". Pola yang
+sama dengan kapasitas (BR-2.3).
 
-`DS-54` — **Layar yang memuat dua hal yang gampang tertukar wajib mengatakan bedanya
-di kalimat pertama.**
+`DS-54` — **Dua hal yang gampang tertukar dibedakan oleh judulnya, bukan oleh
+paragraf.**
 
-A6 memuat *jenis kelas* dan *paket*. Keduanya daftar bernama mirip — dan paketnya
-memang bernama "10 Sesi Reformer" sementara jenis kelasnya "Reformer", jadi tertukar
-itu bukan kecerobohan pembacanya. Layar ini satu-satunya tempat model bisnis studio
-terlihat utuh, jadi ia yang harus menjelaskannya:
+A6 memuat *jenis kelas* dan *paket*. Keduanya daftar bernama mirip — paketnya bernama
+"10 Sesi Reformer" sementara jenis kelasnya "Reformer" — jadi tertukar itu bukan
+kecerobohan pembacanya, dan layarnya memang harus membedakannya.
 
-> Studio ini menjual **kredit**, bukan kelas satuan. **Jenis kelas** adalah apa yang
-> diajarkan — itu yang masuk jadwal. **Paket** adalah apa yang dibayar: sejumlah
-> kredit, masa berlakunya, dan daftar jenis kelas tempat kredit itu bisa dipakai.
-> Satu kredit menukar satu kursi.
+Versi pertama membedakannya dengan paragraf pembuka yang menjelaskan model bisnisnya:
+studio menjual kredit, jenis kelas yang diajarkan, paket yang dibayar. Benar isinya,
+dan dibuang. **Penjelasan model bisnis adalah pelajaran yang cuma dibutuhkan sekali,
+sementara paragrafnya muncul di tiap kunjungan** — mulai kunjungan kedua ia bukan
+bantuan lagi, cuma empat baris yang harus dilewati sebelum sampai ke tabelnya.
 
-Empat hal yang mengikat:
+Yang tersisa mengerjakan tugas yang sama dengan sepersepuluh ruang: judul kartu yang
+membawa perannya — "Jenis kelas · yang diajarkan dan masuk jadwal, tidak punya harga"
+dan "Paket · yang dibayar member, dan yang tampil di halaman publik". Satu baris per
+kartu, terbaca sekilas, dan tetap ada saat dibutuhkan. Nama layarnya sendiri sudah
+disebut remah roti (`DS-38`), jadi `<h1>`-nya `sr-only`.
 
-1. **Judul kartu membawa perannya, bukan cuma namanya** — "Jenis kelas — apa yang
-   diajarkan", "Paket — apa yang dibeli". Judul satu kata memaksa pembacanya menebak.
-2. **Urutannya mengikuti arah uang**: yang diajarkan dulu, yang dijual sesudahnya.
-   Paket menunjuk ke jenis kelas, bukan sebaliknya.
-3. **Satu pasang daftar+formulir per baris kisi**, bukan dua kolom berisi dua daftar
-   lalu dua formulir. Disusun per kolom, "Jenis kelas baru" mendarat sejajar daftar
-   paket dan terbaca sebagai formulir untuk daftar yang salah. Di dalam tiap baris
-   tetap `DS-34`: daftar kiri, formulir kanan.
-4. **Kode `BR-x.y` tidak pernah muncul di teks yang dibaca pengguna.** "BR-1.4 — kredit
-   hanya bisa dipakai untuk kelas yang dicentang" diganti akibatnya: "Yang tidak
-   dicentang akan ditolak saat member mencoba memesan." Kodenya tetap hidup di komentar
-   kode dan di dokumen — di sana ia memang alamat.
+**Kode `BR-x.y` tidak pernah muncul di teks yang dibaca pengguna.** "BR-1.4 — kredit
+hanya bisa dipakai untuk kelas yang dicentang" diganti akibatnya. Kodenya tetap hidup
+di komentar kode dan di dokumen — di sana ia memang alamat.
 
 `DS-55` — **Kursi vs kredit: angka yang berani dibaca sebagai kewajiban.**
 
 Blok terakhir A6 menjawab pertanyaan yang tidak dijawab layar mana pun sebelumnya:
 kredit yang sudah dijual, kursinya sudah ada belum? Ia duduk paling bawah karena ia
-**akibat** dari dua blok di atasnya, melebar penuh karena tidak punya formulir pasangan,
-dan berubah `warn-surface` begitu ada yang kurang — satu-satunya keadaan di layar ini
-yang menuntut tindakan, plus tombol ke Aturan Jadwal untuk melakukannya.
+**akibat** dari dua tabel di atasnya.
+
+**Ia hanya digambar saat ada yang kurang.** Kartu yang selalu hijau adalah baris yang
+berhenti dibaca orang, dan layar ini sudah cukup padat tanpa kabar baik yang diulang
+tiap kunjungan. Saat muncul ia `warn-surface` bertabel, dengan tombol ke Aturan Jadwal —
+karena menjadwalkan kelas persis tindakan yang dituntutnya.
 
 **Kredit terkunci dan kredit bebas dipisah, dan itu yang membuat angkanya jujur.**
 Satu kredit bisa dipakai di semua jenis kelas yang dicakup paketnya. Menjumlahkannya di
@@ -820,14 +817,40 @@ hangus duluan karena kursinya baru tersedia belakangan. Karena itu tanggal hangu
 Angka yang mengaku lebih pintar dari dirinya sendiri lebih berbahaya daripada tidak ada
 angka.
 
-**Angka di tiap baris menjawab pertanyaan layar ini, bukan pertanyaan layar sebelah.**
-Jenis kelas dulu menampilkan "5 slot / minggu · 15 sesi mendatang"; yang kedua itu
-kabar jadwal. Sekarang "Masuk 3 paket · 5 slot / minggu", dan keduanya berbunyi negatif
-kalau nol — "Belum masuk paket", "Belum dijadwalkan". Jenis kelas yang kosong di
-keduanya tidak bisa dibeli dan tidak pernah berjalan, dan itulah satu-satunya keadaan
-yang menuntut tindakan dari layar ini.
+`DS-56` — **Baris adalah tabel, aksinya di menu "⋯", formulirnya dialog dari URL.**
 
-`DS-40` — **Kalender jadwal: satu bilah kendali di kiri atas, dan kalender yang
+Layar kelola katalog menampung banyak baris pendek yang dibandingkan satu sama lain —
+harga lawan harga, kursi lawan kursi. Itu tabel, bukan daftar kartu: angka yang rata
+kanan dan `tabular-nums` bisa dibaca menurun tanpa membaca labelnya lagi. Kolom yang
+nol ditulis **"—"**, bukan "0" — yang nol di layar ini bukan hitungan yang kebetulan
+kosong, tapi keadaan yang perlu diperbaiki ("belum masuk paket", "belum dijadwalkan").
+Tabelnya menggulung mendatar di dalam kotaknya sendiri, tidak pernah menggulungkan
+halaman.
+
+**Aksi per baris masuk menu "⋯" di ujung kanan**, bukan dua tombol yang berjajar di
+tiap baris. Empat baris × dua tombol adalah delapan tombol yang bersaing dengan
+angkanya; satu pemicu per baris mengembalikan tabelnya jadi tabel. Pemicunya 44px
+(`DS-11`) walau ikonnya 16px.
+
+Menu itu **satu-satunya komponen klien di layar ini**, dan hanya karena menu yang tidak
+bisa ditutup dengan klik di luar atau Escape lebih buruk daripada tidak ada menu.
+Isinya cuma tautan — bukan tombol form: Radix melepas menunya dari DOM begitu sebuah
+butir dipilih, dan form yang ikut terlepas di tengah pengirimannya adalah balapan yang
+tidak perlu ada.
+
+**Formulirnya dialog yang hidup di URL** (`?panel=jenis&id=…`), pola yang sama dengan
+panel konfirmasi M1 (`DS-42`). Akibatnya ia dirender server dengan isinya sudah terisi
+dari database, menutupnya cuma tautan, dan tidak ada satu pun keadaan formulir yang
+tersimpan di klien. "Buat" dan "ubah" satu berkas yang sama; yang membedakan cuma
+`<input type="hidden" name="id">` yang kosong.
+
+**Aksi yang menghilangkan sesuatu dari layar lewat dialog tanya dulu** — termasuk
+"Sembunyikan", yang sebenarnya bisa dibatalkan. Ia mencabut paket dari halaman publik,
+dan satu ketukan keliru di menu "⋯" tidak boleh langsung melakukannya. Dialognya
+menyebut akibatnya, bukan cuma bertanya: "Member yang sudah membelinya tetap memegang
+kreditnya, dan paketnya bisa dijual lagi kapan saja."
+
+`DS-40` — **Kalender jadwal: satu bilah kendali di kiri atas`DS-40` — **Kalender jadwal: satu bilah kendali di kiri atas, dan kalender yang
 menggulung sendiri.**
 
 Semua saringan duduk di satu bilah yang menempel di atas (`DS-51`). **Layar ini tidak

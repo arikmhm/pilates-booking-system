@@ -15,7 +15,7 @@
 
 import { afterAll, beforeAll, expect, test } from "vitest";
 import postgres from "postgres";
-import { kursiVsKredit, ubahCakupanPaket } from "./kelola";
+import { kursiVsKredit, ubahPaket } from "./kelola";
 import { bersihkan as kosongkan, dbUji } from "./uji-db";
 
 const sql = postgres(dbUji(), { max: 4 });
@@ -174,11 +174,22 @@ test("tanggal hangus terdekat ikut dilaporkan", async () => {
 
 /* ── Penjaga ubah-cakupan paket ──────────────────────────────────────────── */
 
-test("cakupan paket yang belum pernah dibeli boleh diperbaiki", async () => {
+/** Nilai lain paket dibiarkan apa adanya — yang diuji di sini penjaganya. */
+const ISI = { nama: "Belum Laku", jumlah_kredit: 3, masa_berlaku_hari: 30, harga_rupiah: 900000 };
+
+test("paket yang belum pernah dibeli boleh diubah", async () => {
   // Salah centang saat membuat paket harus bisa dibetulkan, bukan menyisakan
   // paket rusak yang cuma bisa disembunyikan.
-  const berhasil = await ubahCakupanPaket(sql, paketBelumLaku, [jenisId.Private]);
+  const berhasil = await ubahPaket(sql, paketBelumLaku, {
+    ...ISI,
+    harga_rupiah: 750_000,
+    class_type_ids: [jenisId.Private],
+  });
   expect(berhasil).toBe(true);
+
+  const [p] = await sql<{ harga_rupiah: number }[]>`
+    select harga_rupiah from packages where id = ${paketBelumLaku}`;
+  expect(p.harga_rupiah).toBe(750_000);
 
   const cakupan = await sql<{ nama: string }[]>`
     select ct.nama from package_class_types pct
@@ -187,14 +198,27 @@ test("cakupan paket yang belum pernah dibeli boleh diperbaiki", async () => {
   expect(cakupan.map((c) => c.nama)).toEqual(["Private"]);
 });
 
-test("paket yang sudah dibeli DITOLAK, cakupannya tidak tersentuh", async () => {
-  // Mempersempit cakupan paket yang sudah dipegang orang membuat kredit yang
-  // sudah dibayar tiba-tiba ditolak di kelas yang kemarin masih boleh (BR-1.4).
-  const [laku] = await sql<{ id: string }[]>`
-    select id from packages where nama = 'Bebas 4 Sesi'`;
+test("paket yang sudah dibeli DITOLAK, dan tidak tersentuh sedikit pun", async () => {
+  // Harga dan nama dibaca hidup-hidup oleh buku transaksi, jadi mengubahnya
+  // menulis ulang riwayat penjualan. Mempersempit cakupan lebih keras lagi:
+  // kredit yang sudah dibayar jadi ditolak di kelas yang kemarin masih boleh
+  // (BR-1.4).
+  const [laku] = await sql<{ id: string; harga_rupiah: number }[]>`
+    select id, harga_rupiah from packages where nama = 'Bebas 4 Sesi'`;
 
-  const berhasil = await ubahCakupanPaket(sql, laku.id, [jenisId.Private]);
+  const berhasil = await ubahPaket(sql, laku.id, {
+    nama: "Nama Baru",
+    jumlah_kredit: 99,
+    masa_berlaku_hari: 999,
+    harga_rupiah: 1,
+    class_type_ids: [jenisId.Private],
+  });
   expect(berhasil).toBe(false);
+
+  const [tetap] = await sql<{ nama: string; harga_rupiah: number }[]>`
+    select nama, harga_rupiah from packages where id = ${laku.id}`;
+  expect(tetap.nama).toBe("Bebas 4 Sesi");
+  expect(tetap.harga_rupiah).toBe(laku.harga_rupiah);
 
   const cakupan = await sql<{ nama: string }[]>`
     select ct.nama from package_class_types pct

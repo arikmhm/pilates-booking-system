@@ -176,6 +176,28 @@ export async function buatJenisKelas(
 }
 
 /**
+ * Ubah jenis kelas. Aman untuk yang sudah dipakai, dan itu bukan kelonggaran:
+ * BR-7.3 menyalin kapasitas dan durasi ke `sessions` saat sesi dibuat, jadi
+ * sesi yang sudah terbit — beserta bookingnya — tidak ikut berubah. Yang
+ * berubah cuma sesi yang terbit sesudah ini, dan itu memang maksudnya.
+ *
+ * Namanya pun aman diganti: paket menunjuk jenis kelas lewat id, bukan nama,
+ * jadi cakupan paket yang sudah dibeli orang tetap menunjuk hal yang sama.
+ */
+export async function ubahJenisKelas(
+  sql: Sql,
+  id: string,
+  args: { nama: string; kapasitas_default: number; durasi_menit: number },
+) {
+  await sql`
+    update class_types
+       set nama = ${args.nama},
+           kapasitas_default = ${args.kapasitas_default},
+           durasi_menit = ${args.durasi_menit}
+     where id = ${id}`;
+}
+
+/**
  * Hapus jenis kelas yang **belum dipakai apa pun** — salah ketik yang baru
  * saja dibuat. Begitu ia menempel di slot mingguan, sesi, atau paket, ia
  * tidak bisa dihapus: `sessions` dan `package_class_types` menunjuk ke sini,
@@ -295,27 +317,28 @@ export async function daftarPaket(sql: Sql): Promise<BarisPaket[]> {
 }
 
 /**
- * Ganti daftar jenis kelas yang tercakup sebuah paket — **hanya selama belum
- * ada yang membelinya.**
+ * Ubah paket — **hanya selama belum ada yang membelinya.**
  *
- * Paket yang sudah dipegang orang tidak boleh berubah artinya: mempersempit
- * cakupannya membuat kredit yang sudah dibayar tiba-tiba ditolak di kelas yang
- * kemarin masih boleh (BR-1.4), dan memperluasnya memberi orang sesuatu yang
- * tidak dia beli. Untuk itu jalannya tetap yang lama — sembunyikan paketnya,
- * terbitkan yang baru. Yang ditutup di sini cuma salah centang pada paket yang
- * belum sempat dijual.
+ * Sesudah ada pemegangnya, tidak ada satu pun bagian paket yang aman diubah.
+ * Kredit dan masa berlaku memang disalin ke `member_packages` saat dibeli,
+ * tapi **harga dan nama dibaca hidup-hidup** oleh buku transaksi dan laporan
+ * (`src/db/transaksi.ts`): mengubahnya menulis ulang riwayat penjualan yang
+ * sudah terjadi. Cakupannya lebih keras lagi — mempersempitnya membuat kredit
+ * yang sudah dibayar ditolak di kelas yang kemarin masih boleh (BR-1.4).
  *
- * Syaratnya diperiksa di dalam transaksinya. Ia belum kebal balapan sempurna —
- * pembelian menulis ke `member_packages` tanpa menyentuh baris `packages`, jadi
- * pemberian paket yang terjadi pada milidetik yang sama masih bisa lolos.
- * Akibat terburuknya pembeli itu mendapat cakupan versi baru, yang memang yang
- * dimaui pemiliknya; menutupnya rapat menuntut kunci yang dipegang jalur beli
- * juga, dan itu harga yang tidak sepadan.
+ * Jadi jalannya tetap yang lama dan sudah tertulis di 02-rules bagian 5:
+ * sembunyikan paketnya, terbitkan yang baru.
  */
-export async function ubahCakupanPaket(
+export async function ubahPaket(
   sql: postgres.Sql,
   id: string,
-  class_type_ids: string[],
+  args: {
+    nama: string;
+    jumlah_kredit: number;
+    masa_berlaku_hari: number;
+    harga_rupiah: number;
+    class_type_ids: string[];
+  },
 ): Promise<boolean> {
   return sql.begin(async (tx) => {
     const [paket] = await tx<{ id: string }[]>`
@@ -326,10 +349,17 @@ export async function ubahCakupanPaket(
        for update`;
     if (!paket) return false;
 
+    await tx`
+      update packages
+         set nama = ${args.nama},
+             jumlah_kredit = ${args.jumlah_kredit},
+             masa_berlaku_hari = ${args.masa_berlaku_hari},
+             harga_rupiah = ${args.harga_rupiah}
+       where id = ${id}`;
     await tx`delete from package_class_types where package_id = ${id}`;
     await tx`
       insert into package_class_types ${tx(
-        class_type_ids.map((c) => ({ package_id: id, class_type_id: c })),
+        args.class_type_ids.map((c) => ({ package_id: id, class_type_id: c })),
         "package_id",
         "class_type_id",
       )}`;
