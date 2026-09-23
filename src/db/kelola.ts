@@ -279,6 +279,136 @@ export async function daftarPaket(sql: Sql): Promise<BarisPaket[]> {
   return baris.map((b) => ({ ...b, kelas: b.kelas ?? [] }));
 }
 
+/* ── Kursi vs kredit — UC-O02, UC-O06 ─────────────────────────────────────
+
+   Pertanyaan yang tidak bisa dijawab layar mana pun sebelum ini: "kredit yang
+   sudah saya jual, ada kursinya belum?" Studio yang menjual 5 kredit Private
+   berkursi satu berutang lima sesi sebelum kredit itu hangus — dan kalau
+   tidak dijadwalkan, kreditnya tetap hangus (BR-1.6). Uangnya di studio,
+   kreditnya hilang di member. Itu mesin sengketa.
+
+   **Hitungannya syarat perlu, bukan syarat cukup.** Ia membandingkan jumlah
+   di dalam satu jendela, bukan mencocokkan tiap member ke tiap kursi: kalau
+   kursinya kurang, pasti ada yang tidak kebagian; kalau cukup, masih mungkin
+   ada member yang kreditnya hangus duluan karena kursinya baru tersedia
+   sesudah tanggal hangusnya. Karena itu tanggal hangus terdekat ikut
+   disebut — sisanya penilaian orang, bukan penilaian query.                */
+
+export type KursiVsKredit = {
+  /**
+   * Jenis kelas yang punya kredit TERKUNCI — kredit dari paket yang cuma
+   * mencakup jenis ini, jadi pemiliknya tidak punya kelas lain untuk
+   * memakainya. Di sinilah kewajiban studio paling keras.
+   */
+  terkunci: {
+    id: string;
+    nama: string;
+    kredit: number;
+    kursi: number;
+    hangus_terdekat: Date;
+    hangus_terakhir: Date;
+  }[];
+  /**
+   * Kredit dari paket yang mencakup lebih dari satu jenis kelas. Pemiliknya
+   * punya pilihan, jadi tidak bisa dibebankan ke satu jenis kelas mana pun —
+   * yang masih berarti cuma totalnya lawan total kursi kosong.
+   */
+  bebas: { kredit: number; kursi: number; hangus_terakhir: Date | null };
+};
+
+/** Sisa kredit satu paket member = SUM(delta) — BR-1.7, tidak ada kolom saldo. */
+const SISA_KREDIT = `
+  join lateral (select coalesce(sum(cl.delta), 0)::int as sisa
+                  from credit_ledger cl
+                 where cl.member_package_id = mp.id) x on true`;
+
+export async function kursiVsKredit(
+  sql: Sql,
+  sekarang: Date,
+): Promise<KursiVsKredit> {
+  const kini = ts(sekarang);
+
+  const terkunci = await sql<
+    {
+      id: string;
+      nama: string;
+      kredit: number;
+      kursi: number;
+      hangus_terdekat: string | Date;
+      hangus_terakhir: string | Date;
+    }[]
+  >`
+    with paket_satu as (
+      -- having count(*) = 1 memastikan arraynya cuma berisi satu elemen;
+      -- min() tidak dipakai karena Postgres tidak punya min(uuid).
+      select package_id, (array_agg(class_type_id))[1] as class_type_id
+        from package_class_types
+       group by package_id
+      having count(*) = 1
+    ),
+    kredit as (
+      select ps.class_type_id,
+             sum(x.sisa)::int as kredit,
+             min(mp.hangus_at) as hangus_terdekat,
+             max(mp.hangus_at) as hangus_terakhir
+        from member_packages mp
+        join paket_satu ps on ps.package_id = mp.package_id
+        ${sql.unsafe(SISA_KREDIT)}
+       where mp.hangus_at > ${kini}::timestamptz and x.sisa > 0
+       group by ps.class_type_id
+    )
+    select ct.id, ct.nama, k.kredit, k.hangus_terdekat, k.hangus_terakhir,
+           (select coalesce(sum(s.kapasitas
+                   - (select count(*) from bookings b
+                       where b.session_id = s.id and b.status = 'confirmed')), 0)::int
+              from sessions s
+             where s.class_type_id = ct.id and s.status = 'scheduled'
+               and s.mulai_at > ${kini}::timestamptz
+               and s.mulai_at <= k.hangus_terakhir) as kursi
+      from kredit k
+      join class_types ct on ct.id = k.class_type_id
+     order by ct.nama`;
+
+  const [bebas] = await sql<
+    { kredit: number; hangus_terakhir: string | Date | null }[]
+  >`
+    with paket_satu as (
+      select package_id from package_class_types
+       group by package_id having count(*) = 1
+    )
+    select coalesce(sum(x.sisa), 0)::int as kredit,
+           max(mp.hangus_at) as hangus_terakhir
+      from member_packages mp
+      ${sql.unsafe(SISA_KREDIT)}
+     where mp.hangus_at > ${kini}::timestamptz and x.sisa > 0
+       and mp.package_id not in (select package_id from paket_satu)`;
+
+  const [kursiBebas] = bebas.hangus_terakhir
+    ? await sql<{ kursi: number }[]>`
+        select coalesce(sum(s.kapasitas
+               - (select count(*) from bookings b
+                   where b.session_id = s.id and b.status = 'confirmed')), 0)::int
+                 as kursi
+          from sessions s
+         where s.status = 'scheduled'
+           and s.mulai_at > ${kini}::timestamptz
+           and s.mulai_at <= ${ts(saat(bebas.hangus_terakhir))}::timestamptz`
+    : [{ kursi: 0 }];
+
+  return {
+    terkunci: terkunci.map((t) => ({
+      ...t,
+      hangus_terdekat: saat(t.hangus_terdekat),
+      hangus_terakhir: saat(t.hangus_terakhir),
+    })),
+    bebas: {
+      kredit: bebas.kredit,
+      kursi: kursiBebas.kursi,
+      hangus_terakhir: bebas.hangus_terakhir ? saat(bebas.hangus_terakhir) : null,
+    },
+  };
+}
+
 export const BATAS_PAKET = {
   jumlah_kredit: [1, 200],
   masa_berlaku_hari: [1, 730],

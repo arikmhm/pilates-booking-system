@@ -15,10 +15,11 @@
 // saja dibuat. Begitu ia menempel di slot, sesi, atau paket, tombolnya tidak
 // digambar sama sekali, bukan digambar lalu gagal.
 
+import Link from "next/link";
 import { pg } from "@/db";
-import { daftarJenisKelas, daftarPaket } from "@/db/kelola";
+import { daftarJenisKelas, daftarPaket, kursiVsKredit } from "@/db/kelola";
 import { pastikanAdmin } from "@/lib/masuk";
-import { rupiah } from "@/lib/waktu";
+import { rupiah, tanggalRingkasWib } from "@/lib/waktu";
 import { Chip, Kartu, Kerangka, Tombol } from "@/components/kerangka";
 import {
   buangJenisKelas,
@@ -43,10 +44,13 @@ export default async function A6({
   const owner = pengguna.peran === "owner";
   const { kabar } = await searchParams;
 
-  const [jenis, paket] = await Promise.all([
-    daftarJenisKelas(pg, new Date()),
+  const sekarang = new Date();
+  const [jenis, paket, muat] = await Promise.all([
+    daftarJenisKelas(pg, sekarang),
     daftarPaket(pg),
+    kursiVsKredit(pg, sekarang),
   ]);
+  const kurang = muat.terkunci.filter((t) => t.kursi < t.kredit);
 
   return (
     <Kerangka
@@ -360,6 +364,106 @@ export default async function A6({
           </Kartu>
           )}
         </div>
+
+        {/* DS-55 — pertanyaan terakhir layar ini, dan satu-satunya yang
+            menuntut tindakan: kredit yang sudah dijual, kursinya sudah ada
+            belum? Ia duduk paling bawah karena ia akibat dari dua blok di
+            atasnya, dan melebar penuh karena tidak punya formulir pasangan. */}
+        <Kartu
+          judul="Kursi vs kredit"
+          catatan="Kredit hangus pada tanggalnya entah studio menjadwalkan atau tidak. Kalau kursinya kurang, uangnya tetap di studio dan kelasnya hilang di member."
+          warna={
+            kurang.length
+              ? "bg-warn-surface border-warn-foreground/30"
+              : "bg-background border-border"
+          }
+        >
+          {muat.terkunci.length > 0 && (
+            <ul className="divide-y divide-border">
+              {muat.terkunci.map((t) => {
+                const selisih = t.kredit - t.kursi;
+                return (
+                  <li
+                    key={t.id}
+                    className="flex flex-wrap items-baseline gap-x-4 gap-y-1 py-3 first:pt-0"
+                  >
+                    <p className="min-w-32 text-app-body">{t.nama}</p>
+                    <p className="text-app-body-sm text-muted-foreground">
+                      <span className="text-foreground tabular-nums">
+                        {t.kredit} kredit
+                      </span>{" "}
+                      cuma bisa dipakai di sini, mulai hangus{" "}
+                      {tanggalRingkasWib(t.hangus_terdekat)}
+                    </p>
+                    <p className="text-app-body-sm text-muted-foreground">
+                      <span className="text-foreground tabular-nums">
+                        {t.kursi} kursi
+                      </span>{" "}
+                      kosong terjadwal sampai {tanggalRingkasWib(t.hangus_terakhir)}
+                    </p>
+                    {selisih > 0 ? (
+                      <Chip
+                        warna="bg-warn-surface text-warn-foreground"
+                        anak={`Kurang ${selisih} kursi`}
+                      />
+                    ) : (
+                      <Chip
+                        warna="bg-ok-surface text-ok-foreground"
+                        anak="Cukup"
+                      />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {/* Kredit dari paket yang mencakup beberapa jenis kelas tidak bisa
+              dibebankan ke satu jenis pun — pemiliknya punya pilihan. Yang
+              masih berarti cuma totalnya. */}
+          <p
+            className={`text-app-body-sm text-muted-foreground ${
+              muat.terkunci.length ? "mt-4" : ""
+            }`}
+          >
+            {muat.bebas.kredit > 0 ? (
+              <>
+                Di luar itu ada{" "}
+                <span className="tabular-nums text-foreground">
+                  {muat.bebas.kredit} kredit
+                </span>{" "}
+                dari paket yang mencakup beberapa jenis kelas — pemiliknya punya
+                pilihan, jadi tidak dibebankan ke satu jenis pun. Lawan{" "}
+                <span className="tabular-nums text-foreground">
+                  {muat.bebas.kursi} kursi
+                </span>{" "}
+                kosong terjadwal sampai{" "}
+                {muat.bebas.hangus_terakhir
+                  ? tanggalRingkasWib(muat.bebas.hangus_terakhir)
+                  : "—"}
+                .
+              </>
+            ) : (
+              "Belum ada kredit aktif dari paket yang mencakup beberapa jenis kelas."
+            )}
+          </p>
+
+          <p className="mt-2 max-w-[70ch] text-app-body-sm text-muted-foreground">
+            Hitungan ini menjawab &ldquo;cukup atau tidak&rdquo; untuk
+            keseluruhan, bukan untuk tiap member: kursi yang baru tersedia
+            sesudah kredit seseorang hangus tetap terhitung di sini. Tanggal
+            hangus terdekat disebut supaya sisanya bisa kamu nilai sendiri.
+          </p>
+
+          {kurang.length > 0 && (
+            <Link
+              href="/admin/jadwal"
+              className="mt-4 inline-flex min-h-11 items-center rounded-sm border border-foreground px-4 text-app-label font-medium uppercase"
+            >
+              Buka Aturan Jadwal
+            </Link>
+          )}
+        </Kartu>
       </div>
     </Kerangka>
   );

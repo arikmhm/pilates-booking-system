@@ -767,6 +767,41 @@ Empat hal yang mengikat:
    dicentang akan ditolak saat member mencoba memesan." Kodenya tetap hidup di komentar
    kode dan di dokumen — di sana ia memang alamat.
 
+`DS-55` — **Kursi vs kredit: angka yang berani dibaca sebagai kewajiban.**
+
+Blok terakhir A6 menjawab pertanyaan yang tidak dijawab layar mana pun sebelumnya:
+kredit yang sudah dijual, kursinya sudah ada belum? Ia duduk paling bawah karena ia
+**akibat** dari dua blok di atasnya, melebar penuh karena tidak punya formulir pasangan,
+dan berubah `warn-surface` begitu ada yang kurang — satu-satunya keadaan di layar ini
+yang menuntut tindakan, plus tombol ke Aturan Jadwal untuk melakukannya.
+
+**Kredit terkunci dan kredit bebas dipisah, dan itu yang membuat angkanya jujur.**
+Satu kredit bisa dipakai di semua jenis kelas yang dicakup paketnya. Menjumlahkannya di
+tiap jenis kelas berarti menghitung kredit yang sama berkali-kali: paket empat-jenis
+seharga 4 kredit akan tampak sebagai 16 kredit kewajiban. Jadi:
+
+- **Terkunci** — kredit dari paket yang cuma mencakup **satu** jenis kelas. Pemiliknya
+  tidak punya kelas lain untuk memakainya, jadi kewajibannya jatuh utuh ke jenis itu.
+  Ini baris yang bisa merah.
+- **Bebas** — kredit dari paket yang mencakup beberapa jenis. Tidak dibebankan ke satu
+  jenis pun; yang masih berarti cuma totalnya lawan total kursi kosong.
+
+Pemisahan itu sekalian memperlihatkan sesuatu yang selama ini tidak kelihatan: **paket
+bernama "Private" yang mencakup Reformer, Mat, Chair, dan Tower sekaligus bukan paket
+privat.** Kreditnya tidak pernah muncul sebagai kewajiban Private, karena pembelinya
+memang boleh membelanjakannya di kelas rombongan.
+
+**Jendelanya tanggal hangus, bukan "semua sesi mendatang".** Kursi yang terbit sesudah
+kredit hangus tidak akan pernah bisa dipakai, jadi ia tidak boleh ikut menenangkan.
+
+**Hitungannya syarat perlu, dan layarnya mengatakan itu.** Ia membandingkan jumlah di
+dalam satu jendela, bukan mencocokkan tiap member ke tiap kursi: kalau kursinya kurang,
+pasti ada yang tidak kebagian; kalau cukup, masih mungkin ada member yang kreditnya
+hangus duluan karena kursinya baru tersedia belakangan. Karena itu tanggal hangus
+**terdekat** ikut disebut, dan kalimat terakhir kartu menyatakan batas itu apa adanya.
+Angka yang mengaku lebih pintar dari dirinya sendiri lebih berbahaya daripada tidak ada
+angka.
+
 **Angka di tiap baris menjawab pertanyaan layar ini, bukan pertanyaan layar sebelah.**
 Jenis kelas dulu menampilkan "5 slot / minggu · 15 sesi mendatang"; yang kedua itu
 kabar jadwal. Sekarang "Masuk 3 paket · 5 slot / minggu", dan keduanya berbunyi negatif
