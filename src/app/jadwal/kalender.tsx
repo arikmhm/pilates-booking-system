@@ -9,10 +9,11 @@
 // state klien. Blok digambar `position: absolute` di dalam kolom harinya,
 // karena grid CSS tidak bisa menaruh sesi 06.00 dan 06.50 di baris yang sama.
 //
-// DS-40 — kalender menggulung SENDIRI, dua arah, bukan menggulungkan halaman.
-// Sejak kalender cuma memakai 8 dari 12 kolom, panel di sebelahnya harus tetap
-// terbaca saat jadwalnya panjang. Baris hari menempel di atas dan lajur jam
-// menempel di kiri, kalau tidak yang tergulung kehilangan sumbunya.
+// DS-40 — kalender menggulung sendiri MENDATAR saja. Tegaknya digambar utuh:
+// jadwal yang dipotong `max-height` menyembunyikan kelas sore di balik gulungan
+// kedua, dan lubang jadwal — satu-satunya alasan memakai bentuk kalender — baru
+// terbaca kalau seluruh harinya kelihatan sekaligus. Lajur jam tetap menempel
+// di kiri, kalau tidak yang tergulung mendatar kehilangan sumbunya.
 
 import { kunciHariWib, menitHariWib, namaHariWib, tanggalWib } from "@/lib/waktu";
 import type { BarisJadwal } from "@/db/booking";
@@ -98,13 +99,18 @@ export function Kalender({
   };
 
   return (
-    <div className="max-h-[calc(100svh-15rem)] overflow-auto rounded-md border border-border bg-background">
+    <div className="overflow-x-auto rounded-md border border-border bg-background">
       {/* 44rem = 7 kolom hari @ ~93px + lajur jam. Di bawah itu barulah muncul
           gulung mendatar, dan ia berhenti di tepi kotak ini — bukan di tepi
           halaman (DS-40). */}
-      <div className="min-w-[44rem]">
-        <div className={`${kolom} sticky top-0 z-30 border-b border-border bg-background`}>
-          <div className="sticky left-0 bg-background" />
+      {/* `pb-2` menampung separuh label jam terakhir yang menjorok ke bawah
+          kisi — tanpa itu kotaknya tergulung tegak 8px dan memunculkan bilah
+          gulung yang tidak menggulung apa-apa. */}
+      <div className="min-w-[44rem] pb-2">
+        <div className={`${kolom} border-b border-border bg-background`}>
+          {/* Sudut kiri atas ikut menempel saat digulung mendatar — tanpa ini
+              nama hari menyelinap ke bawah lajur jam. */}
+          <div className="sticky left-0 z-20 bg-background" />
           {hari.map((h) => {
             const ini = kunciHariWib(h) === hariIni;
             return (

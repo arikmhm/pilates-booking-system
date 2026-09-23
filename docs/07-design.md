@@ -761,11 +761,20 @@ keduanya — dulu dua salinan yang harus diubah bersamaan tiap kali jenis kelas 
 Admin tidak melihat sakelarnya sama sekali: slot mingguan kewenangan owner (BR-9.3),
 dan tab yang ditolak servernya cuma memancing klik yang gagal.
 
-**Gulung mendatar berhenti di tepi kalender, bukan di tepi halaman.** Kalender punya
-`overflow-auto` dan `max-h` sendiri; baris hari menempel di atas dan lajur jam menempel
-di kiri. Tanpa itu, yang tergulung kehilangan sumbunya — dan panel di sebelahnya ikut
-terdorong keluar layar. Lebar minimum isinya 44rem (7 kolom hari ~93px + lajur jam);
-di bawah itu barulah muncul gulung mendatar, di dalam kotaknya.
+**Gulung mendatar berhenti di tepi kalender; tegaknya tidak digulung sama sekali.**
+Kalender punya `overflow-x-auto` sendiri dan lajur jam menempel di kiri — tanpa itu
+yang tergulung kehilangan sumbunya, dan panel di sebelahnya ikut terdorong keluar
+layar. Lebar minimum isinya 44rem (7 kolom hari ~93px + lajur jam); di bawah itu
+barulah muncul gulung mendatar, di dalam kotaknya.
+
+Sumbu tegaknya digambar **utuh**, tanpa `max-height`. Kalender yang dipotong setinggi
+layar menyembunyikan kelas sore di balik gulungan kedua, dan lubang jadwal — satu-satunya
+alasan memakai bentuk kalender dan bukan daftar — baru terbaca kalau seluruh harinya
+kelihatan sekaligus. Yang dibayar untuk itu satu: baris hari tidak bisa lagi menempel di
+atas, karena `overflow-x-auto` menjadikan kotaknya wadah gulung tersendiri dan
+`sticky top` di dalamnya menempel pada wadah yang tidak pernah bergulir tegak. Strip hari
+(`DS-51`) yang duduk di atas kalender menanggung tugas itu: ia menyebut ketujuh
+tanggalnya sebelum kalendernya mulai.
 
 **Penerbitan jadwal jadi strip tetap di kaki kartu, bukan tab ketiga.** Dua tab di
 atasnya membuat SATU kelas; menerbitkan menjalankan apa yang sudah dijanjikan aturan
@@ -799,6 +808,56 @@ owner; admin tetap melihat chipnya, karena menjalankan slot mingguan kewenangan 
 dibedakan dari gagal oleh orang yang sedang menatap kalender minggu ini yang kosong;
 "8 sesi terbit, mulai Selasa, 29 September" bisa. Slot Selasa yang dibuat hari Rabu
 memang tidak punya sesi minggu ini.
+
+`DS-51` — **Strip hari jadi kendali minggu, dan jadwal punya dua rupa.**
+
+Tujuh sel — nama hari di atas nomor tanggal — dibagi rata `grid-cols-7`, diapit dua
+tombol geser minggu. Ia menggantikan teks rentang plus tiga tombol yang dipakai
+sebelumnya. Tiga hal yang dibelinya:
+
+1. **Ketujuh harinya selalu terlihat.** "Kamis ada kelas apa" dijawab satu ketukan,
+   bukan dengan menghitung kolom kalender atau menggulung daftar tujuh hari.
+2. **Lebarnya tidak berubah-ubah.** Kolom yang melar mengikuti panjang nama hari
+   membuat mata mencari ulang tiap pindah minggu.
+3. **Ia muat di 375px.** Tujuh sel @30px dengan tinggi sentuh 48px (`DS-11`), nama
+   harinya 10px — pengecualian skala yang sama dengan saringan alat (`DS-40`).
+
+**Rentang tanggal tetap ada, di kanan baris pertama.** Strip cuma menyebut nomor
+tanggal, jadi bulan harus disebut di suatu tempat — dan justru minggu yang menyeberang
+bulan ("28 Sep – 4 Okt") yang paling butuh. Tombol "Minggu ini" hanya muncul saat
+sedang tidak di minggu ini; tombol yang mengantar ke halaman yang sedang dibuka bukan
+tombol.
+
+**Dua rupa, satu data: kalender dan daftar** (`?rupa=daftar`). Kalender menjawab
+"bagaimana bentuk minggu ini" — jeda, tumpukan, lubang. Daftar menjawab "hari ini saya
+bisa ikut apa" dan memberi tiap sesi satu baris penuh: jam mulai di atas jam selesai,
+nama kelas, pelatih, dan chip statusnya. Rupa itu tersimpan di URL seperti `?buat=` dan
+`?pilih=` (`DS-42`), bukan di state klien — tautan ke satu hari tetap membuka hari itu.
+
+Yang mengikat:
+
+- **Hari yang diketuk di strip selalu membuka rupa daftar.** Di rupa kalender strip
+  tidak memilih apa pun — ketujuh harinya sudah tergambar sekaligus — jadi di sana ia
+  cuma menandai hari ini.
+- **Hari bawaannya hari ini**, dan Senin untuk minggu lain. Parameternya baru ditulis
+  ke URL kalau berbeda dari bawaan **minggu tujuan**: tanpa itu, geser minggu dari Rabu
+  mendarat di Senin.
+- **Di bawah 768px rupanya selalu daftar**, dan sakelarnya disembunyikan. Kalender
+  selebar 44rem tidak pernah digambar di sana, dan sakelar yang separuh pilihannya mati
+  cuma memancing ketukan yang gagal.
+- **Daftar menampilkan satu hari, bukan tujuh.** Versi HP sebelumnya menumpuk tujuh
+  kartu hari; dengan strip di atasnya, tumpukan itu jadi gulungan panjang yang
+  menjawab pertanyaan yang sudah dijawab strip.
+
+Jam selesai menggantikan durasi di tiap baris daftar: "55m" harus dijumlahkan sendiri
+oleh pembacanya, sedangkan yang ditanya orang yang menyusun harinya selalu "jam berapa
+saya keluar".
+
+**Tidak ada batang warna per jenis kelas** seperti di jadwal studio lain. Palet sistem
+ini memetakan warna ke *status* (bagian 7), bukan ke alat, dan `DS-14` melarang warna
+jadi penanda tunggal. Menambah satu warna per jenis kelas berarti mengarang delapan
+warna baru yang harus lolos kontras dan tetap dibedakan pembaca buta warna — untuk
+keterangan yang sudah tertulis sebagai nama kelas di tiap blok.
 
 `DS-41` — **Satu tab, satu formulir, satu tombol, satu hasil.**
 

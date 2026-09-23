@@ -227,7 +227,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 
 | ID | Layar | Isi |
 |---|---|---|
-| M1 | Jadwal | Kalender mingguan di laptop, daftar per hari di HP · sisa kursi · blok membuka panel konfirmasi M2, blok penuh langsung mengantre · bisa geser minggu — `src/app/jadwal/`. **Terbuka untuk tamu**: pengunjung yang belum masuk melihat jadwal yang sama dalam kerangka publik, tanpa tombol booking dan tanpa kartu kredit (DS-45) |
+| M1 | Jadwal | Strip tujuh hari sebagai kendali minggu (DS-51) · dua rupa untuk data yang sama: kalender mingguan (bawaan, ≥ 768px) dan daftar satu hari (`?rupa=daftar`, selalu dipakai di HP) · sisa kursi · blok membuka panel konfirmasi M2, blok penuh langsung mengantre — `src/app/jadwal/`. **Terbuka untuk tamu**: pengunjung yang belum masuk melihat jadwal yang sama dalam kerangka publik, tanpa tombol booking dan tanpa kartu kredit (DS-45) |
 | M2 | Konfirmasi *(panel geser)* | Pilih nomor alat · info "1 kredit dipotong" + sisa sesudahnya · aturan batal tertulis · terbuka-tutup lewat `?pilih=` — `src/app/jadwal/konfirmasi.tsx` |
 | M4 | Transaksi | **Uang**: satu baris satu pembelian paket. Tiap baris membuka detail transaksi — yang dibeli (kredit, masa berlaku, jenis kelas yang tercakup) + ringkasan empat angka nasib kreditnya, lalu menautkan ke buku kredit di Akun Saya (DS-48) — `src/app/transaksi/`, `src/app/transaksi/[id]/` |
 | M3 | Akun Saya | **Sisa kredit + tanggal hangus + hitung mundur** · booking aktif · **daftar tunggu + tombol keluar** (BR-4.7) · riwayat kredit — `src/app/akun/` |
@@ -264,7 +264,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | ID | Layar | Isi |
 |---|---|---|
 | P1 | Profil studio | Sepuluh pita pemasaran, statis dan prerender · tiga kartu paket pilihan sebagai teaser — `src/app/page.tsx` |
-| P2 | Jadwal publik | Kalender mingguan yang sama dengan M1, tanpa tombol booking (DS-45) — `src/app/jadwal/` |
+| P2 | Jadwal publik | Kalender dan daftar yang sama dengan M1, tanpa tombol booking (DS-45) — `src/app/jadwal/` |
 | P3 | Katalog paket | **Seluruh** paket yang sedang dijual, dibaca dari `packages` — harga, isi kredit, masa berlaku, dan jenis kelas yang tercakup (BR-1.4) · saringan per jenis kelas · tombolnya WhatsApp meja depan karena pembelian mandiri baru ada di versi real (UC-M11) — `src/app/paket/` |
 
 P1 brosur, P3 katalog: yang pertama sengaja statis dan dipilih tangan, yang kedua
