@@ -13,6 +13,7 @@ import {
   hasilPenghangusan,
   naikkanWaitlist,
   pilihPaket,
+  sesiBentrok,
   slotBentrok,
   type Antre,
   type PaketMember,
@@ -501,5 +502,68 @@ describe("slotBentrok()", () => {
 
   test("daftar kosong selalu lolos", () => {
     expect(slotBentrok(dasar, [])).toEqual({ ada: false });
+  });
+});
+
+/* ── BR-7.6 · kelas sekali jalan yang menabrak sesi yang sudah ada ───────── */
+
+describe("sesiBentrok()", () => {
+  const REFORMER = "ct-reformer";
+  const PRIVATE = "ct-private";
+  const RANI = "u-rani";
+  const DIMAS = "u-dimas";
+
+  /** Private 10.00 WIB, 30 menit, Rani. */
+  const dasar = {
+    mulai_at: new Date("2026-09-24T03:00:00Z"),
+    durasi_menit: 30,
+    class_type_id: PRIVATE,
+    coach_id: RANI as string | null,
+  };
+  const geser = (menit: number) =>
+    new Date(dasar.mulai_at.getTime() + menit * 60_000);
+
+  test("dua kelas privat di jam yang sama ditolak", () => {
+    // Persis kasus yang lolos sebelum ini ada: dua sesi Private 1 kursi pada
+    // menit yang sama, dan dua orang datang untuk kursi yang sama.
+    expect(sesiBentrok(dasar, [dasar])).toEqual({
+      ada: true,
+      sebab: "kelas",
+      lawan: dasar,
+    });
+  });
+
+  test("kelas tambahan yang menabrak kelas rutin ikut tertangkap", () => {
+    // Sesi dari slot mingguan dan sesi sekali jalan sama-sama di `sessions`,
+    // jadi keduanya masuk daftar yang sama.
+    const rutin = {
+      mulai_at: geser(-10),
+      durasi_menit: 70,
+      class_type_id: REFORMER,
+      coach_id: DIMAS,
+    };
+    const tambahan = { ...dasar, class_type_id: REFORMER, coach_id: RANI };
+    expect(sesiBentrok(tambahan, [rutin]).ada).toBe(true);
+  });
+
+  test("pelatih yang sama di jam yang tumpang tindih ditolak", () => {
+    const lain = { ...dasar, class_type_id: REFORMER, mulai_at: geser(15) };
+    expect(sesiBentrok(lain, [dasar])).toMatchObject({ ada: true, sebab: "coach" });
+  });
+
+  test("jenis kelas dan pelatih berbeda boleh berbarengan", () => {
+    const lain = { ...dasar, class_type_id: REFORMER, coach_id: DIMAS };
+    expect(sesiBentrok(lain, [dasar])).toEqual({ ada: false });
+  });
+
+  test("kelas yang mulai tepat saat kelas lain selesai bukan bentrok", () => {
+    expect(sesiBentrok({ ...dasar, mulai_at: geser(30) }, [dasar]).ada).toBe(false);
+    expect(sesiBentrok({ ...dasar, mulai_at: geser(29) }, [dasar]).ada).toBe(true);
+  });
+
+  test("hari lain tidak pernah bentrok", () => {
+    expect(sesiBentrok({ ...dasar, mulai_at: geser(24 * 60) }, [dasar]).ada).toBe(
+      false,
+    );
   });
 });

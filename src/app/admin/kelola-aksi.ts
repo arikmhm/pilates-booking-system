@@ -24,6 +24,8 @@ import {
   HARI,
   hentikanAturan,
   jalankanAturan,
+  jenisKelasById,
+  sesiSekitar,
   NAMA_JENIS_GANDA,
   simpanJangkaTerbit,
   ubahAktifPaket,
@@ -31,7 +33,7 @@ import {
 import { generateSesi } from "@/db/job";
 import { pastikanAdmin, pastikanOwner } from "@/lib/masuk";
 import { saat } from "@/db/booking";
-import { slotBentrok, type SlotMingguan } from "@/rules";
+import { sesiBentrok, slotBentrok, type SlotMingguan } from "@/rules";
 import { hariWib, jamWib, kunciHariWib } from "@/lib/waktu";
 
 function keLayanan(pesan: string): never {
@@ -65,6 +67,25 @@ function jamDinding(form: FormData, kunciJam: string, kunciMenit: string) {
 function angka(form: FormData, kunci: string, [min, maks]: readonly [number, number]) {
   const n = Number(form.get(kunci));
   return Number.isInteger(n) && n >= min && n <= maks ? n : null;
+}
+
+/**
+ * Kursi dan durasi di formulir jadwal boleh dikosongkan — artinya "ikut jenis
+ * kelasnya" (BR-7.2). Tiga keadaan, jadi tiga nilai kembalian:
+ *
+ * - `null`      dikosongkan, pakai bawaan jenis kelasnya
+ * - `number`    diisi dan sah
+ * - `undefined` diisi tapi di luar rentang — itu galat, bukan "ikut bawaan"
+ */
+function angkaOpsional(
+  form: FormData,
+  kunci: string,
+  [min, maks]: readonly [number, number],
+) {
+  const mentah = String(form.get(kunci) ?? "").trim();
+  if (!mentah) return null;
+  const n = Number(mentah);
+  return Number.isInteger(n) && n >= min && n <= maks ? n : undefined;
 }
 
 /* ── Layanan & paket — UC-O03 ──────────────────────────────────────────────
@@ -199,10 +220,22 @@ export async function tambahAturan(formData: FormData) {
   if (!class_type_id) keJadwal("Pilih jenis kelas.", dari);
 
   const coach_id = String(formData.get("coach_id") ?? "") || null;
-  const kapasitas = angka(formData, "kapasitas", [1, 60]);
-  if (kapasitas === null) keJadwal("Kursi harus 1–60.", dari);
-  const durasi = angka(formData, "durasi_menit", [15, 240]);
-  if (durasi === null) keJadwal("Durasi harus 15–240 menit.", dari);
+
+  // BR-7.2 — kursi dan durasi bawaannya milik jenis kelas; yang disimpan di
+  // slot hanya kalau sengaja ditimpa. Formulir yang mengisi angka duluan
+  // membuat keputusan itu diambil dua kali, dan yang kedua diam-diam menang:
+  // "Private 1 kursi" terbit 8 kursi karena kolomnya sudah terlanjur terisi.
+  const kapasitas = angkaOpsional(formData, "kapasitas", [1, 60]);
+  if (kapasitas === undefined) keJadwal("Kursi harus 1–60, atau dikosongkan.", dari);
+  const durasi = angkaOpsional(formData, "durasi_menit", [15, 240]);
+  if (durasi === undefined)
+    keJadwal("Durasi harus 15–240 menit, atau dikosongkan.", dari);
+
+  const jenis = await jenisKelasById(pg, class_type_id);
+  if (!jenis) keJadwal("Jenis kelas tidak ditemukan.", dari);
+  // Yang BERLAKU — dipakai penjaga bentrok dan disebut di pesan hasilnya.
+  const kursiBerlaku = kapasitas ?? jenis.kapasitas_default;
+  const durasiBerlaku = durasi ?? jenis.durasi_menit;
 
   // Jangka terbit ikut di formulir ini (DS-41): membuat kelas mingguan dan
   // memutuskan sampai kapan ia terbit adalah satu keputusan, bukan dua.
@@ -227,7 +260,7 @@ export async function tambahAturan(formData: FormData) {
     }));
 
   const benturan = slotBentrok(
-    { hari, jam_mulai: jam, durasi_menit: durasi, class_type_id, coach_id },
+    { hari, jam_mulai: jam, durasi_menit: durasiBerlaku, class_type_id, coach_id },
     berjalan,
   );
   if (benturan.ada) {
@@ -277,8 +310,13 @@ export async function tambahAturan(formData: FormData) {
 
   revalidatePath("/admin/jadwal");
   revalidatePath("/jadwal");
+  // Pesannya menyebut kursi dan durasi yang BERLAKU, bukan yang diketik.
+  // Sesudah kolomnya boleh dikosongkan, satu-satunya cara tahu angka mana
+  // yang jadi adalah dengan membacanya kembali di sini.
   keJadwal(
-    `Jadwal mingguan dibuat — ${milik_slot} sesi terbit` +
+    `${jenis.nama} ${HARI[hari - 1]} ${jam.replace(":", ".")} — ` +
+      `${kursiBerlaku} kursi, ${durasiBerlaku} menit. ` +
+      `${milik_slot} sesi terbit` +
       (perdana ? `, mulai ${hariWib(saat(perdana))}` : "") +
       (dibuat > milik_slot
         ? `, sekalian ${dibuat - milik_slot} sesi slot lain yang belum diterbitkan.`
@@ -343,26 +381,68 @@ export async function tambahSesi(formData: FormData) {
   const class_type_id = String(formData.get("class_type_id") ?? "");
   if (!class_type_id) keJadwal("Pilih jenis kelas.", dari);
 
-  const kapasitas = angka(formData, "kapasitas", [1, 60]);
-  const durasi = angka(formData, "durasi_menit", [15, 240]);
-  if (kapasitas === null) keJadwal("Kapasitas harus 1–60.", dari);
-  if (durasi === null) keJadwal("Durasi harus 15–240 menit.", dari);
+  // BR-7.2 — sama seperti slot mingguan: kosong berarti ikut jenis kelasnya.
+  // Bedanya di sini nilainya tidak boleh tersimpan null — `sessions.kapasitas`
+  // dan `durasi_menit` NOT NULL karena sesi yang sudah terbit tidak boleh
+  // berubah saat jenis kelasnya diedit (BR-7.3). Jadi bawaannya diselesaikan
+  // di sini, bukan ditunda ke query.
+  const kapasitas = angkaOpsional(formData, "kapasitas", [1, 60]);
+  if (kapasitas === undefined) keJadwal("Kursi harus 1–60, atau dikosongkan.", dari);
+  const durasi = angkaOpsional(formData, "durasi_menit", [15, 240]);
+  if (durasi === undefined)
+    keJadwal("Durasi harus 15–240 menit, atau dikosongkan.", dari);
+
+  const jenis = await jenisKelasById(pg, class_type_id);
+  if (!jenis) keJadwal("Jenis kelas tidak ditemukan.", dari);
+  const kursiBerlaku = kapasitas ?? jenis.kapasitas_default;
+  const durasiBerlaku = durasi ?? jenis.durasi_menit;
 
   const studio = await setelanLengkap(pg);
+
+  // BR-7.6 untuk kelas sekali jalan. Jam dindingnya baru jadi timestamptz di
+  // dalam Postgres (BR-7.5), jadi tanggal + jam diubah lebih dulu lewat query
+  // yang sama polanya — menebak offset di JavaScript adalah cara paling rapi
+  // untuk meleset satu jam dua kali setahun di zona yang punya DST.
+  const [{ mulai_rencana }] = await pg<{ mulai_rencana: string | Date }[]>`
+    select (${tanggal}::date + ${jam}::time) at time zone 'Asia/Jakarta'
+             as mulai_rencana`;
+  const rencana = saat(mulai_rencana);
+
+  const benturan = sesiBentrok(
+    {
+      mulai_at: rencana,
+      durasi_menit: durasiBerlaku,
+      class_type_id,
+      coach_id: String(formData.get("coach_id") ?? "") || null,
+    },
+    await sesiSekitar(pg, rencana, durasiBerlaku),
+  );
+  if (benturan.ada) {
+    const l = benturan.lawan;
+    const kapan = `${hariWib(l.mulai_at)} pukul ${jamWib(l.mulai_at)}`;
+    keJadwal(
+      benturan.sebab === "kelas"
+        ? `Bentrok dengan kelas ${kapan} yang jenis kelasnya sama. Dua kelas serentak berarti alatnya dipakai dua kali — di kelas berkursi satu, dua orang akan datang untuk kursi yang sama.`
+        : `Bentrok dengan kelas ${kapan} yang pelatihnya sama. Satu orang tidak bisa mengajar dua kelas sekaligus.`,
+      dari,
+    );
+  }
+
   const mulai = await buatSesiManual(pg, {
     studio_id: studio.id,
     class_type_id,
     coach_id: String(formData.get("coach_id") ?? "") || null,
     tanggal,
     jam,
-    durasi_menit: durasi,
-    kapasitas,
+    durasi_menit: durasiBerlaku,
+    kapasitas: kursiBerlaku,
   });
 
   revalidatePath("/admin/jadwal");
   revalidatePath("/jadwal");
   keJadwal(
-    `Kelas tambahan dibuat: ${hariWib(mulai)} pukul ${jamWib(mulai)}.`,
+    `${jenis.nama} ${hariWib(mulai)} pukul ${jamWib(mulai)} — ` +
+      `${kursiBerlaku} kursi, ${durasiBerlaku} menit.`,
     dari,
   );
 }

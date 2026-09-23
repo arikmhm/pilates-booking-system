@@ -197,6 +197,62 @@ export async function hapusJenisKelas(sql: Sql, id: string): Promise<boolean> {
   return hapus.count > 0;
 }
 
+/**
+ * Kapasitas dan durasi bawaan satu jenis kelas — dipakai saat formulir
+ * jadwal dikosongkan (BR-7.2). Dibaca di server, bukan disalin ke formulir:
+ * angka yang dititipkan ke klien bisa diganti sebelum dikirim balik.
+ */
+export async function jenisKelasById(sql: Sql, id: string) {
+  const [j] = await sql<
+    { nama: string; kapasitas_default: number; durasi_menit: number }[]
+  >`
+    select nama, kapasitas_default, durasi_menit
+      from class_types where id = ${id}`;
+  return j ?? null;
+}
+
+/**
+ * Sesi terjadwal di sekitar satu jam, untuk penjaga BR-7.6 kelas sekali
+ * jalan. Jendelanya dilebarkan 4 jam ke belakang — durasi terpanjang yang
+ * boleh disimpan 240 menit, jadi sesi yang MULAI sebelum itu tidak mungkin
+ * masih berjalan saat kelas baru dimulai.
+ *
+ * Sesi dari slot mingguan dan sesi sekali jalan sama-sama di tabel ini, jadi
+ * satu query menutup keduanya.
+ */
+export async function sesiSekitar(
+  sql: Sql,
+  mulai: Date,
+  durasi_menit: number,
+): Promise<
+  {
+    mulai_at: Date;
+    durasi_menit: number;
+    class_type_id: string;
+    coach_id: string | null;
+    kelas: string;
+  }[]
+> {
+  const baris = await sql<
+    {
+      mulai_at: string | Date;
+      durasi_menit: number;
+      class_type_id: string;
+      coach_id: string | null;
+      kelas: string;
+    }[]
+  >`
+    select s.mulai_at, s.durasi_menit, s.class_type_id, s.coach_id,
+           ct.nama as kelas
+      from sessions s
+      join class_types ct on ct.id = s.class_type_id
+     where s.status = 'scheduled'
+       and s.mulai_at >= ${ts(mulai)}::timestamptz - interval '4 hours'
+       and s.mulai_at < ${ts(new Date(mulai.getTime() + durasi_menit * 60_000))}::timestamptz`;
+  // saat() wajib: di runtime server Next, timestamptz kembali string mentah.
+  return baris.map((b) => ({ ...b, mulai_at: saat(b.mulai_at) }));
+}
+
 export type BarisPaket = {
   id: string;
   nama: string;

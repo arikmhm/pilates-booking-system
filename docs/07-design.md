@@ -995,11 +995,31 @@ sebagai 02.30 PM dan 14.30. Studio ini menulis jam dalam 24 jam di mana pun. Sel
 menutup kemungkinan mengetik jam yang tidak ada, dan menitnya kelipatan lima — jadwal
 studio tidak pernah mulai pukul 09.07.
 
-`DS-41b` — **Durasi bisa ditimpa per aturan mingguan, sama seperti kapasitas.**
-`schedule_rules.durasi_menit` boleh `null` = pakai durasi jenis kelasnya. Tanpa ini, kelas
-Sabtu 45 menit memaksa membuat jenis kelas kembar hanya untuk membedakan durasinya —
-padahal `kapasitas` sudah bekerja begini sejak awal. Nilainya tetap **disalin** ke sesi
-saat diterbitkan (BR-7.3).
+`DS-41b` — **Kursi dan durasi adalah TIMPAAN, jadi formulirnya dibiarkan kosong.**
+
+`schedule_rules.kapasitas` dan `.durasi_menit` boleh `null` = pakai angka jenis kelasnya.
+Tanpa itu, kelas Sabtu 45 menit memaksa membuat jenis kelas kembar hanya untuk
+membedakan durasinya. Nilainya tetap **disalin** ke sesi saat diterbitkan (BR-7.3).
+
+Yang menentukan, dan sempat salah: **formulirnya tidak boleh mengisi angka lebih
+dulu.** Kedua angka itu sudah diputuskan di jenis kelasnya; mengisinya lagi di sini
+berarti keputusan yang sama diambil dua kali, dan yang kedua diam-diam menang. Versi
+sebelumnya mengisi angka dari jenis kelas **pertama menurut abjad** — apa pun yang
+dipilih di dropdown — jadi "Private, 1 kursi" terbit sebagai kelas 6 kursi selama
+kolomnya tidak disentuh, dan tiap slot Reformer yang dibuat lewat formulir ini diam-diam
+jadi 6 kursi, bukan 8.
+
+Perbaikannya bukan menyinkronkan angkanya ke dropdown — itu menuntut JS dan tetap
+menyisakan dua sumber. Kolomnya dikosongkan, `placeholder`-nya berbunyi "Ikut jenis
+kelas", dan `required`-nya dilepas. **Kosong berarti ikut jenis kelasnya; diisi berarti
+sengaja ditimpa untuk kelas ini saja.** Nilai yang BERLAKU diselesaikan di server —
+bukan dititipkan ke formulir, karena angka yang dikirim klien bisa diganti sebelum
+kembali.
+
+**Pesan hasilnya menyebut angka yang jadi, bukan yang diketik**: "Private Senin 13.00 —
+1 kursi, 70 menit. 8 sesi terbit, mulai Senin 28 September." Sesudah kolomnya boleh
+kosong, kalimat inilah satu-satunya tempat orang bisa memastikan kelas yang barusan
+dibuat memang seperti yang dia maksud.
 
 `DS-41c` — **Daftar panjang dipecah tab, bukan digulir.** Empat puluh kelas rutin dalam
 satu daftar berarti menggulir untuk menjawab "Selasa isinya apa?", padahal jadwal studio

@@ -80,9 +80,26 @@ export type SlotMingguan = {
   coach_id: string | null;
 };
 
-export type BenturanSlot =
-  | { ada: false }
-  | { ada: true; sebab: "kelas" | "coach"; lawan: SlotMingguan };
+export type Sebab = "kelas" | "coach";
+
+export type Benturan<T> = { ada: false } | { ada: true; sebab: Sebab; lawan: T };
+
+/**
+ * Dua kelas yang waktunya sudah dipastikan bertabrakan — kenapa itu masalah.
+ *
+ * Jenis kelas yang sama berarti alatnya dipakai dua kali; pelatih yang sama
+ * berarti orangnya dipakai dua kali. `coach_id` null artinya "belum
+ * ditentukan", bukan "orang yang sama", jadi ia tidak pernah menabrak siapa
+ * pun. `null` = boleh berbarengan: itu studio yang menjalankan dua ruang.
+ */
+function sebabBentur(
+  baru: { class_type_id: string; coach_id: string | null },
+  lawan: { class_type_id: string; coach_id: string | null },
+): Sebab | null {
+  if (lawan.class_type_id === baru.class_type_id) return "kelas";
+  if (baru.coach_id && lawan.coach_id === baru.coach_id) return "coach";
+  return null;
+}
 
 const MENIT_MINGGU = 7 * 24 * 60;
 
@@ -126,13 +143,40 @@ function tumpangTindih(a: SlotMingguan, b: SlotMingguan): boolean {
 export function slotBentrok(
   baru: SlotMingguan,
   yangAda: SlotMingguan[],
-): BenturanSlot {
+): Benturan<SlotMingguan> {
   for (const lawan of yangAda) {
     if (!tumpangTindih(baru, lawan)) continue;
-    if (lawan.class_type_id === baru.class_type_id)
-      return { ada: true, sebab: "kelas", lawan };
-    if (baru.coach_id && lawan.coach_id === baru.coach_id)
-      return { ada: true, sebab: "coach", lawan };
+    const sebab = sebabBentur(baru, lawan);
+    if (sebab) return { ada: true, sebab, lawan };
+  }
+  return { ada: false };
+}
+
+export type SesiTerjadwal = {
+  mulai_at: Date;
+  durasi_menit: number;
+  class_type_id: string;
+  coach_id: string | null;
+};
+
+/**
+ * BR-7.6 untuk kelas **sekali jalan** — tanggalnya pasti, jadi tumpang
+ * tindihnya dihitung pada garis waktu biasa (`bentrok()`), bukan pada minggu
+ * yang melingkar.
+ *
+ * `yangAda` diisi sesi yang sudah terjadwal di sekitar jamnya, termasuk sesi
+ * yang lahir dari slot mingguan — keduanya sama-sama duduk di `sessions`,
+ * jadi kelas tambahan yang menabrak kelas rutin ikut tertangkap di sini.
+ */
+export function sesiBentrok(
+  baru: SesiTerjadwal,
+  yangAda: SesiTerjadwal[],
+): Benturan<SesiTerjadwal> {
+  for (const lawan of yangAda) {
+    if (!bentrok(baru.mulai_at, baru.durasi_menit, lawan.mulai_at, lawan.durasi_menit))
+      continue;
+    const sebab = sebabBentur(baru, lawan);
+    if (sebab) return { ada: true, sebab, lawan };
   }
   return { ada: false };
 }

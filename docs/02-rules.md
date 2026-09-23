@@ -155,7 +155,7 @@ Kolom terakhir: **D** = ditegakkan di demo · **R** = hanya versi real.
 | 7.3 | Ubah aturan berulang **hanya** memengaruhi sesi yang belum ada booking-nya; sesi yang sudah ada booking ditangani manual lewat BR-5 | R |
 | 7.4 | Hari libur / blackout → sesi tidak dibuat, atau dibatalkan lewat BR-5 | R |
 | 7.5 | Semua waktu disimpan UTC, ditampilkan WIB | D |
-| 7.6 | Slot mingguan **tidak boleh menabrak slot yang masih berjalan** bila jenis kelasnya sama atau pelatihnya sama; jenis kelas berbeda dengan pelatih berbeda boleh berbarengan | D |
+| 7.6 | **Kelas tidak boleh menabrak kelas lain** bila jenis kelasnya sama atau pelatihnya sama — berlaku untuk slot mingguan maupun kelas sekali jalan; jenis kelas berbeda dengan pelatih berbeda boleh berbarengan | D |
 
 ### BR-8 · Uang
 

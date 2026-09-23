@@ -307,11 +307,26 @@ di luar jangka baru — sebagian mungkin sudah ada pesertanya.
 
 **Penjaganya ada di hulu, bukan di sini.** Job ini menerbitkan apa pun yang tertulis di
 `schedule_rules`; ia tidak bertanya apakah dua slot saling menabrak. Yang bertanya
-`slotBentrok()` (BR-7.6) saat slotnya dibuat di A7. Alasannya: jadwal ini di-assign
-berdasarkan **jenis kelas**, bukan alat — `schedule_rules` tidak mengenal ruang maupun
-mesin — jadi dua slot Reformer di jam yang sama akan menjual 8 + 8 kursi untuk 8
-reformer, dan yang menemukannya delapan orang yang sudah datang. Menolaknya saat
-booking berarti menghukum member atas kesalahan studio.
+BR-7.6, saat kelasnya dibuat — `slotBentrok()` untuk slot mingguan, `sesiBentrok()`
+untuk kelas sekali jalan. Alasannya: jadwal ini di-assign berdasarkan **jenis kelas**,
+bukan alat — `schedule_rules` tidak mengenal ruang maupun mesin — jadi dua kelas
+Reformer di jam yang sama akan menjual 8 + 8 kursi untuk 8 reformer, dan yang
+menemukannya delapan orang yang sudah datang. Di kelas berkursi satu akibatnya paling
+telanjang: dua orang datang untuk kursi yang sama. Menolaknya saat booking berarti
+menghukum member atas kesalahan studio.
+
+Dua jalur, dua fungsi, karena yang dibandingkan memang berbeda bentuk. Slot mingguan
+punya hari dan jam dinding, jadi tumpang tindihnya dihitung pada garis waktu satu
+minggu yang melingkar. Kelas sekali jalan punya tanggal pasti, jadi ia dibandingkan
+dengan `sessions` di sekitar jamnya — dan karena sesi dari slot mingguan duduk di tabel
+yang sama, kelas tambahan yang menabrak kelas rutin ikut tertangkap. Keputusan "kenapa
+ini masalah" dipakai bersama keduanya (`sebabBentur()`), supaya keduanya tidak pernah
+menjawab berbeda.
+
+**Satu celah yang sengaja dibiarkan:** slot mingguan baru yang sesinya menabrak kelas
+sekali jalan yang sudah ada. Memeriksanya berarti memproyeksikan slot itu ke tiap
+tanggal sampai batas terbit. Kelas sekali jalan adalah pengecualian yang jumlahnya
+sedikit, dan yang membuatnya biasanya orang yang sedang menatap kalender.
 
 ### 7.4 Tutup waitlist — tiap jam · `UC-S04`
 

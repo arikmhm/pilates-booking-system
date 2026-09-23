@@ -135,14 +135,12 @@ export async function BuatKelas({
   ]);
   const coach = tim.filter((t) => t.peran === "coach");
   const besok = kunciHariWib(new Date(sekarang.getTime() + 86_400_000));
-  const kursiBaku = jenis[0]?.kapasitas_default ?? 8;
-  const durasiBaku = jenis[0]?.durasi_menit ?? 60;
 
   // Admin tidak punya mode berulang sama sekali — menampilkan tab yang
   // ditolak servernya cuma memancing klik yang gagal.
   const berulang = owner && mode === "berulang";
 
-  /** Alat, pelatih, kursi, durasi — sama persis di kedua tab. */
+  /** Jenis kelas, pelatih, kursi, durasi — sama persis di kedua tab. */
   const isiKelas = (
     <>
       <div>
@@ -177,6 +175,14 @@ export async function BuatKelas({
         </select>
       </div>
 
+      {/* DS-41b — kursi dan durasi TIDAK diisi lebih dulu. Keduanya sudah
+          ditentukan di jenis kelasnya (BR-7.2), jadi mengisinya di sini
+          berarti keputusan yang sama diambil dua kali — dan yang kedua
+          diam-diam menang. Versi sebelumnya mengisi angka dari jenis kelas
+          PERTAMA menurut abjad apa pun yang dipilih, jadi "Private 1 kursi"
+          terbit sebagai kelas 6 kursi selama kolomnya tidak disentuh.
+          Kosong = ikut jenis kelasnya; diisi = sengaja ditimpa untuk slot
+          ini saja. Angka yang berlaku disebut lagi di pesan hasilnya. */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className={LABEL} htmlFor="kapasitas">
@@ -186,10 +192,9 @@ export async function BuatKelas({
             id="kapasitas"
             name="kapasitas"
             type="number"
-            required
             min={1}
             max={60}
-            defaultValue={kursiBaku}
+            placeholder="Ikut jenis kelas"
             className={INPUT}
           />
         </div>
@@ -201,14 +206,18 @@ export async function BuatKelas({
             id="durasi_menit"
             name="durasi_menit"
             type="number"
-            required
             min={15}
             max={240}
-            defaultValue={durasiBaku}
+            placeholder="Ikut jenis kelas"
             className={INPUT}
           />
         </div>
       </div>
+
+      <p className="text-app-body-sm text-muted-foreground">
+        Kosongkan keduanya untuk memakai kursi dan durasi jenis kelasnya. Isi
+        hanya kalau kelas ini memang beda — Sabtu 45 menit, misalnya.
+      </p>
     </>
   );
 
