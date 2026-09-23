@@ -722,9 +722,13 @@ browser sama sekali.
 `DS-40` — **Kalender jadwal: satu bilah kendali di kiri atas, dan kalender yang
 menggulung sendiri.**
 
-Semua saringan duduk di satu bilah yang menempel di atas (`DS-51`). Rentang tanggal
-berdiri sendiri tepat di atas kalender, sebagai keterangan bagi kepala kalender yang
-cuma menyebut nomor tanggal — bukan judul besar dengan subjudul di bawahnya.
+Semua saringan duduk di satu bilah yang menempel di atas (`DS-51`). **Layar ini tidak
+punya judul yang terlihat.** Rentang tanggal sempat jadi `<h1>`-nya, lalu dibuang:
+kepala kalender sudah menyebut ketujuh tanggalnya satu per satu, dan sebaris teks yang
+cuma menamai apa yang tepat di bawahnya bukan judul — ia pengulangan yang memakan satu
+baris di atas lipatan. Nama halamannya sudah disebut remah roti (`DS-38`); yang tersisa
+`<h1>` `sr-only` untuk pembaca layar, karena halaman tanpa `h1` tetap salah walau
+layarnya tidak membutuhkannya.
 
 **Saringan jenis kelas dan pelatih.** Satu studio bisa punya beberapa ruang dengan satu
 alat di masing-masing — Reformer di bawah, Mat di atas — jadi dua sesi berjalan di jam
@@ -837,12 +841,37 @@ daftar, **di sana** dengan tautan, karena cuma satu hari yang digambar. Lebar 46
 hanya berlaku saat ia menyangga kisi kalender; berdiri sendiri ia menciut sampai muat
 di 375px — tujuh kolom @34px, tombol minggu tetap 44px (`DS-11`).
 
+**Kepala minggu ikut menempel di rupa daftar** — ia tinggal di dalam bilah kendali,
+bukan di atas daftarnya. Di sana ia satu-satunya cara berpindah hari, dan pemilih yang
+menuntut menggulung ke atas dulu sama saja dengan tidak ada. Di rupa kalender ia
+disembunyikan dari bilah karena kalendernya sudah menyangga kepalanya sendiri — tapi
+**hanya di atas 768px**: di bawah itu yang digambar selalu daftar satu hari, apa pun
+`?rupa=`-nya, jadi pemilih harinya harus tetap ada di sana.
+
+**Hari ini dapat latar tipis sepanjang kolomnya** (`muted`), terpisah dari lingkaran
+`primary` yang menandai hari yang sedang **dipilih**. Dua pertanyaan yang berbeda —
+"sekarang di mana" dan "yang saya buka mana" — dan sejak ada pemilih tanggal keduanya
+tidak lagi selalu jatuh di kolom yang sama.
+
 **Dua rupa, satu data: kalender dan daftar** (`?rupa=daftar`). Kalender menjawab
 "bagaimana bentuk minggu ini" — jam sibuk, hari kosong. Daftar menjawab "hari ini saya
 bisa ikut apa" dan memberi tiap sesi satu baris penuh: jam mulai di atas jam selesai,
-nama kelas, pelatih, dan chip statusnya. Di bawah 768px rupanya **selalu** daftar dan
-label sakelarnya menciut jadi ikon saja: kalender selebar 46rem tidak pernah digambar
-di sana.
+nama kelas, pelatih, chip status, dan tombol aksinya. Di bawah 768px rupanya **selalu**
+daftar dan sakelarnya tidak digambar sama sekali: kalender selebar 46rem tidak pernah
+muncul di sana, dan sakelar yang separuh pilihannya mati cuma memancing ketukan yang
+gagal.
+
+**Tombol aksi hanya di rupa daftar, dan hanya di baris yang bisa ditindaki.** "Pesan"
+untuk kursi yang masih boleh dibooking, "Antre" untuk kelas penuh (BR-4.5). Baris yang
+sudah lewat, ditolak aturan, atau sudah dipesan tidak dapat tombol — tombol yang pasti
+gagal memancing ketukan yang cuma berakhir dengan pesan tolak. Kartu kalender **tidak**
+ikut dapat tombol dan tetap satu target sentuh utuh (`DS-32`): di kolom selebar 92px,
+tombol di dalam kartu berarti dua target bersarang yang keduanya terlalu kecil — dan
+`<button>` di dalam `<a>` bukan HTML yang sah.
+
+Baris yang punya tombol berhenti jadi tautan seluruh baris. Yang tersisa dibungkus
+seperti semula: baris staf menuju detail sesinya, karena di sana tidak ada satu aksi
+tunggal yang pantas jadi tombol.
 
 Jam selesai menggantikan durasi di tiap baris daftar: "55m" harus dijumlahkan sendiri
 oleh pembacanya, sedangkan yang ditanya orang yang menyusun harinya selalu "jam berapa

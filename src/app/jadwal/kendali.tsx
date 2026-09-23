@@ -68,6 +68,7 @@ export function BilahKendali({
   buat,
   tautanRupa,
   tautanHariIni,
+  children,
 }: {
   alat: string;
   daftarAlat: [string, number][];
@@ -82,6 +83,8 @@ export function BilahKendali({
   /** URL kedua rupa, sudah jadi — fungsi tidak bisa melintasi batas server. */
   tautanRupa: Record<Rupa, string>;
   tautanHariIni: string;
+  /** Kepala minggu di rupa daftar — ikut menempel, bukan menggulung pergi. */
+  children?: React.ReactNode;
 }) {
   const router = useRouter();
 
@@ -104,7 +107,7 @@ export function BilahKendali({
           }
           router.push(q.size ? `/jadwal?${q}` : "/jadwal");
         }}
-        className="flex flex-wrap items-center justify-between gap-2 py-2"
+        className="flex flex-wrap items-center justify-between gap-2 py-1.5"
       >
         {/* `pilih` sengaja tidak ikut: mengganti saringan berarti orang sedang
             melihat-lihat lagi, dan panel konfirmasinya harus ikut tertutup. */}
@@ -141,7 +144,10 @@ export function BilahKendali({
             </Link>
           )}
 
-          <div className="flex items-center gap-0.5 rounded-sm border border-border p-1">
+          {/* Di bawah 768px rupanya selalu daftar, jadi sakelarnya tidak
+              digambar sama sekali — sakelar yang separuh pilihannya mati cuma
+              memancing ketukan yang gagal. */}
+          <div className="hidden items-center gap-0.5 rounded-sm border border-border p-1 md:flex">
             {pilihan.map(([nilai, label, Ikon]) => {
               const dipilih = nilai === rupa;
               return (
@@ -156,7 +162,7 @@ export function BilahKendali({
                   }`}
                 >
                   <Ikon className="size-4" />
-                  <span className="hidden sm:inline">{label}</span>
+                  {label}
                 </Link>
               );
             })}
@@ -169,6 +175,8 @@ export function BilahKendali({
           </noscript>
         </div>
       </form>
+
+      {children}
     </div>
   );
 }

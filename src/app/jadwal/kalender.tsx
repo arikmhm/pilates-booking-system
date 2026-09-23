@@ -37,6 +37,12 @@ export type IsiBlok = {
   catatan: string;
   /** Dibungkus form (booking) atau tautan (staf). Null = blok mati. */
   bungkus?: (anak: React.ReactNode) => React.ReactNode;
+  /**
+   * Tombol aksi eksplisit — hanya dipakai rupa daftar (DS-51). Kartu kalender
+   * tetap satu target sentuh utuh (DS-32): di kolom selebar 92px, tombol di
+   * dalam kartu berarti dua target bersarang yang keduanya terlalu kecil.
+   */
+  tombol?: React.ReactNode;
 };
 
 /**
@@ -81,6 +87,7 @@ function Geser({
 export function KepalaMinggu({
   hari,
   ditandai,
+  hariIni,
   mundur,
   maju,
   tautan,
@@ -88,6 +95,8 @@ export function KepalaMinggu({
   hari: Date[];
   /** Indeks 0–6 hari yang sedang dipilih. */
   ditandai: number;
+  /** Indeks hari ini, atau −1 kalau minggu ini bukan minggunya. */
+  hariIni: number;
   mundur: string;
   maju: string;
   /** Kalau ada, tiap hari jadi tautan. Kalau tidak, harinya keterangan saja. */
@@ -117,7 +126,13 @@ export function KepalaMinggu({
             </span>
           </>
         );
-        const gaya = "flex flex-col items-center py-2";
+        // Hari ini dapat latar tipis sepanjang kolomnya, terpisah dari
+        // lingkaran `primary` yang menandai hari yang sedang DIPILIH. Dua
+        // pertanyaan berbeda — "sekarang di mana" dan "yang saya buka mana" —
+        // dan di hari biasa keduanya memang jatuh di kolom yang sama.
+        const gaya = `flex flex-col items-center py-1.5 ${
+          i === hariIni ? "bg-muted" : ""
+        }`;
 
         return tautan ? (
           <Link
@@ -181,6 +196,7 @@ export function Kalender({
   baris,
   isi,
   ditandai,
+  hariIni,
   mundur,
   maju,
 }: {
@@ -189,6 +205,7 @@ export function Kalender({
   baris: BarisJadwal[];
   isi: (b: BarisJadwal) => IsiBlok;
   ditandai: number;
+  hariIni: number;
   mundur: string;
   maju: string;
 }) {
@@ -213,6 +230,7 @@ export function Kalender({
         <KepalaMinggu
           hari={hari}
           ditandai={ditandai}
+          hariIni={hariIni}
           mundur={mundur}
           maju={maju}
         />
@@ -226,10 +244,12 @@ export function Kalender({
               {String(j).padStart(2, "0")}.00
             </div>
 
-            {hari.map((h) => (
+            {hari.map((h, i) => (
               <div
                 key={kunciHariWib(h)}
-                className="flex flex-col gap-1 border-l border-border p-1"
+                className={`flex flex-col gap-1 border-l border-border p-1 ${
+                  i === hariIni ? "bg-muted" : ""
+                }`}
               >
                 {(petak.get(`${j}|${kunciHariWib(h)}`) ?? []).map((b) => (
                   <KartuSesi key={b.id} b={b} isi={isi} />

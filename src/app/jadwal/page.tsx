@@ -34,7 +34,6 @@ import {
   jamWib,
   kunciHariWib,
   selisihManusiawi,
-  tanggalWib,
 } from "@/lib/waktu";
 import { Angka, Chip, Kartu, Kerangka } from "@/components/kerangka";
 import { RangkaPublik } from "@/components/rangka-publik";
@@ -60,6 +59,13 @@ type Konteks = {
   /** URL layar ini apa adanya — dibawa formulir supaya minggunya tidak hilang. */
   sini: string;
 };
+
+/**
+ * Tombol aksi di rupa daftar — DS-51. Lime `primary` karena ini memang aksi
+ * utama barisnya (DS-2), dan 44px karena DS-11 tidak mengenal pengecualian.
+ */
+const TOMBOL =
+  "inline-flex min-h-11 shrink-0 items-center rounded-sm bg-primary px-4 text-app-label font-medium uppercase text-primary-foreground transition-opacity hover:opacity-90";
 
 /** Alasan tolak diringkas jadi dua kata — kalimat penuh tidak muat di blok. */
 const RINGKAS: Record<string, string> = {
@@ -118,6 +124,14 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
           {anak}
         </Link>
       ),
+      // Tamu belum punya akun, jadi tombolnya mendarat di layar masuk. Kata
+      // yang sama dengan tombol member — yang dituju orangnya memang sama,
+      // dan "Masuk dulu" di sini terbaca seperti penolakan.
+      tombol: (
+        <Link href="/masuk" className={TOMBOL}>
+          Pesan
+        </Link>
+      ),
     };
   }
 
@@ -150,13 +164,22 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
   if (penuh)
     return {
       warna: "border-border bg-neutral-surface text-neutral-foreground",
-      catatan: b.antre ? `Penuh · ${b.antre} antre` : "Penuh · Antre",
+      catatan: b.antre ? `Penuh · ${b.antre} antre` : "Penuh",
       bungkus: (anak) => (
         <form action={ikutWaitlist} className="h-full">
           <input type="hidden" name="session_id" value={b.id} />
           <input type="hidden" name="kembali" value={k.sini} />
           <button type="submit" className="h-full w-full">
             {anak}
+          </button>
+        </form>
+      ),
+      tombol: (
+        <form action={ikutWaitlist}>
+          <input type="hidden" name="session_id" value={b.id} />
+          <input type="hidden" name="kembali" value={k.sini} />
+          <button type="submit" className={TOMBOL}>
+            Antre
           </button>
         </form>
       ),
@@ -168,10 +191,17 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
     return {
       warna:
         "border-foreground bg-background transition-colors hover:bg-primary hover:text-primary-foreground",
-      catatan: `${sisa} kursi · Booking`,
+      // Sejak ada tombolnya sendiri, chip cukup menyebut keadaannya. "4 kursi
+      // · Booking" di sebelah tombol Pesan menyuruh dua kali.
+      catatan: `${sisa} kursi tersisa`,
       bungkus: (anak) => (
         <Link href={k.tautanPilih(b.id)} className="block h-full">
           {anak}
+        </Link>
+      ),
+      tombol: (
+        <Link href={k.tautanPilih(b.id)} className={TOMBOL}>
+          Pesan
         </Link>
       ),
     };
@@ -188,9 +218,14 @@ function rupa(b: BarisJadwal, k: Konteks): IsiBlok {
  * Jam mulai ditumpuk di atas jam selesai, bukan di atas durasi: "55m" harus
  * dijumlahkan sendiri oleh pembacanya, sedangkan yang ditanya orang yang
  * menyusun harinya selalu "jam berapa saya keluar".
+ *
+ * Baris yang punya `tombol` TIDAK ikut dibungkus jadi tautan: tombol di dalam
+ * tautan itu HTML yang tidak sah, dan dua target sentuh bersarang membuat
+ * separuh ketukan mendarat di tempat yang tidak diniatkan. Yang tersisa
+ * dibungkus seperti semula — baris staf menuju detail sesinya.
  */
 function Baris({ b, k }: { b: BarisJadwal; k: Konteks }) {
-  const { warna, catatan, bungkus } = rupa(b, k);
+  const { warna, catatan, bungkus, tombol } = rupa(b, k);
   const selesai = new Date(b.mulai_at.getTime() + b.durasi_menit * 60_000);
   const dalam = (
     <div className="flex w-full items-center gap-4 px-4 py-4 text-left">
@@ -208,9 +243,10 @@ function Baris({ b, k }: { b: BarisJadwal; k: Konteks }) {
         </p>
       </div>
       <Chip warna={warna} anak={catatan} />
+      {tombol}
     </div>
   );
-  return <li>{bungkus ? bungkus(dalam) : dalam}</li>;
+  return <li>{tombol || !bungkus ? dalam : bungkus(dalam)}</li>;
 }
 
 export default async function M1({
@@ -262,6 +298,13 @@ export default async function M1({
   const idxDipilih = Math.round(
     (dipilih.getTime() - senin.getTime()) / 86_400_000,
   );
+  // Hari ini dan hari yang dipilih dua hal berbeda sejak ada pemilih tanggal;
+  // −1 berarti minggu yang dibuka bukan minggu ini.
+  const idxHariIni = Math.round(
+    (hariIni.getTime() - senin.getTime()) / 86_400_000,
+  );
+  const hariIniDiMinggu =
+    idxHariIni >= 0 && idxHariIni <= 6 ? idxHariIni : -1;
 
   // Tiga query terakhir milik pengguna yang sudah masuk. Nilai biasa di dalam
   // Promise.all tetap sah, jadi tamu tidak perlu cabang await sendiri.
@@ -403,12 +446,6 @@ export default async function M1({
     perHari.set(kunci, [...(perHari.get(kunci) ?? []), b]);
   }
 
-  const rentang = `${tanggalWib(senin)} – ${tanggalWib(new Date(sampai.getTime() - 86_400_000))}`;
-
-  // Kerangka publik sudah memasang <h1> "Jadwal Kelas"-nya sendiri; di dalam
-  // aplikasi rentang tanggal inilah satu-satunya judul halaman.
-  const Judul = mode === "tamu" ? "h2" : "h1";
-
   const geserMinggu = (arah: -1 | 1) => ({
     tgl: new Date(dipilih.getTime() + arah * 7 * 86_400_000),
   });
@@ -435,6 +472,12 @@ export default async function M1({
 
   const isi = (
     <>
+      {/* Rentang tanggal dulu jadi <h1> layar ini. Ia dibuang — kepala
+          kalender sudah menyebut ketujuh tanggalnya, dan sebaris teks yang
+          cuma menamai apa yang tepat di bawahnya bukan judul. Yang tersisa
+          judul untuk pembaca layar: tamu sudah punya <h1> dari hero. */}
+      {mode !== "tamu" && <h1 className="sr-only">Jadwal Kelas</h1>}
+
       {/* DS-51 — semua saringan dalam satu bilah yang menempel di atas saat
           halaman digulung. Tombol geser minggu TIDAK ada di sini: ia menyatu
           dengan kepala kalender, karena strip tanggal berdiri sendiri di atas
@@ -453,7 +496,31 @@ export default async function M1({
           daftar: url({ rupa: "daftar" }),
         }}
         tautanHariIni={url({ tgl: hariIni })}
-      />
+      >
+        {/* Di rupa daftar kepala minggu jadi pemilih hari — cuma satu hari
+            yang digambar — jadi ia ikut menempel: memilih hari lain tidak
+            boleh menuntut menggulung ke atas dulu. Tanpa `min-w` di sini; ia
+            harus muat di 375px, dan tujuh kolom selebar 34px masih menampung
+            "SEN" 11px. Lebar 46rem cuma berlaku saat kepalanya menyangga kisi
+            kalender. */}
+        {/* Di bawah 768px yang digambar SELALU daftar satu hari, apa pun
+            `?rupa=`-nya — jadi pemilih harinya harus ada di sana juga. Di
+            atas 768px rupa kalender sudah punya kepala minggunya sendiri di
+            dalam kotak kalender, dan dua deret tanggal yang bersisian memaksa
+            pembacanya menebak mana yang berlaku. */}
+        <div className={rupaAktif === "daftar" ? "" : "md:hidden"}>
+          <div className="border-t border-border">
+            <KepalaMinggu
+              hari={tujuhHari}
+              ditandai={idxDipilih}
+              hariIni={hariIniDiMinggu}
+              mundur={url(geserMinggu(-1))}
+              maju={url(geserMinggu(1))}
+              tautan={(i) => url({ tgl: tujuhHari[i] })}
+            />
+          </div>
+        </div>
+      </BilahKendali>
 
       {mode === "member" && (
         <div className="mt-dekat">
@@ -496,30 +563,8 @@ export default async function M1({
           kalender lagi. */}
       <div className="mt-dekat grid grid-cols-12 gap-dekat">
         <div className={`col-span-12 min-w-0 ${staf ? "xl:col-span-8" : ""}`}>
-          {/* Kepala kalender cuma menyebut nomor tanggal, jadi bulan — dan
-              minggu yang menyeberang bulan — harus disebut di sini. */}
-          <Judul className="mb-dekat text-app-section tabular-nums">
-            {rentang}
-          </Judul>
-
           {rupaAktif === "daftar" ? (
-            <>
-              {/* Di rupa daftar kepala minggu jadi pemilih hari: cuma satu
-                  hari yang digambar, jadi harus ada cara memilih yang lain. */}
-              {/* Tanpa `min-w` — di sini ia harus muat di 375px, dan tujuh
-                  kolom selebar 34px masih menampung "SEN" 11px. Lebar 46rem
-                  cuma berlaku saat kepalanya menyangga kisi kalender. */}
-              <div className="mb-dekat rounded-md border border-border bg-background">
-                <KepalaMinggu
-                  hari={tujuhHari}
-                  ditandai={idxDipilih}
-                  mundur={url(geserMinggu(-1))}
-                  maju={url(geserMinggu(1))}
-                  tautan={(i) => url({ tgl: tujuhHari[i] })}
-                />
-              </div>
-              {daftarHari}
-            </>
+            daftarHari
           ) : (
             <>
               {/* Minggu kosong tetap menggambar kepala kalendernya. Mengganti
@@ -540,6 +585,7 @@ export default async function M1({
                   baris={tampil}
                   isi={(b) => rupa(b, k)}
                   ditandai={idxDipilih}
+                  hariIni={hariIniDiMinggu}
                   mundur={url(geserMinggu(-1))}
                   maju={url(geserMinggu(1))}
                 />
